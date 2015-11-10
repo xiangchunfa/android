@@ -1,0 +1,39 @@
+package com.qdoc.client.model;
+
+public class ValiBankAccountModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2263714295898217923L;
+	
+	public static final int SAVING_CARD = 0;//不是信用卡
+	public static final int CREDIT_CARD = 1;//是信用卡
+
+	private int credit;//银行卡类型
+	private String creditMsg;//提示信息
+	/**
+	 * @return the credit
+	 */
+	public int getCredit() {
+		return credit;
+	}
+	/**
+	 * @param credit the credit to set
+	 */
+	public void setCredit(int credit) {
+		this.credit = credit;
+	}
+	/**
+	 * @return the creditMsg
+	 */
+	public String getCreditMsg() {
+		return creditMsg;
+	}
+	/**
+	 * @param creditMsg the creditMsg to set
+	 */
+	public void setCreditMsg(String creditMsg) {
+		this.creditMsg = creditMsg;
+	}
+}

@@ -1,0 +1,253 @@
+package com.qdoc.client.system;
+
+import java.io.IOException;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.content.Context;
+import android.content.Intent;
+import android.support.v4.content.LocalBroadcastManager;
+
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.db.DatabaseService;
+import com.qdoc.client.db.bean.CustomContent;
+import com.qdoc.client.db.bean.MessageCount;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.tencent.android.tpush.XGPushBaseReceiver;
+import com.tencent.android.tpush.XGPushClickedResult;
+import com.tencent.android.tpush.XGPushRegisterResult;
+import com.tencent.android.tpush.XGPushShowedResult;
+import com.tencent.android.tpush.XGPushTextMessage;
+
+public class MessageReceiver extends XGPushBaseReceiver {
+    public static final String TAG = "MessageReceiver";
+
+    private void show(Context context, String text) {
+    }
+    
+    @Override
+    public void onNotifactionShowedResult(Context context, XGPushShowedResult notifiShowedRlt) {
+        if (context == null || notifiShowedRlt == null) {
+            return;
+        }
+        CustomContent content = parshContent(notifiShowedRlt);
+        LogUtils.i(TAG, "notifiShowedRlt=" + notifiShowedRlt.toString());
+        DatabaseService service = new DatabaseService(context);
+        //当Action为6(订购咨询单)，添加红点处理
+        if(content.getAction()==AppConstants.CONSULT_BILL && content.getConsultOption()==AppConstants.CONSULTOPTION_ORDER_CONSULT){
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(new Intent(AppConstants.SHOW_CONSULT_REDOT_INTENT_ACTION));
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(new Intent(AppConstants.REFRESH_CONSULT_LIST_ACTION));
+        }else if(content.getAction()==AppConstants.CONSULT_BILL && (content.getConsultOption()==AppConstants.CONSULTOPTION_FINISH_CONSULT||content.getConsultOption()==AppConstants.CONSULTOPTION_CANCEL_CONSULT)){
+        	//当Action为6(取消咨询单或者完成咨询单)
+        	Global.countMap.remove(content.getConsultId());
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(new Intent(AppConstants.REFRESH_CONSULT_LIST_ACTION));
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(new Intent(AppConstants.HIDE_CONSULT_REDOT_INTENT_ACTION));
+        }else if(content.getAction() == AppConstants.CONSULT_CONTENT){
+        	//当Acition为7（咨询内容）时，统计每个咨询ID对应的消息数量  
+        	consultContentAction(content, service);
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(IntentTools.startConsultUpdate(context, content));
+        }else if(content.getAction() == AppConstants.ACTIVITY_ACTION){
+        	//接收到新活动的通知
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(new Intent(AppConstants.SHOW_ACTIVITY_REDOT_INTENT_ACTION));
+        }else if(content.getAction() == AppConstants.FLAG_KINDNESS){
+        	//收到患者送的锦旗
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(new Intent(AppConstants.PUSH_FLAG_KINDNESS_ACTION));
+        }
+        if(content.getAction() != AppConstants.CONSULT_CONTENT){
+        	//action不等于7，都要在联系客服页面展示
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(new Intent(AppConstants.UPDATE_CONTACT_SERVER_RAD_DOT));
+        	//action不等于7，需要更新客服消息
+        	LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(IntentTools.startServiceUpdate(context, content));
+        }
+    }
+    
+    /**
+     * Action为7（咨询内容）的逻辑处理
+     */
+    public void consultContentAction(CustomContent content,DatabaseService service){
+    	String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+//        service.saveConsultRecord(content);
+        //假如已经接受了该咨询，就把咨询数量加1
+        if(Global.countMap.containsKey(content.getConsultId())){
+        	LogUtils.i(TAG, "ConsultID1 = "+content.getConsultId());
+      	    int count = Global.countMap.get(content.getConsultId())+1;
+      	    MessageCount messageCount = new MessageCount(count, content.getConsultId(), accountName);
+      	    service.upDateMessageCount(messageCount,accountName);
+        	Global.countMap.put(content.getConsultId(),count);
+         //假如未接受该咨询，就把咨询数量设置为1
+         } else {
+      	    LogUtils.i(TAG, "ConsultID2 = "+content.getConsultId());
+      	    Global.countMap.put(content.getConsultId(),1);
+      	    MessageCount messageCount = new MessageCount(1, content.getConsultId(), accountName);
+      	    try {
+			    service.saveMessageCount(messageCount);
+		    } catch (Exception e) {
+				LogUtils.i(TAG, e.getMessage());
+		    }
+         }
+         LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(
+                new Intent(AppConstants.SHOW_CONSULT_REDOT_INTENT_ACTION));
+    }
+    
+    
+    /**
+     * 解析推送自定义内容
+     * @param notifiShowedRlt:推送通知
+     * @return 
+     */
+    public CustomContent parshContent(XGPushShowedResult notifiShowedRlt){
+        CustomContent customContent = null;
+        try {
+              customContent = JsonParserFactory.parseJson(CustomContent.class, notifiShowedRlt.getCustomContent());
+          	  String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+          	  customContent.setAccount(accountName);
+          	  String content = notifiShowedRlt.getContent();
+              customContent.setContent(content);	
+              LogUtils.i(TAG, "CustomContent = "+notifiShowedRlt.getCustomContent()+";content = "+notifiShowedRlt.getContent());
+  		} catch (JSONException e) {
+  		    LogUtils.i(TAG, e.getMessage());
+  		    return customContent;
+  		} catch (IOException e) {
+  			LogUtils.i(TAG, e.getMessage());
+  			return customContent;
+  		}
+		return customContent;
+    }
+    
+    @Override
+    public void onUnregisterResult(Context context, int errorCode) {
+        if (context == null) {
+            return;
+        }
+        String text = null;
+        if (errorCode == XGPushBaseReceiver.SUCCESS) {
+            text = "反注册成功";
+        } else {
+            text = "反注册失败" + errorCode;
+        }
+        LogUtils.d(TAG, text);
+        show(context, text);
+    }
+
+    @Override
+    public void onSetTagResult(Context context, int errorCode, String tagName) {
+        if (context == null) {
+            return;
+        }
+        String text = null;
+        if (errorCode == XGPushBaseReceiver.SUCCESS) {
+            text = "\"" + tagName + "\"设置成功";
+        } else {
+            text = "\"" + tagName + "\"设置失败,错误码：" + errorCode;
+        }
+        LogUtils.d(TAG, text);
+        show(context, text);
+    }
+
+    @Override
+    public void onDeleteTagResult(Context context, int errorCode, String tagName) {
+        if (context == null) {
+            return;
+        }
+        String text = null;
+        if (errorCode == XGPushBaseReceiver.SUCCESS) {
+            text = "\"" + tagName + "\"删除成功";
+        } else {
+            text = "\"" + tagName + "\"删除失败,错误码：" + errorCode;
+        }
+        LogUtils.d(TAG, text);
+        show(context, text);
+    }
+
+    // 通知点击回调 actionType=1为该消息被清除，actionType=0为该消息被点击
+    @Override
+    public void onNotifactionClickedResult(Context context, XGPushClickedResult message) {
+        if (context == null || message == null) {
+            return;
+        }
+        String text = null;
+        if (message.getActionType() == XGPushClickedResult.NOTIFACTION_CLICKED_TYPE) {
+            // 通知在通知栏被点击啦。。。。。
+            // APP自己处理点击的相关动作
+            // 这个动作可以在activity的onResume也能监听，请看第3点相关内容
+            text = "通知被打开 :" + message;
+        } else if (message.getActionType() == XGPushClickedResult.NOTIFACTION_DELETED_TYPE) {
+            // 通知被清除啦。。。。
+            // APP自己处理通知被清除后的相关动作
+            text = "通知被清除 :" + message;
+            return;
+        }
+        String customContent = message.getCustomContent();
+        int type = -1;
+        String consultId = "0";
+        String consultOption = "";
+        if (customContent != null && customContent.length() != 0) {
+            try {
+                JSONObject obj = new JSONObject(customContent);
+                // key1为前台配置的key
+                if (!obj.isNull("action")) { 
+                    String value = obj.getString("action");
+                    type = Integer.valueOf(value);
+                    if (!obj.isNull("consultId")) {
+                      consultId = obj.getString("consultId");
+                    }
+                    if (!obj.isNull("consultOption")){
+                        consultOption = obj.getString("consultOption");	
+                     }
+                    MainActivity.startActivityFromPush(context, type, consultId, consultOption);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void onRegisterResult(Context context, int errorCode, XGPushRegisterResult message) {
+        // TODO Auto-generated method stub 
+        if (context == null || message == null) {
+            return;
+        }
+        String text = null;
+        if (errorCode == XGPushBaseReceiver.SUCCESS) {
+            text = message + "注册成功";
+            // 在这里拿token
+            String token = message.getToken();
+        } else {
+            text = message + "注册失败，错误码：" + errorCode;
+        }
+        LogUtils.d(TAG, text);
+        show(context, text);
+    }
+
+    // 消息透传
+    @Override
+    public void onTextMessage(Context context, XGPushTextMessage message) {
+        // TODO Auto-generated method stub
+        String text = "收到消息:" + message.toString();
+        // 获取自定义key-value
+        String customContent = message.getCustomContent();
+        if (customContent != null && customContent.length() != 0) {
+            try {
+                JSONObject obj = new JSONObject(customContent);
+                // key1为前台配置的key
+                if (!obj.isNull("action")) {
+                    String value = obj.getString("action");
+                    LogUtils.d(TAG, "get custom value:" + value);
+                }
+                // ...
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        // APP自主处理消息的过程...
+        LogUtils.d(TAG, text);
+        show(context, text);
+    }
+}

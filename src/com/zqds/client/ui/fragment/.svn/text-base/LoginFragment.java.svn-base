@@ -1,0 +1,372 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.VerifyUtil;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.LoginModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.SystemBarTintManager;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.view.PhoneClearEditText;
+import com.qdoc.client.util.InputTools;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.SystemBarUtil;
+import com.qdoc.client.util.ToastUtils;
+import com.tencent.android.tpush.XGIOperateCallback;
+import com.tencent.android.tpush.XGPushManager;
+
+/**
+ * com.qdoc.client.ui.fragment.LoginFragment
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-18 上午9:24:13
+ */
+public class LoginFragment extends BaseFragment implements OnClickListener {
+	/**
+	 * TAG
+	 */
+	public static final String TAG = LoginFragment.class.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private PhoneClearEditText edtUserName;
+	private Button btnLogin;
+	private String phoneNumber;
+	//private SharedPreferences sp;
+	
+	private TextView tv_register_account;
+
+	
+	
+	/**
+	 * params
+	 */
+//	private static boolean isTimeOut;//是否超时
+	
+	public static LoginFragment newInstance(Bundle bundle) {
+		final LoginFragment fragment = new LoginFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		LogUtils.i(TAG, "onCreate");
+		super.onCreate(savedInstanceState);
+	}
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		LogUtils.i(TAG, "onCreateView");
+		return inflater.inflate(R.layout.fragment_login, container, false);
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		LogUtils.i(TAG, "onViewCreated");
+		SystemBarUtil.setSystemStatusBar(true, R.color.color_eee3ef, getActivity());
+		initView(view);
+		initListener();
+		initParams();
+	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+	}
+	
+	private void initParams() {
+	}
+
+	private void initView(View view) {
+		// TODO Auto-generated method stub
+		edtUserName = (PhoneClearEditText) view.findViewById(R.id.et_username);
+		btnLogin = (Button) view.findViewById(R.id.login_btn);
+		String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+		if (!TextUtils.isEmpty(accountName)) {
+			StringBuffer sb = new StringBuffer(accountName);
+			sb.insert(3, "-");
+			sb.insert(8, "-");
+			edtUserName.setText(sb.toString());
+		}
+		tv_register_account = (TextView) view.findViewById(R.id.tv_register_account);
+	}
+
+	protected void initListener() {
+		btnLogin.setOnClickListener(new OnClickListener() {
+		
+
+			@Override
+			public void onClick(View v) {
+				 phoneNumber = edtUserName.getPhoneNumber();
+				LogUtils.i(TAG, phoneNumber);
+				
+				if (!VerifyUtil.verifyUserName(getActivity(), phoneNumber)) {
+					return;
+				}
+				if(NetworkUtils.NETWORK_TYPE_UNAVAILABLE == NetworkUtils.getNetworkType(getContext())){
+					//网络不可用
+					ToastUtils.ToastShort(getActivity(), R.string.network_error);
+					return;
+				}
+				String deviceToken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+				//ANDY 未完成
+				if(!StringUtils.isEmpty(deviceToken)){
+                	startLoginRequest(deviceToken,true); 
+                }else{
+                	XGPushRegisterAndLogin();
+                }
+			}
+		});
+		
+		edtUserName.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
+				
+			}
+			
+			@Override
+			public void afterTextChanged(Editable s) {
+				
+			}
+		});
+		
+		tv_register_account.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				switchToCheckVerifyCode((LoginActivity)getActivity(), AppConstants.VERIFY_NO_ENTRY, AppConstants.LOGIN_NO_ENTRY, null, CheckVerifyCodeFragment.TAG);
+			}
+		});
+	}
+	
+    public void XGPushRegisterAndLogin(){
+	    Global.progressDialog = ProgressDialog.show(getActivity(), null,
+	    		  getActivity().getString(R.string.login_hint), true,
+					true);
+   	    //注册信鸽没有回调onSuccess与onFail方法，计时20秒后调用登录接口
+	    final Handler handler = new Handler();  
+    	final Runnable runnable = new Runnable() {  
+    	       @Override  
+    	       public void run() {  
+    	    	   try {
+    	    	      Global.isTimeOut = true;
+    	    	      String deviceToken = Global.getDeviceID(getActivity());
+    	    	      PersonalConfig.putString(PersonalConfigKey.EXTRA_DEVICE_TOKEN,deviceToken);
+					  PersonalConfig.asyncCommit();
+					  startLoginRequest(deviceToken,false);
+				   } catch (Exception e) {
+				      LogUtils.i(TAG, e.getMessage());
+				   } 
+    	       }  
+    	};
+	    handler.postDelayed(runnable, 20*1000);
+	 	XGPushManager.registerPush(getActivity(),
+	 			new XGIOperateCallback() {
+	 				@Override
+	 				public void onSuccess(Object data, int flag) {
+	 					try {
+							//已经超时,信鸽回调不做任何处理
+							if(Global.isTimeOut)
+								return;
+							if (PersonalConfig.hasKey(PersonalConfigKey.EXTRA_DEVICE_TOKEN)) {
+								PersonalConfig.remove(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+							}
+							String deviceToken=(String) data;
+							PersonalConfig.putString(PersonalConfigKey.EXTRA_DEVICE_TOKEN,deviceToken);
+							PersonalConfig.asyncCommit();
+							handler.removeCallbacks(runnable);
+							startLoginRequest(deviceToken,false); 
+						} catch (Exception e) {
+							LogUtils.i(TAG, e.getMessage());
+						}
+	 				}
+
+	 				@Override
+	 				public void onFail(Object data, int errCode,String msg) {
+	 					try {
+							//已经超时,信鸽回调不做任何处理
+							if(Global.isTimeOut)
+								return;
+							String deviceToken=(String) data;
+							if(StringUtils.isEmpty(deviceToken)){
+								deviceToken = Global.getDeviceID(getActivity());
+							}
+							PersonalConfig.putString(PersonalConfigKey.EXTRA_DEVICE_TOKEN,deviceToken);
+							PersonalConfig.asyncCommit();
+							handler.removeCallbacks(runnable);
+							startLoginRequest(deviceToken,false);
+						} catch (Exception e) {
+							LogUtils.i(TAG, e.getMessage());
+						}
+	 				}
+	 			});
+	}
+    
+	private void startLoginRequest(String deviceToken,boolean showProgress) {
+		if(showProgress)
+	        Global.progressDialog = ProgressDialog.show(getActivity(), null, getActivity().getString(R.string.login_hint), true, true);
+		final String accountName=edtUserName.getPhoneNumber().toString();
+		if(TextUtils.isEmpty(Global.APP_VERSION_NAME))
+			Global.APP_VERSION_NAME = Global.getVerName(getContext());
+		if(TextUtils.isEmpty(Global.OS_VERSION))
+			Global.OS_VERSION = Global.getOSVersion();
+		if(TextUtils.isEmpty(Global.PHONE_MODEL))
+			Global.PHONE_MODEL = Global.getPhoneModel();
+		RequestParams params = DataRequestUtils.getLoginRequestParam(TAG,
+				accountName, "", AppConstants.ANDROID,
+				deviceToken, AppConstants.MODEL_DEFAULT, Global.APP_VERSION_NAME, Global.OS_VERSION, Global.PHONE_MODEL);
+		HttpTaskManager.startStringRequest(params,
+				JsonParserFactory.parseBaseModel(LoginModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						Global.progressDialog.dismiss();
+						LoginActivity activity = (LoginActivity) getActivity();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+						    final LoginModel dataModel = (LoginModel) resultData;
+                            if(dataModel != null&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+							// 先清除再保存TOKEN数据
+							if (PersonalConfig.hasKey(PersonalConfigKey.EXTRA_TOKEN)) {
+								PersonalConfig.remove(PersonalConfigKey.EXTRA_TOKEN);
+							}
+							PersonalConfig.putString(PersonalConfigKey.EXTRA_TOKEN, dataModel.getToken());
+							PersonalConfig.putString(PersonalConfigKey.EXTRA_ACCOUNT_HINT, edtUserName.getPhoneNumber().toString());
+							PersonalConfig.putInt(PersonalConfigKey.EXTAR_AUTH_STATUS, dataModel.getDoctorCertificationStatus());
+							PersonalConfig.asyncCommit();
+							Global.loginStatus = dataModel.getLoginStatus();
+							if (dataModel.getLoginStatus() == AppConstants.LOGIN_DEFAULT) {
+								// 跳转
+						        Global.loginSuccess(dataModel.getUserStatus(),false,accountName,dataModel.getDoctorCertificationStatus());
+								MainActivity.startActivity(getContext());
+								if(getActivity()!=null)
+									getActivity().finish();
+							} else if (dataModel.getLoginStatus() == AppConstants.LOGIN_NO_ENTRY) {
+								switchToCheckVerifyCode(activity, AppConstants.VERIFY_NO_ENTRY, AppConstants.LOGIN_NO_ENTRY, accountName, CheckVerifyCodeFragment.TAG);
+							} else if (dataModel.getLoginStatus() == AppConstants.LOGIN_NO_AUDIT) {
+								switchToCheckVerifyCode(activity, AppConstants.VERIFY_NO_ENTRY, AppConstants.LOGIN_NO_AUDIT, accountName, CheckVerifyCodeFragment.TAG);
+							} else if (dataModel.getLoginStatus() == AppConstants.LOGIN_NO_ACTIVE) {
+								switchToCheckVerifyCode(activity, AppConstants.VERIFY_NO_ACTIVE, AppConstants.LOGIN_NO_ACTIVE, accountName, CheckVerifyCodeFragment.TAG);
+							} else if (dataModel.getLoginStatus() == AppConstants.LOGIN_CHANGE_DEVICE) {
+								activity.switchToChangeDeviceFragment(ChangeDeviceFragment.TAG);
+								InputTools.HideKeyboard(edtUserName);
+							}
+						 }else{
+								ToastUtils.ToastShort(getContext(),dataModel.getErrorMsg());
+						 } 
+						}else {
+							if (null == resultData) {
+								ToastUtils.ToastShort(getContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext(),(String) resultData);
+							}
+						}
+						
+					}
+				});
+	}
+	
+    /**
+     * 
+     * @param activity:loginActivity实例  
+     * @param verifyCodeType:验证码类型
+     * @param loginStatus:登陆状态
+     */
+	public void switchToCheckVerifyCode(LoginActivity activity,int verifyCodeType,int loginStatus,String userName,String tag){
+		Bundle bundle = new Bundle();
+		bundle.putInt(IntentTools.EXTRA_VERIFY_CODE_TYPE, verifyCodeType);
+		bundle.putInt(IntentTools.EXTRA_LOGIN_STATUS, loginStatus);
+		bundle.putString(IntentTools.EXTRA_USER_NAME, userName);
+		
+		activity.switchToCheckVerifyCodeFrament(bundle,tag);
+	}
+	
+	public void onDestroy() {
+		LogUtils.i(TAG, "onDestroy");
+		super.onDestroy();
+	}
+
+	public static void startActivity(Context context) {
+		context.startActivity(IntentTools.getLoginIntent(context));
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		}
+	}
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public void onDestroyView() {
+	    	// TODO Auto-generated method stub
+	    super.onDestroyView();
+	    LogUtils.i(TAG, "onDestroyView");
+	}
+		
+	@Override
+	public void onAttach(Activity activity) {
+		// TODO Auto-generated method stub
+		LogUtils.i(TAG, "onAttach");
+		super.onAttach(activity);
+		}
+		
+	@Override
+	public void onDetach() {
+			// TODO Auto-generated method stub
+		LogUtils.i(TAG, "onDetach");
+		super.onDetach();
+	}
+}

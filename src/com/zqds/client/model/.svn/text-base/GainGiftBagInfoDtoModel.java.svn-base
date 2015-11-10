@@ -1,0 +1,79 @@
+/*
+ * PersonalizedDtoModel.java
+ * classes : com.qdoc.client.model.PersonalizedDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-19 下午11:59:59
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.PersonalizedDtoModel
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-10-15 下午11:59:59
+ */
+public class GainGiftBagInfoDtoModel { 
+	
+	private Long id;
+	private Long giftBagId;
+	private String address;
+	private String phoneNumber;
+	private String contactPerson;
+	private Long doctorId;	
+    private String applyTime;
+    private String description;
+	public Long getId() {
+		return id;
+	}
+	public void setId(Long id) {
+		this.id = id;
+	}
+	public Long getGiftBagId() {
+		return giftBagId;
+	}
+	public void setGiftBagId(Long giftBagId) {
+		this.giftBagId = giftBagId;
+	}
+	public String getAddress() {
+		return address;
+	}
+	public void setAddress(String address) {
+		this.address = address;
+	}
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
+	public String getContactPerson() {
+		return contactPerson;
+	}
+	public void setContactPerson(String contactPerson) {
+		this.contactPerson = contactPerson;
+	}
+	public Long getDoctorId() {
+		return doctorId;
+	}
+	public void setDoctorId(Long doctorId) {
+		this.doctorId = doctorId;
+	}
+	public String getApplyTime() {
+		return applyTime;
+	}
+	public void setApplyTime(String applyTime) {
+		this.applyTime = applyTime;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
+    
+    
+    
+    
+
+}

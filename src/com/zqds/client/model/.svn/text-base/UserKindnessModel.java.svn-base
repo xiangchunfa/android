@@ -1,0 +1,47 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 心意列表接口返回对象
+ * @author Antony
+ *
+ */
+public class UserKindnessModel extends AbstractBaseModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7443083840128773344L;
+	
+	private Pagination<UserKindnessDto> pager;//心意列表
+	private String shareUrl;//医生微信端移动诊所Url
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<UserKindnessDto> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<UserKindnessDto> pager) {
+		this.pager = pager;
+	}
+
+	/**
+	 * @return the shareUrl
+	 */
+	public String getShareUrl() {
+		return shareUrl;
+	}
+
+	/**
+	 * @param shareUrl the shareUrl to set
+	 */
+	public void setShareUrl(String shareUrl) {
+		this.shareUrl = shareUrl;
+	}
+}

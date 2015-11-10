@@ -1,0 +1,232 @@
+/*
+ * ConsultListModel.java
+ * classes : com.qdoc.client.model.ConsultListModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:02:07
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * FileName    : MyConsultDtoModel.java
+ * Description : 我的咨询记录实体类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2014-12-11 
+ **/
+public class MyConsultDtoModel implements Serializable{
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 6589609580013607938L;
+	
+    private Long id;//咨询服务ID
+    private String openid;//用户微信openid
+    private String userName;//微信用户名，<highlight></highlight>包括的内容，需要高亮显示
+    private String caseName;//咨询单用户名，<highlight></highlight>包括的内容，需要高亮显示
+    private String sex;//咨询单性别
+    private String headImageUrl;//微信用户头像
+    private Integer consultType;//咨询服务类型  0 普通咨询  1 快捷咨询
+    private Integer consultState;//咨询服务状态(数字)
+    private String consultStateStr;//咨询服务状态(字符串)
+    private String consultMoney;//订单金额，单位元
+    private String description;//咨询单内容，<highlight></highlight>包括的内容，需要高亮显示
+    private String age;//咨询单用户年龄
+    private String acceptTime;//医生接单时间
+    private Boolean fans;//咨询用户是否医生粉丝  true:是  false:不是
+	private boolean anonymity;//是否匿名：true：是 false：不是
+    private int shareStatus;//该咨询是否分享(0:无 1:已分享) 	 	
+    
+     
+	public int getShareStatus() {
+		return shareStatus;
+	}
+	public void setShareStatus(int shareStatus) {
+		this.shareStatus = shareStatus;
+	}
+	/**
+	 * @return the anonymity
+	 */
+	public boolean isAnonymity() {
+		return anonymity;
+	}
+	/**
+	 * @param anonymity the anonymity to set
+	 */
+	public void setAnonymity(boolean anonymity) {
+		this.anonymity = anonymity;
+	}
+	/**
+	 * @return the consultState
+	 */
+	public Integer getConsultState() {
+		return consultState;
+	}
+	/**
+	 * @return the id
+	 */
+	public Long getId() {
+		return id;
+	}
+	/**
+	 * @return the consultStateStr
+	 */
+	public String getConsultStateStr() {
+		return consultStateStr;
+	}
+	/**
+	 * @param consultStateStr the consultStateStr to set
+	 */
+	public void setConsultStateStr(String consultStateStr) {
+		this.consultStateStr = consultStateStr;
+	}
+	/**
+	 * @param consultState the consultState to set
+	 */
+	public void setConsultState(Integer consultState) {
+		this.consultState = consultState;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(Long id) {
+		this.id = id;
+	}
+	/**
+	 * @return the openid
+	 */
+	public String getOpenid() {
+		return openid;
+	}
+	/**
+	 * @param openid the openid to set
+	 */
+	public void setOpenid(String openid) {
+		this.openid = openid;
+	}
+	/**
+	 * @return the userName
+	 */
+	public String getUserName() {
+		return userName;
+	}
+	/**
+	 * @param userName the userName to set
+	 */
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+	/**
+	 * @return the caseName
+	 */
+	public String getCaseName() {
+		return caseName;
+	}
+	/**
+	 * @param caseName the caseName to set
+	 */
+	public void setCaseName(String caseName) {
+		this.caseName = caseName;
+	}
+	/**
+	 * @return the sex
+	 */
+	public String getSex() {
+		return sex;
+	}
+	/**
+	 * @param sex the sex to set
+	 */
+	public void setSex(String sex) {
+		this.sex = sex;
+	}
+	/**
+	 * @return the headImageUrl
+	 */
+	public String getHeadImageUrl() {
+		return headImageUrl;
+	}
+	/**
+	 * @param headImageUrl the headImageUrl to set
+	 */
+	public void setHeadImageUrl(String headImageUrl) {
+		this.headImageUrl = headImageUrl;
+	}
+	/**
+	 * @return the consultType
+	 */
+	public Integer getConsultType() {
+		return consultType;
+	}
+	/**
+	 * @param consultType the consultType to set
+	 */
+	public void setConsultType(Integer consultType) {
+		this.consultType = consultType;
+	}
+	/**
+	 * @return the consultMoney
+	 */
+	public String getConsultMoney() {
+		return consultMoney;
+	}
+	/**
+	 * @param consultMoney the consultMoney to set
+	 */
+	public void setConsultMoney(String consultMoney) {
+		this.consultMoney = consultMoney;
+	}
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	/**
+	 * @return the age
+	 */
+	public String getAge() {
+		return age;
+	}
+	/**
+	 * @param age the age to set
+	 */
+	public void setAge(String age) {
+		this.age = age;
+	}
+	/**
+	 * @return the acceptTime
+	 */
+	public String getAcceptTime() {
+		return acceptTime;
+	}
+	/**
+	 * @param acceptTime the acceptTime to set
+	 */
+	public void setAcceptTime(String acceptTime) {
+		this.acceptTime = acceptTime;
+	}
+	/**
+	 * @return the fans
+	 */
+	public Boolean getFans() {
+		return fans;
+	}
+	/**
+	 * @param fans the fans to set
+	 */
+	public void setFans(Boolean fans) {
+		this.fans = fans;
+	}
+    
+}

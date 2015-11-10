@@ -1,0 +1,264 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+import java.util.Date;
+
+/**
+ * create at 2014-11-5 17:13
+ * @author antony
+ *提现流水记录类
+ */
+public class DoctorWithdrawDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3844251205085640246L;
+	
+	/**
+	 * 提现状态
+	 */
+	public static final int WITHDRAW_STATUS_UNTREATED = 0;//未处理
+	public static final int WITHDRAW_STATUS_APPROVED = 1;//审核通过
+	public static final int WITHDRAW_STATUS_SUBMITS = 2;//提交支付
+	public static final int WITHDRAW_STATUS_PAID = 3;//支付完成
+	public static final int WITHDRAW_STATUS_FAIL = 4;//失败
+	
+	
+	
+	private long id;//流水ID
+	private long doctorId;//医生编号
+	private String doctorName;//医生姓名
+	private String tradeNo;//提现单号
+	private int money;//提现金额，单位分
+	private String realMoney;//到账金额，单位元
+	private String withdMoney;//提现金额，单位元
+	private String description;//提现描述
+	private String bankNo;//银行转换单号
+	private int status;//提现状态
+	private String paymentTime;//转账时间
+	private String creatDate;//提现时间
+	private String bankName;//银行名称
+	private String accountNo;//银行卡号
+	private String drawInfo;//提现失败原因
+	private String expectDate;//预计到账时间
+	private String withdFee;//手续费
+	private int fee;//收取手续费的边界
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+	/**
+	 * @return the doctorId
+	 */
+	public long getDoctorId() {
+		return doctorId;
+	}
+	/**
+	 * @param doctorId the doctorId to set
+	 */
+	public void setDoctorId(long doctorId) {
+		this.doctorId = doctorId;
+	}
+	/**
+	 * @return the doctorName
+	 */
+	public String getDoctorName() {
+		return doctorName;
+	}
+	/**
+	 * @param doctorName the doctorName to set
+	 */
+	public void setDoctorName(String doctorName) {
+		this.doctorName = doctorName;
+	}
+	/**
+	 * @return the tradeNo
+	 */
+	public String getTradeNo() {
+		return tradeNo;
+	}
+	/**
+	 * @param tradeNo the tradeNo to set
+	 */
+	public void setTradeNo(String tradeNo) {
+		this.tradeNo = tradeNo;
+	}
+	/**
+	 * @return the money
+	 */
+	public int getMoney() {
+		return money;
+	}
+	/**
+	 * @param money the money to set
+	 */
+	public void setMoney(int money) {
+		this.money = money;
+	}
+
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	/**
+	 * @return the bankNo
+	 */
+	public String getBankNo() {
+		return bankNo;
+	}
+	/**
+	 * @param bankNo the bankNo to set
+	 */
+	public void setBankNo(String bankNo) {
+		this.bankNo = bankNo;
+	}
+	/**
+	 * @return the status
+	 */
+	public int getStatus() {
+		return status;
+	}
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(int status) {
+		this.status = status;
+	}
+	/**
+	 * @return the creatDate
+	 */
+	public String getCreatDate() {
+		return creatDate;
+	}
+	/**
+	 * @param creatDate the creatDate to set
+	 */
+	public void setCreatDate(String creatDate) {
+		this.creatDate = creatDate;
+	}
+	/**
+	 * @return the paymentTime
+	 */
+	public String getPaymentTime() {
+		return paymentTime;
+	}
+	/**
+	 * @param paymentTime the paymentTime to set
+	 */
+	public void setPaymentTime(String paymentTime) {
+		this.paymentTime = paymentTime;
+	}
+	/**
+	 * @return the withdMoney
+	 */
+	public String getWithdMoney() {
+		return withdMoney;
+	}
+	/**
+	 * @param withdMoney the withdMoney to set
+	 */
+	public void setWithdMoney(String withdMoney) {
+		this.withdMoney = withdMoney;
+	}
+	/**
+	 * @return the realMoney
+	 */
+	public String getRealMoney() {
+		return realMoney;
+	}
+	/**
+	 * @param realMoney the realMoney to set
+	 */
+	public void setRealMoney(String realMoney) {
+		this.realMoney = realMoney;
+	}
+	/**
+	 * @return the bankName
+	 */
+	public String getBankName() {
+		return bankName;
+	}
+	/**
+	 * @param bankName the bankName to set
+	 */
+	public void setBankName(String bankName) {
+		this.bankName = bankName;
+	}
+	/**
+	 * @return the accountNo
+	 */
+	public String getAccountNo() {
+		return accountNo;
+	}
+	/**
+	 * @param accountNo the accountNo to set
+	 */
+	public void setAccountNo(String accountNo) {
+		this.accountNo = accountNo;
+	}
+	/**
+	 * @return the drawInfo
+	 */
+	public String getDrawInfo() {
+		return drawInfo;
+	}
+	/**
+	 * @param drawInfo the drawInfo to set
+	 */
+	public void setDrawInfo(String drawInfo) {
+		this.drawInfo = drawInfo;
+	}
+	/**
+	 * @return the expectDate
+	 */
+	public String getExpectDate() {
+		return expectDate;
+	}
+	/**
+	 * @param expectDate the expectDate to set
+	 */
+	public void setExpectDate(String expectDate) {
+		this.expectDate = expectDate;
+	}
+	/**
+	 * @return the withdFee
+	 */
+	public String getWithdFee() {
+		return withdFee;
+	}
+	/**
+	 * @param withdFee the withdFee to set
+	 */
+	public void setWithdFee(String withdFee) {
+		this.withdFee = withdFee;
+	}
+	/**
+	 * @return the fee
+	 */
+	public int getFee() {
+		return fee;
+	}
+	/**
+	 * @param fee the fee to set
+	 */
+	public void setFee(int fee) {
+		this.fee = fee;
+	}
+}

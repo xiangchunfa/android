@@ -1,0 +1,268 @@
+package com.qdoc.client.ui;
+
+import java.util.ArrayList;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ConsultRecordListDataModel;
+import com.qdoc.client.model.ConsultRecordListDto;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.adapter.ConsultRecordListAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+
+/**
+ * create at 2015-06-09
+ * @author Antony
+ *
+ */
+public class ConsultRecordActivity extends BaseActivity {
+	
+	private static final String TAG = ConsultRecordActivity.class.getSimpleName();
+	
+	private TitleBar mTitleBar;
+	
+	private PullRefreshView consultRecord_listview;
+	private PullListMaskController mViewController;
+	private int currentPage;//当前页码
+	private ArrayList<ConsultRecordListDto> global_consultRecordList;
+	private ConsultRecordListAdapter global_consultRecordListAdapter;
+	private int patient_sex;//患者性别
+	private String openId;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_consult_record);
+		
+		initView();
+		initListener();
+		initData();
+	}
+
+	@Override
+	protected void initView() {
+		mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.consult_record, R.drawable.icon_back, 0, leftBtClickListener, null, getResources().getColor(R.color.titlebar_bg));
+		consultRecord_listview = (PullRefreshView) findViewById(R.id.listView);
+		// 自定义emptyview
+		ErrorMaskView maskView = (ErrorMaskView)findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(consultRecord_listview, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+	}
+
+	@Override
+	protected void initListener() {
+		consultRecord_listview.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View item, int position,long arg3) {
+				LogUtils.d(TAG, "------consultRecord_listview OnItemClickListener position="+position);
+				ConsultRecordListDto consultRecordListDto =  (ConsultRecordListDto) parent.getAdapter().getItem(position);
+				ElementsModel elementsModel=new ElementsModel();
+	            elementsModel.setConsultState(Integer.valueOf(consultRecordListDto.getConsultState()));
+	            elementsModel.setId(consultRecordListDto.getConsultId());
+	            ConsultDetailActivity.startActivity(ConsultRecordActivity.this, String.valueOf(elementsModel.getId()),AppConstants.FROM_DETAIL,AppConstants.CONSULT_ING);
+			}
+		});
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				getConsultRecordByOpenIdInit();
+			}
+		});
+		
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+			
+			@Override
+			public void onClickFootView() {
+				getConsultRecordByOpenIdMore();
+			}
+		});
+		
+		mViewController.setOnRefreshListener(new OnRefreshListener() {
+			
+			@Override
+			public void onRefresh() {
+				getConsultRecordByOpenIdRefresh();
+			}
+		});
+	}
+	
+	OnClickListener leftBtClickListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			finish();
+		}
+	};
+	
+	private void initData(){
+		openId = getIntent().getExtras().getString(IntentTools.EXTRA_OPEN_ID);
+		patient_sex = getIntent().getExtras().getInt(IntentTools.EXTRA_PATIENT_SEX);
+		currentPage = 1;
+		global_consultRecordList = new ArrayList<ConsultRecordListDto>();
+		global_consultRecordListAdapter = new ConsultRecordListAdapter(this, global_consultRecordList,patient_sex);
+		consultRecord_listview.setAdapter(global_consultRecordListAdapter);
+		getConsultRecordByOpenIdInit();
+	}
+
+	private void getConsultRecordByOpenIdInit(){
+		currentPage = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getFansConsultRecordByOpenId(TAG,currentPage, token, openId), 
+				JsonParserFactory.parseBaseModel(ConsultRecordListDataModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					ConsultRecordListDataModel consultRecordListDataModel = (ConsultRecordListDataModel) resultData;
+					if(consultRecordListDataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ConsultRecordListDto> pager = consultRecordListDataModel.getPager();
+						if(pager!=null){
+							ArrayList<ConsultRecordListDto> consultRecordList =  pager.getElements();
+							if(ListUtils.isEmpty(consultRecordList)){
+								 mViewController.showViewStatus(ListViewState.EMPTY_BLANK, "暂无咨询记录，请点击刷新");
+							}else if(pager.isHasNext()){
+								//有下一页
+								global_consultRecordList.clear();
+								global_consultRecordList = consultRecordList;
+								global_consultRecordListAdapter.changeData(global_consultRecordList);
+								mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+							}else{
+								//无下一页
+								global_consultRecordList.clear();
+								global_consultRecordList = consultRecordList;
+								global_consultRecordListAdapter.changeData(global_consultRecordList);
+								mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+							}
+						}else{
+							 mViewController.showViewStatus(ListViewState.EMPTY_BLANK, "暂无咨询记录，请点击刷新");
+						}
+					}else if(consultRecordListDataModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(ConsultRecordActivity.this);
+					}else{
+						ToastUtils.ToastShort(getContext(), consultRecordListDataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void getConsultRecordByOpenIdMore(){
+		currentPage = currentPage+1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getFansConsultRecordByOpenId(TAG,currentPage, token, openId), 
+				JsonParserFactory.parseBaseModel(ConsultRecordListDataModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					ConsultRecordListDataModel consultRecordListDataModel = (ConsultRecordListDataModel) resultData;
+					if(consultRecordListDataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ConsultRecordListDto> pager = consultRecordListDataModel.getPager();
+						if(pager!=null){
+							ArrayList<ConsultRecordListDto> consultRecordList =  pager.getElements();
+							if(ListUtils.isEmpty(consultRecordList)){
+								mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+							}else{
+								global_consultRecordList.addAll(consultRecordList);
+								global_consultRecordListAdapter.changeData(global_consultRecordList);
+								mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+							}
+						}else{
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(consultRecordListDataModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(ConsultRecordActivity.this);
+					}else{
+						ToastUtils.ToastShort(getContext(), consultRecordListDataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void getConsultRecordByOpenIdRefresh(){
+		currentPage = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getFansConsultRecordByOpenId(TAG,currentPage, token, openId), 
+				JsonParserFactory.parseBaseModel(ConsultRecordListDataModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					ConsultRecordListDataModel consultRecordListDataModel = (ConsultRecordListDataModel) resultData;
+					if(consultRecordListDataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ConsultRecordListDto> pager = consultRecordListDataModel.getPager();
+						if(pager!=null){
+							ArrayList<ConsultRecordListDto> consultRecordList =  pager.getElements();
+							if(ListUtils.isEmpty(consultRecordList)){
+								 mViewController.showViewStatus(ListViewState.EMPTY_BLANK, "暂无咨询记录，请点击刷新");
+							}else{
+								global_consultRecordList.clear();
+								global_consultRecordList = consultRecordList;
+								global_consultRecordListAdapter.changeData(global_consultRecordList);
+								mViewController.showViewStatus(ListViewState.LIST_REFRESH_COMPLETE);
+							}
+						}else{
+							 mViewController.showViewStatus(ListViewState.EMPTY_BLANK, "暂无咨询记录，请点击刷新");
+						}
+					}else if(consultRecordListDataModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(ConsultRecordActivity.this);
+					}else{
+						ToastUtils.ToastShort(getContext(), consultRecordListDataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+}

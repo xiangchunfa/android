@@ -1,0 +1,538 @@
+package com.qdoc.client.ui.fragment;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import org.json.JSONException;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.RequestParams;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.http.client.HttpRequest;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.UploadDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.BitmapUtils;
+import com.qdoc.client.util.OnKeyDownUtil;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.UploadImageUtil;
+
+/**
+ * create at 2015-05-12 14:23
+ * @author Antony
+ *
+ */
+public class WriteArticleFragment extends BaseFragment implements OnClickListener{
+	
+	public static final String TAG = WriteArticleFragment.class.getSimpleName();
+	
+	/* 用来标识请求照相功能的activity */
+	private static final int CAMERA_WITH_DATA = 3023;
+	/* 用来标识请求gallery的activity */
+	private static final int PHOTO_PICKED_WITH_DATA = 3021;
+	//记录当前上传图片的布局索引
+	private static final int UPLOAD_ARTICLE_IMAGE_LAYOUT_1 = 0011;//布局1
+	private static final int UPLOAD_ARTICLE_IMAGE_LAYOUT_2 = 0012;//布局2
+	private static final int UPLOAD_ARTICLE_IMAGE_LAYOUT_3 = 0013;//布局3
+	//记录当前上传图片布局索引
+	private int current_upload_layout_index;
+	//设备token
+	private String token;
+	//传输过来的第一张图片地址
+	private String firstImagePath;
+	
+	private TitleBar mTitleBar;
+	private EditText write_article_title;//文章标题编辑框
+	private EditText write_article_content;//文章内容编辑框
+	private RelativeLayout upload_article_photo_layout_1,upload_article_photo_layout_2,upload_article_photo_layout_3;//文章图片上传布局（有3个布局）
+	//private View upload_article_photo_bg_view_1,upload_article_photo_bg_view_2,upload_article_photo_bg_view_3;//背景View
+	private TextView upload_article_photo_tv_1,upload_article_photo_tv_2,upload_article_photo_tv_3;
+	private ImageView upload_article_photo_content_iv_1,upload_article_photo_content_iv_2,upload_article_photo_content_iv_3;
+	private ImageView upload_article_photo_cancle_iv_1,upload_article_photo_cancle_iv_2,upload_article_photo_cancle_iv_3;
+	
+	private CheckBox cb_share_to_doctor;//分享给所有医生CheckBox
+	private CheckBox cb_share_to_patient;//分享到我的移动诊所CheckBox
+	
+	private String upload_article_image_path_1,upload_article_image_path_2,upload_article_image_path_3;//记录上传文章图片的地址
+	
+	private String CAMERA_MIDDLE_IMAGE_PATH = "camera_middle_image_path.jpg";//保存图片副本的名称
+	
+	public static WriteArticleFragment getInstance(Bundle bundle){
+		final WriteArticleFragment fragment = new WriteArticleFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_write_article, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		
+		initView(view);
+		initListener();
+		initParam();
+	}
+	
+	private void initView(View view){
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfoWithRightText(R.string.write_article_title, R.drawable.icon_back,R.string.submit,
+                actionBarLeftBtnListener, actionBarRightBtnListener, getResources().getColor(R.color.titlebar_bg));
+		write_article_title = (EditText) view.findViewById(R.id.write_article_title);
+		write_article_content = (EditText) view.findViewById(R.id.write_article_content);
+		upload_article_photo_layout_1 = (RelativeLayout) view.findViewById(R.id.upload_article_photo_layout_1);
+		upload_article_photo_layout_2 = (RelativeLayout) view.findViewById(R.id.upload_article_photo_layout_2);
+		upload_article_photo_layout_3 = (RelativeLayout) view.findViewById(R.id.upload_article_photo_layout_3);
+		//upload_article_photo_bg_view_1 = view.findViewById(R.id.upload_article_photo_bg_view_1);
+		//upload_article_photo_bg_view_2 = view.findViewById(R.id.upload_article_photo_bg_view_2);
+		//upload_article_photo_bg_view_3 = view.findViewById(R.id.upload_article_photo_bg_view_3);
+		upload_article_photo_tv_1 = (TextView) view.findViewById(R.id.upload_article_photo_tv_1);
+		upload_article_photo_tv_2 = (TextView) view.findViewById(R.id.upload_article_photo_tv_2);
+		upload_article_photo_tv_3 = (TextView) view.findViewById(R.id.upload_article_photo_tv_3);
+		upload_article_photo_content_iv_1 = (ImageView) view.findViewById(R.id.upload_article_photo_content_iv_1);
+		upload_article_photo_content_iv_2 = (ImageView) view.findViewById(R.id.upload_article_photo_content_iv_2);
+		upload_article_photo_content_iv_3 = (ImageView) view.findViewById(R.id.upload_article_photo_content_iv_3);
+		upload_article_photo_cancle_iv_1 = (ImageView) view.findViewById(R.id.upload_article_photo_cancle_iv_1);
+		upload_article_photo_cancle_iv_2 = (ImageView) view.findViewById(R.id.upload_article_photo_cancle_iv_2);
+		upload_article_photo_cancle_iv_3 = (ImageView) view.findViewById(R.id.upload_article_photo_cancle_iv_3);
+		cb_share_to_doctor = (CheckBox) view.findViewById(R.id.cb_share_to_doctor);
+		cb_share_to_patient = (CheckBox) view.findViewById(R.id.cb_share_to_patient);
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			getActivity().finish();
+		}
+	};
+	
+	OnClickListener actionBarRightBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			//防止用户快速点击
+			if(!OnKeyDownUtil.isValidClick())
+				return;
+			//提交文章
+			String artTitle = write_article_title.getText().toString().trim();
+			String artContent = write_article_content.getText().toString().trim();
+			if(TextUtils.isEmpty(artTitle)){
+				ToastUtils.ToastShort(getActivity(), R.string.article_title_not_null);
+				return;
+			}
+			if(TextUtils.isEmpty(artContent)){
+				ToastUtils.ToastShort(getActivity(), R.string.article_content_not_null);
+				return;
+			}
+			ArrayList<String> imageUrls = new ArrayList<String>();
+			if(!TextUtils.isEmpty(upload_article_image_path_1))
+				imageUrls.add(upload_article_image_path_1);
+			if(!TextUtils.isEmpty(upload_article_image_path_2))
+				imageUrls.add(upload_article_image_path_2);
+			if(!TextUtils.isEmpty(upload_article_image_path_3))
+				imageUrls.add(upload_article_image_path_3);
+			if(imageUrls.size()==0){
+				ToastUtils.ToastShort(getActivity(), R.string.at_least_one_img);
+				return;
+			}
+			submitArticle(artTitle,artContent,imageUrls);
+		}
+	};
+	
+	private void initListener(){
+		upload_article_photo_tv_1.setOnClickListener(this);
+		upload_article_photo_tv_2.setOnClickListener(this);
+		upload_article_photo_tv_3.setOnClickListener(this);
+		upload_article_photo_cancle_iv_1.setOnClickListener(this);
+		upload_article_photo_cancle_iv_2.setOnClickListener(this);
+		upload_article_photo_cancle_iv_3.setOnClickListener(this);
+	}
+	
+	private void initParam(){
+		current_upload_layout_index = UPLOAD_ARTICLE_IMAGE_LAYOUT_1;
+		token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		if(firstImagePath!=null){
+			uploadLocalImageFile(UPLOAD_ARTICLE_IMAGE_LAYOUT_1, firstImagePath);
+		}
+	}
+
+	private void openChooseImageDialogFragment(){
+        FragmentManager fm = getFragmentManager();
+        ChooseImageDialogFragment chooseDialog = new ChooseImageDialogFragment(new ChooseImageDialogFragment.OnDialogclickListener() {
+			
+			@Override
+			public void onButtonClick(int type, DialogFragment dialog) {
+				switch (type) {
+				case AppConstants.CAMERA:
+					//调用摄像头获取相片
+					doTakePhoto();
+					dialog.dismiss();
+					break;
+				case AppConstants.PHOTO_ALBUM:
+					//调用相册获取相片
+					doPickPhotoFromGallery();
+					dialog.dismiss();
+					break;
+				}
+			}
+		});
+        chooseDialog.show(fm, ChooseImageDialogFragment.TAG);
+	}
+	
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.upload_article_photo_tv_1:
+			current_upload_layout_index = UPLOAD_ARTICLE_IMAGE_LAYOUT_1;
+			openChooseImageDialogFragment();
+			break;
+		case R.id.upload_article_photo_tv_2:
+			current_upload_layout_index = UPLOAD_ARTICLE_IMAGE_LAYOUT_2;
+			openChooseImageDialogFragment();
+			break;
+		case R.id.upload_article_photo_tv_3:
+			current_upload_layout_index = UPLOAD_ARTICLE_IMAGE_LAYOUT_3;
+			openChooseImageDialogFragment();
+			break;
+		case R.id.upload_article_photo_cancle_iv_1:
+			cancleUploadImageOperate(upload_article_photo_tv_1, upload_article_photo_content_iv_1, upload_article_photo_cancle_iv_1);
+			upload_article_image_path_1 = null;
+			break;
+		case R.id.upload_article_photo_cancle_iv_2:
+			cancleUploadImageOperate(upload_article_photo_tv_2, upload_article_photo_content_iv_2, upload_article_photo_cancle_iv_2);
+			upload_article_image_path_2 = null;
+			break;
+		case R.id.upload_article_photo_cancle_iv_3:
+			cancleUploadImageOperate(upload_article_photo_tv_3, upload_article_photo_content_iv_3, upload_article_photo_cancle_iv_3);
+			upload_article_image_path_3 = null;
+			break;
+		}
+	}
+	
+	private void cancleUploadImageOperate(TextView upload_icon,ImageView uploadContent,ImageView cancle_icon){
+		//显示上传图标
+		upload_icon.setVisibility(View.VISIBLE);
+		//删除内容控件中的图片
+		uploadContent.setImageBitmap(null);
+		//隐藏取消上传图标
+		cancle_icon.setVisibility(View.GONE);
+	}
+	
+	//拍照获取图片
+	private void doTakePhoto() {
+		try {
+			Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE, null);
+			intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), CAMERA_MIDDLE_IMAGE_PATH)));
+			startActivityForResult(intent, CAMERA_WITH_DATA);
+		} catch (ActivityNotFoundException e) {
+			Toast.makeText(getContext(), "photoPickerNotFoundText", Toast.LENGTH_LONG).show();
+		}
+	}
+	
+	//读取本地图片
+	private void doPickPhotoFromGallery(){
+        Intent intent = new Intent(Intent.ACTION_PICK, null);
+        intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
+		startActivityForResult(intent, PHOTO_PICKED_WITH_DATA);
+	}
+	
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if(resultCode!=Activity.RESULT_OK)
+			return;
+		switch (requestCode) {
+		case CAMERA_WITH_DATA:
+			String status = Environment.getExternalStorageState();
+			if (status.equals(Environment.MEDIA_MOUNTED)) {
+				File picture = new File(Environment.getExternalStorageDirectory() + File.separator + CAMERA_MIDDLE_IMAGE_PATH);
+				uploadLocalImageFile(current_upload_layout_index, picture.getAbsolutePath());
+			}else{
+				ToastUtils.ToastShort(getContext(), R.string.no_sd_card);
+			}
+			break;
+		case PHOTO_PICKED_WITH_DATA :
+			if(data==null)
+				return;
+			Uri uri = data.getData();
+			/*String[] proj = {MediaStore.Images.Media.DATA};
+			Cursor cursor = getActivity().managedQuery(uri, proj, null, null, null);
+			int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+			cursor.moveToFirst();
+			String selectImagePath = cursor.getString(column_index);*/
+			String selectImagePath = new UploadImageUtil(getActivity()).getLocalImagePath(getActivity(), uri);
+			uploadLocalImageFile(current_upload_layout_index, selectImagePath);
+			//cursor.close();
+			break;
+		}
+	}
+	
+	
+    private File getAvatarFile(String fileName) {
+        File file = getActivity().getFilesDir();
+        String path = file.getAbsolutePath();
+        return new File(path + File.separator + fileName);
+    }
+	
+    //图片文件过大，作为中间转换的文件名
+	private String middleImageFileName = "article_image.jpg";
+	//图片文件过大，作为中间转换图片文件的路径
+	private String middleImagePath;
+	//上传文章图片操作
+	 private void uploadLocalImageFile(final int currentIndex,final String path) {
+		 //获取上传地址
+		 String uploadUrl = DataRequestUtils.getUploadUrl();
+		 //添加上传参数
+		 RequestParams params = new RequestParams();
+		 params.addQueryStringParameter("token", token);
+		 params.addQueryStringParameter("fileType", "repArticle");
+		 //获取图片文件大小
+		 File testSizeFile = new File(path);
+		 long testFileSize = testSizeFile.length()/(1024 * 1024);
+		 final boolean isBigImage = testFileSize>1?true:false;
+		 final int degree = BitmapUtils.readPictureDegree(path);
+		 try {
+			 if(degree!=0){
+				 //图片有旋转
+				 //获取旋转的BitMap
+				 Bitmap beforeRotateBm = BitmapUtils.getBitmap(path);
+				 //将图片旋转相应的角度
+				 Bitmap afterBotateBm = BitmapUtils.rotaingImageView(degree, beforeRotateBm);
+				 //保存旋转后的图片
+				 BitmapUtils.saveBitmapByAbsolutePath(getContext(), middleImageFileName, afterBotateBm, 100);
+				 //释放旋转前的Bitmap
+				 beforeRotateBm.recycle();
+				 middleImagePath = getAvatarFile(middleImageFileName).getAbsolutePath();
+				 if(isBigImage){
+					//如果图片大于1M，先压缩，再上传
+					 //先得到旋转后的BitMap
+					 Bitmap middleBm = BitmapUtils.getBitmap(middleImagePath);
+					 //压缩图片90%
+					 BitmapUtils.saveBitmapByAbsolutePath(getContext(), middleImageFileName, middleBm, 90);
+				 }
+				 //添加旋转和压缩后的图片文件
+				 params.addBodyParameter("file", new File(middleImagePath));
+			 }else{
+				 //图片没有旋转
+				if(isBigImage){
+					//图片过大，需要压缩
+					//读取压缩前的Bitmap
+					Bitmap middleBm = BitmapUtils.getBitmap(path);
+					//保存压缩后的图片
+					BitmapUtils.saveBitmapByAbsolutePath(getContext(), middleImageFileName, middleBm, 90);
+					middleImagePath = getAvatarFile(middleImageFileName).getAbsolutePath();
+					//添加压缩的文件图片
+					params.addBodyParameter("file", new File(middleImagePath));
+				}else{
+					//既没旋转也没过大,直接添加上传的图片文件
+					params.addBodyParameter("file", new File(path));
+				} 
+			 }
+			 HttpUtils http = new HttpUtils();
+			 //上传过程显示进度条
+			 Global.progressDialog = ProgressDialog.show(getContext(), null,getString(R.string.upload_ing), true, true);
+			 Global.progressDialog.setCanceledOnTouchOutside(false);
+			 http.send(HttpRequest.HttpMethod.POST, uploadUrl, params, new RequestCallBack<String>() {
+
+				@Override
+				public void onFailure(HttpException arg0, String arg1) {
+					//上传失败的操作
+					if(currentIndex==UPLOAD_ARTICLE_IMAGE_LAYOUT_1){
+						//当前上传第一张图片
+						uploadImageFailOperate(upload_article_photo_tv_1, upload_article_photo_content_iv_1, upload_article_photo_cancle_iv_1);
+					}else if(currentIndex==UPLOAD_ARTICLE_IMAGE_LAYOUT_2){
+						//当前上传第二张图片
+						uploadImageFailOperate(upload_article_photo_tv_2, upload_article_photo_content_iv_2, upload_article_photo_cancle_iv_2);
+					}else if(currentIndex==UPLOAD_ARTICLE_IMAGE_LAYOUT_3){
+						//当前上传第三张图片
+						uploadImageFailOperate(upload_article_photo_tv_3, upload_article_photo_content_iv_3, upload_article_photo_cancle_iv_3);
+					}
+					Global.progressDialog.dismiss();
+				}
+
+				@Override
+				public void onSuccess(ResponseInfo<String> responseInfo) {
+					//上传成功的操作
+					if(isBigImage||(degree!=0)){
+						operateUploadSuccessResponse(currentIndex, middleImagePath,responseInfo);
+					}else{
+						operateUploadSuccessResponse(currentIndex, path,responseInfo);
+					}
+					Global.progressDialog.dismiss();
+				}
+			 });
+			
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	 }
+	 
+	 /**
+	  * 处理上传成功后的操作
+	  * @param currentIndex
+	  * @param path
+	  * @param bm
+	  * @param responseInfo
+	  */
+	 private void operateUploadSuccessResponse(final int currentIndex,final String path,ResponseInfo<String> responseInfo){
+		 UploadDataModel uploadModel = null;
+		 try {
+			uploadModel = JsonParserFactory.parseStringJson(UploadDataModel.class, responseInfo.result);
+			String imageRemotePath = uploadModel.getPath()+uploadModel.getRealName();;
+			if(currentIndex==UPLOAD_ARTICLE_IMAGE_LAYOUT_1){
+				setImageView(upload_article_photo_content_iv_1, path);
+				uploadImageSucessOperate(upload_article_photo_tv_1, upload_article_photo_cancle_iv_1, upload_article_photo_layout_2);
+				upload_article_image_path_1 = imageRemotePath;
+			}else if(currentIndex==UPLOAD_ARTICLE_IMAGE_LAYOUT_2){
+				setImageView(upload_article_photo_content_iv_2, path);
+				uploadImageSucessOperate(upload_article_photo_tv_2, upload_article_photo_cancle_iv_2, upload_article_photo_layout_3);
+				upload_article_image_path_2 = imageRemotePath;
+			}else if(currentIndex==UPLOAD_ARTICLE_IMAGE_LAYOUT_3){
+				setImageView(upload_article_photo_content_iv_3, path);
+				uploadImageSucessOperate(upload_article_photo_tv_3, upload_article_photo_cancle_iv_3, null);
+				upload_article_image_path_3 = imageRemotePath;
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	 }
+	 
+	 private void setImageView(ImageView articleContent,String path){
+		 try {
+			 Bitmap middleBm = BitmapUtils.getBitmap(path);
+			 articleContent.setImageBitmap(middleBm);
+		} catch (Exception e) {
+			ToastUtils.ToastShort(getContext(), "图片过大！");
+		}
+	 }
+	
+	//上传失败的操作
+	private void uploadImageFailOperate(TextView upload_icon,ImageView uploadContent,ImageView cancle_icon){
+		//显示上传图标
+		upload_icon.setVisibility(View.VISIBLE);
+		//上传内容区显示一张上传失败的图片
+		uploadContent.setImageResource(R.drawable.upload_image_fail);
+		//隐藏取消上传图标
+		cancle_icon.setVisibility(View.GONE);
+	}
+	
+	//上传成功的操作
+	private void uploadImageSucessOperate(TextView upload_icon,ImageView cancle_icon,RelativeLayout nextVisibleUploadLayout){
+		//隐藏上传图标
+		upload_icon.setVisibility(View.GONE);
+		//显示取消上传图标
+		cancle_icon.setVisibility(View.VISIBLE);
+		//显示下一个上传图片的布局
+		if(null!=nextVisibleUploadLayout)
+			nextVisibleUploadLayout.setVisibility(View.VISIBLE);
+	}
+    
+    /**
+     * 提交写好的文章
+     */
+    private void submitArticle(String artTitle,String artContent,ArrayList<String> imageUrls){
+		Global.progressDialog = ProgressDialog.show(getContext(), null,getString(R.string.wait_submit), true, true);
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.saveDoctorArticle(TAG, token, artTitle, artContent, imageUrls, cb_share_to_doctor.isChecked(), cb_share_to_patient.isChecked()), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final BaseModel dataModel = (BaseModel) resultData;
+					if (ServerErrorCode.INTERFACE_SUCCESS == dataModel.getState()) {
+						//保存文章成功
+						ToastUtils.ToastShort(getContext(), R.string.save_article_success);
+						LocalBroadcastManager.getInstance(getContext()).sendBroadcast(new Intent(AppConstants.REFRESH_MY_ARTICLE_ACTION));
+						getActivity().finish();
+					}else if(ServerErrorCode.TOKEN_INVALID == dataModel.getState()){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						//保存文章失败
+						ToastUtils.ToastShort(getContext(), dataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+				Global.progressDialog.dismiss();
+			}
+		});
+    }
+    
+    /**
+	 * @param firstImagePath the firstImagePath to set
+	 */
+	public void setFirstImagePath(String firstImagePath) {
+		this.firstImagePath = firstImagePath;
+	}
+
+	@Override
+    public void onDestroy() {
+    	super.onDestroy();
+    }
+}

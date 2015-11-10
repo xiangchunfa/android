@@ -1,0 +1,40 @@
+package com.qdoc.client.model;
+
+public class InfomationListModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3550728244525405803L;
+
+	//private int page;
+	private Pagination<ArticleListDto> pager;
+
+/*	*//**
+	 * @return the page
+	 *//*
+	public int getPage() {
+		return page;
+	}
+
+	*//**
+	 * @param page the page to set
+	 *//*
+	public void setPage(int page) {
+		this.page = page;
+	}*/
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<ArticleListDto> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<ArticleListDto> pager) {
+		this.pager = pager;
+	}
+}

@@ -1,0 +1,64 @@
+/*
+ * consultDtoDataModel.java
+ * classes : com.qdoc.client.model.consultDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-31 下午10:49:21
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.consultDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-31 下午10:49:21
+ */
+public class FansActiveStatusDataModel extends AbstractBaseModel {
+
+		/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+		private String 	startDate;
+		private String 	endDate;
+		private int     status;
+		/**
+		 * @return the startDate
+		 */
+		public String getStartDate() {
+			return startDate;
+		}
+		/**
+		 * @param startDate the startDate to set
+		 */
+		public void setStartDate(String startDate) {
+			this.startDate = startDate;
+		}
+		/**
+		 * @return the endDate
+		 */
+		public String getEndDate() {
+			return endDate;
+		}
+		/**
+		 * @param endDate the endDate to set
+		 */
+		public void setEndDate(String endDate) {
+			this.endDate = endDate;
+		}
+		/**
+		 * @return the status
+		 */
+		public int getStatus() {
+			return status;
+		}
+		/**
+		 * @param status the status to set
+		 */
+		public void setStatus(int status) {
+			this.status = status;
+		}
+      
+		
+		
+}

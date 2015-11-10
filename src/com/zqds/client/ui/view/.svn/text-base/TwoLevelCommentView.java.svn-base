@@ -1,0 +1,90 @@
+package com.qdoc.client.ui.view;
+
+import android.content.Context;
+import android.graphics.Color;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.RepReviewDto;
+import com.qdoc.client.model.RepReviewReplyDto;
+import com.qdoc.client.system.ImageLoaderHelper;
+
+public class TwoLevelCommentView extends LinearLayout {
+	
+	
+	private RepReviewDto oneLevelComment;
+	private RepReviewReplyDto twoLevelComment;
+	private Context mContext;
+	private LinearLayout ll_twoLevel_CommentList;
+	private ImageView iv_reply_review_head;
+	private TextView tv_reply_review_info;
+	private TextView tv_reply_review_time;
+	private ImageView iv_reply_review_reply;
+	private ReplyItemOnClickListener mReplyItemOnClickListener;
+	
+	private View convertView;
+
+	public TwoLevelCommentView(Context context) {
+		super(context);
+	}
+
+	public TwoLevelCommentView(Context context,LinearLayout ll_twoLevel_CommentList,RepReviewDto repReviewDto,RepReviewReplyDto repReviewReplyDto,ReplyItemOnClickListener mReplyItemOnClickListener){
+		super(context);
+		this.mContext = context;
+		this.ll_twoLevel_CommentList = ll_twoLevel_CommentList;
+		this.oneLevelComment = repReviewDto;
+		this.twoLevelComment = repReviewReplyDto;
+		this.mReplyItemOnClickListener = mReplyItemOnClickListener;
+		initView(context);
+		initData(repReviewReplyDto);
+		initListener();
+	}
+	
+	private void initView(Context context){
+		convertView = LayoutInflater.from(context).inflate(R.layout.reply_review_item, null);
+		
+		iv_reply_review_head = (ImageView) convertView.findViewById(R.id.iv_reply_review_head);
+		tv_reply_review_info = (TextView) convertView.findViewById(R.id.tv_reply_review_info);
+		tv_reply_review_time = (TextView) convertView.findViewById(R.id.tv_reply_review_time);
+		iv_reply_review_reply = (ImageView) convertView.findViewById(R.id.iv_reply_review_reply);
+		this.addView(convertView);
+	}
+	
+	private void initData(RepReviewReplyDto repReviewReply){
+		ImageLoaderHelper.getInstance(mContext).displayImage(repReviewReply.getRevUserHeadImg(), iv_reply_review_head, R.drawable.bank_owener_default_header);
+		//回复人的名称
+		String repUserName = repReviewReply.getRevUserName();
+		//被回复人的名称
+		String repRepUserName = repReviewReply.getReplyerDto()==null?"":"回复"+repReviewReply.getReplyerDto().getRevUserName();
+		//二级评论显示内容
+		String reply_review_info_str = repUserName+repRepUserName+":"+repReviewReply.getRevContent();
+		//蓝色处理
+		SpannableString spanReplyReviewInfoStr = new SpannableString(reply_review_info_str);
+		spanReplyReviewInfoStr.setSpan(new ForegroundColorSpan(Color.parseColor("#1d78df")), 0, repUserName.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+		if(repRepUserName.length()>0)
+			spanReplyReviewInfoStr.setSpan(new ForegroundColorSpan(Color.parseColor("#1d78df")), repUserName.length()+2, repUserName.length()+2+repRepUserName.length()-2, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+		tv_reply_review_info.setText(spanReplyReviewInfoStr);
+		tv_reply_review_time.setText(repReviewReply.getRevTime());
+	}
+	
+	private void initListener(){
+		iv_reply_review_reply.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				System.out.println(mReplyItemOnClickListener);
+				mReplyItemOnClickListener.onButtonClick(oneLevelComment,twoLevelComment,ll_twoLevel_CommentList);
+			}
+		});
+	}
+	
+	public interface ReplyItemOnClickListener{
+		public void onButtonClick(RepReviewDto repReviewDto,RepReviewReplyDto repReviewReplyDto, View view);
+	}
+}

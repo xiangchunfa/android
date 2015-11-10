@@ -1,0 +1,746 @@
+/*
+ * ConsultListFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultListFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:03
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+
+import android.app.Dialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.res.Resources;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.SoundPool;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.FastConsultDtoModel;
+import com.qdoc.client.model.GrabBillDataModel;
+import com.qdoc.client.model.ListNewFastConsultsDataModel;
+import com.qdoc.client.model.MyCountDataModel;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.ConsultDetailActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.adapter.ConsultGrabBillListAdapter;
+import com.qdoc.client.ui.adapter.ConsultGrabBillListAdapter.GrabItemOnclickListener;
+import com.qdoc.client.ui.dialog.SingleHintDlg;
+import com.qdoc.client.ui.dialog.SingleHintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.view.PullToRefreshView;
+import com.qdoc.client.ui.view.PullToRefreshView.OnHeaderRefreshListener;
+import com.qdoc.client.ui.widget.GrabPullRefreshView;
+import com.qdoc.client.ui.widget.GrabPullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.GrabPullRefreshView.OnRefreshListener;
+import com.qdoc.client.ui.widget.GuideMaskView;
+import com.qdoc.client.ui.widget.HintView;
+import com.qdoc.client.ui.widget.PullListGrabMaskController;
+import com.qdoc.client.ui.widget.PullListGrabMaskController.ListViewState;
+import com.qdoc.client.ui.widget.RefreshView;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultListFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:03
+ */
+public class FastConsultListFragment extends BaseFragment implements OnHeaderRefreshListener{
+	/**
+	 * TAG
+	 */
+	public static final String TAG = FastConsultListFragment.class.getSimpleName();
+	
+	public static final long INIT_NETWORK_ERROR = 0x00;//初始加载网络异常状态
+	public static final long OPERATION_MANUAL = 0x01;//显示操作指南状态
+	public static final long CONSULTATION_COUNT = 0X12;//显示咨询数状态
+	public static final long CONSULTATION_FORM = 0X13;//显示咨询单状态
+
+	/**
+	 * view
+	 */
+	private TitleBar mTitleBar;
+	private GrabPullRefreshView mListView;
+	private PullListGrabMaskController mViewController;
+    private HintView grab_hint_view;
+    private RefreshView refresh_view;
+    
+	/**
+	 * PARAMS
+	 */
+	private ConsultGrabBillListAdapter mAdapter;
+	private InnerHandler mHandler = new InnerHandler(this);
+	private final int DELAYMILLIS = 200;
+	private ArrayList<FastConsultDtoModel> elementsList = new ArrayList<FastConsultDtoModel>();
+	private int pageIndex = 1;
+	private static final int PAGE_SIZE = 10;
+	private boolean mStartPlaying = true;
+	private MediaPlayer mPlayer = null;
+	private boolean isGrabBillFinished = true;
+    private Resources res;
+	private PullToRefreshView mPullToRefreshView;//显示操作指引控件
+	private PullToRefreshView pull_refresh_number;//显示咨询数控件
+	private ImageView titlebar_title_middle_refresh_iv;
+	private TextView titlebar_title;
+	private Animation mTitleRefreshAnimation;
+	private Thread refreshThread;//刷新线程
+	//抢单铃声设置CheckBox
+	private CheckBox ring_checkbox;
+	private int grab_count;//今日抢单数
+	
+	private SoundPool mSoundPool;
+	private ArrayList<Long> preConsultIDList = new ArrayList<Long>();
+
+	public static FastConsultListFragment newInstance(Bundle bundle) {
+		final FastConsultListFragment fragment = new FastConsultListFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+    
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onCreate(savedInstanceState);
+		registerUpdateReceiver();
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_consult_grablist, container, false);
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		initView(view);
+		initListener();
+		initParams();
+	}
+
+	
+	private void initParams() {
+		// TODO Auto-generated method stub
+    	mSoundPool = new SoundPool(1, AudioManager.STREAM_RING, 5);
+    	mSoundPool.load(getContext(), R.raw.ring, 1);
+		mAdapter = new ConsultGrabBillListAdapter(getContext(),
+				new GrabItemOnclickListener() {
+
+					@Override
+					public void onButtonClick(int type, Object obj,int position) {
+						// TODO Auto-generated method stub
+						switch (type) {
+						case ConsultGrabBillListAdapter.BUTTON_VOL:
+							if (obj == null || ((ElementsModel) obj).getConsultMsgDto() == null || (TextUtils.isEmpty(((ElementsModel) obj).getConsultMsgDto().getRealUrl()))) {
+								return;
+							}
+							String url = ((ElementsModel) obj).getConsultMsgDto().getRealUrl();
+							if (!TextUtils.isEmpty(url)) {
+								onPlay(mStartPlaying, url);
+								mStartPlaying = !mStartPlaying;
+							}
+							break;
+						case ConsultGrabBillListAdapter.BUTTON_GRAB:
+							if (obj == null) {
+								return;
+							}
+							if (isGrabBillFinished) {
+								isGrabBillFinished = false;
+								startGrabBillResult(position,((FastConsultDtoModel) obj).getConsultId(),(FastConsultDtoModel) obj);
+							}
+							break;
+						}
+					}
+				}
+		);
+		mListView.setAdapter(mAdapter);
+	}
+
+	private void initView(View view) {
+		// TODO Auto-generated method stub
+		res=getResources();
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		//使用有刷新状态图片的标题栏
+		mTitleBar.setTitleInfoWidthMiddleIcon(R.string.tab3_title, 0, 0, 0, null, null, null, getResources().getColor(R.color.titlebar_bg));
+		//添加标题栏的刷新图片，不使用原来的标题栏
+		//mTitleBar.setTitleInfo(R.string.tab3_title, 0, 0, null, null,getResources().getColor(R.color.titlebar_bg));
+		mTitleRefreshAnimation = AnimationUtils.loadAnimation(getContext(), R.anim.refresh_progress_rotate_animation);
+		mTitleRefreshAnimation.setInterpolator(new LinearInterpolator());
+		titlebar_title_middle_refresh_iv = (ImageView) view.findViewById(R.id.titlebar_title_middle_refresh_iv);
+		titlebar_title = (TextView) view.findViewById(R.id.titlebar_title);
+		//初始化铃声设置CheckBox
+		ring_checkbox = (CheckBox) view.findViewById(R.id.titlebar_right_checkbox);
+		refresh_view = (RefreshView) view.findViewById(R.id.refresh_view);
+		boolean ringstate = true;
+		if(PersonalConfig.hasKey(PersonalConfigKey.EXTAR_CONSULT_RING))
+			ringstate = PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_CONSULT_RING);
+		ring_checkbox.setChecked(ringstate);
+		mListView = (GrabPullRefreshView) view.findViewById(R.id.listView);
+		// 自定义emptyview
+		GuideMaskView maskView = (GuideMaskView) view.findViewById(R.id.maskView);
+		mViewController = new PullListGrabMaskController(mListView, maskView, refresh_view);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+		mPullToRefreshView = (PullToRefreshView) view.findViewById(R.id.pay_pull_refresh_view);
+		mPullToRefreshView.setOnHeaderRefreshListener(this);
+		mPullToRefreshView.setLastUpdated(new Date().toLocaleString());
+		grab_hint_view=(HintView) view.findViewById(R.id.grab_hint_view);
+		pull_refresh_number = (PullToRefreshView) view.findViewById(R.id.pull_refresh_number);
+		pull_refresh_number.setOnHeaderRefreshListener(this);
+		pull_refresh_number.setLastUpdated(new Date().toLocaleString());
+	}
+
+	protected void initListener() {
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				// 避免频繁发送请求
+				mHandler.removeCallbacks(taskRunnable);
+				mHandler.postDelayed(taskRunnable, DELAYMILLIS);
+			}
+		});
+		mViewController.setOnRefreshListener(new OnRefreshListener() {
+
+			@Override
+			public void onRefresh() {
+				// 下拉刷新
+				startConsultListRefreshRequest(true);
+			}
+		});
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+
+			@Override
+			public void onClickFootView() {
+				// 上来加载更多
+				startConsultListLoadMoreRequest();
+			}
+		});
+//		titlebar_title.setOnClickListener(refreshListener);
+		ring_checkbox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if(isChecked){
+					//打开抢单铃声
+					ToastUtils.show(getContext(), R.string.ring_on, Toast.LENGTH_SHORT);
+				}else{
+					//关闭抢单铃声
+					ToastUtils.show(getContext(), R.string.ring_off, Toast.LENGTH_SHORT);
+				}
+				saveConsultRing(isChecked);
+			}
+		});
+	}
+	
+	/**
+	 * 保存抢单铃声开启状态
+	 * @param ringstate
+	 */
+	private void saveConsultRing(boolean ringstate){
+		if(PersonalConfig.hasKey(PersonalConfigKey.EXTAR_CONSULT_RING)){
+			PersonalConfig.remove(PersonalConfigKey.EXTAR_CONSULT_RING);
+		}
+		PersonalConfig.putBoolean(PersonalConfigKey.EXTAR_CONSULT_RING, ringstate);
+		PersonalConfig.asyncCommit();
+	}
+	
+	/**
+	 * 刷新图片的点击监听器
+	 */
+//	OnClickListener refreshListener = new OnClickListener() {
+//		
+//		@Override
+//		public void onClick(View v) {
+//			//开始下拉刷新操作
+//			mHandler.removeCallbacks(pullToRefreshRunnable);
+//			mHandler.postDelayed(pullToRefreshRunnable, DELAYMILLIS);
+/*			if(refreshThread==null||!refreshThread.isAlive()){
+				refreshThread = new Thread(new Runnable() {
+					
+					@Override
+					public void run() {
+						mHandler.postDelayed(pullToRefreshRunnable, DELAYMILLIS);
+					}
+				});
+				refreshThread.start();
+			}else{
+				return;
+			}*/
+//		}
+//	};
+
+	private Runnable taskRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+			startConsultListInitRequest();
+		}
+	};
+	
+//	private Runnable pullToRefreshRunnable = new Runnable() {
+//		
+//		@Override
+//		public void run() {
+//			if(INIT_NETWORK_ERROR==currentPullToRefreshState){
+//				//初始加载网络异常状态下刷新
+//				LogUtils.i(TAG, "INIT_NETWORK_ERROR");
+//				startConsultListRefreshRequest(true);
+//			}else if(OPERATION_MANUAL==currentPullToRefreshState){
+//				//操作指引状态下刷新
+//				LogUtils.i(TAG, "OPERATION_MANUAL");
+//				mPullToRefreshView.headerRefreshing();
+//			}else if(CONSULTATION_COUNT==currentPullToRefreshState){
+//				//显示咨询数状态下刷新
+//				LogUtils.i(TAG, "CONSULTATION_COUNT");
+//				pull_refresh_number.headerRefreshing();
+//			}else if(CONSULTATION_FORM==currentPullToRefreshState){
+//				//咨询单状态下刷新
+//				LogUtils.i(TAG, "CONSULTATION_FORM");
+//				mListView.showRefreshingState();
+//			}else{
+//				//其他状态下刷新
+//				LogUtils.i(TAG, "ALL");
+//				mPullToRefreshView.headerRefreshing();
+//				pull_refresh_number.headerRefreshing();
+//				mListView.showRefreshingState();
+//			}
+//		}
+//	};
+
+	private void startConsultListInitRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.listNewFastConsults(TAG, token, pageIndex, PAGE_SIZE), JsonParserFactory
+				.parseBaseModel(ListNewFastConsultsDataModel.class), new IResultReceiver() {
+
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final ListNewFastConsultsDataModel dataModel = (ListNewFastConsultsDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						if ((dataModel != null) && (dataModel.getPager() != null) && (!ListUtils.isEmpty(dataModel.getPager().getElements()))) {
+							grab_count = dataModel.getCount();
+							Pagination<FastConsultDtoModel> pager = dataModel.getPager();
+							mAdapter.addMoreListData(pager.getElements());
+							if(dataModel.getPager().isHasNext()){
+								mViewController.showGrabViewStatus(ListViewState.LIST_NORMAL_HAS_MORE,grab_count);
+							}else{
+								mViewController.showGrabViewStatus(ListViewState.LIST_NO_MORE,grab_count);
+							}
+						} else {
+							if ( mAdapter.getCount() > 0) {
+								mViewController.showGrabViewStatus(ListViewState.LIST_NO_MORE ,grab_count);	
+							} else {
+							    mViewController.showViewStatus(ListViewState.EMPTY_BLANK,res.getString(R.string.refresh_success),R.drawable.grab_single_advertise);
+							}
+						}
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						   LoginActivity.startActivity(getActivity());
+					} 
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+
+	private void startConsultListRefreshRequest(boolean refreshIVloading) {
+		if(refreshIVloading)
+			titlebar_title_middle_refresh_iv.startAnimation(mTitleRefreshAnimation);
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		pageIndex = 1;
+		HttpTaskManager.startStringRequest(DataRequestUtils 
+				.listNewFastConsults(TAG, token, pageIndex, PAGE_SIZE), JsonParserFactory
+				.parseBaseModel(ListNewFastConsultsDataModel.class), new IResultReceiver() {
+	
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final ListNewFastConsultsDataModel dataModel = (ListNewFastConsultsDataModel)resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						if ((dataModel != null) && (dataModel.getPager() != null) && (!ListUtils.isEmpty(dataModel.getPager().getElements()))) {
+							grab_count = dataModel.getCount();
+							Pagination<FastConsultDtoModel> pager = dataModel.getPager();
+							elementsList.clear();
+							elementsList = pager.getElements();
+							bellRing(pager.getElements());
+							mAdapter.addListData(elementsList);
+							mViewController.showViewStatus(ListViewState.LIST_REFRESH_COMPLETE,dataModel.getPager().isHasNext(),grab_count);
+						} else {
+							mViewController.showViewStatus(ListViewState.EMPTY_BLANK,res.getString(R.string.refresh_success),R.drawable.grab_single_advertise);
+						} 
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					} 
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+//				mHandler.postDelayed(new Runnable() {
+//					
+//					@Override
+//					public void run() {
+//						titlebar_title_middle_refresh_iv.clearAnimation();
+//					}
+//				}, 1000);
+			}
+		});
+	}
+
+	private void startConsultListLoadMoreRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.listNewFastConsults(TAG, token, ++pageIndex,PAGE_SIZE), JsonParserFactory
+				.parseBaseModel(ListNewFastConsultsDataModel.class), new IResultReceiver() {
+
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final ListNewFastConsultsDataModel dataModel = (ListNewFastConsultsDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						grab_count = dataModel.getCount();
+						if ((dataModel != null)&& (dataModel.getPager() != null)&& (!ListUtils.isEmpty(dataModel.getPager().getElements()))) {
+							Pagination<FastConsultDtoModel> pager = dataModel.getPager();
+							mAdapter.addMoreListData(pager.getElements());
+							if(dataModel.getPager().isHasNext())
+							    mViewController.showGrabViewStatus(ListViewState.LIST_NORMAL_HAS_MORE ,grab_count);
+							else
+								mViewController.showGrabViewStatus(ListViewState.LIST_NO_MORE ,grab_count);
+						} else {
+							mViewController.showGrabViewStatus(ListViewState.LIST_NO_MORE ,grab_count);
+						}
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						 LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.LIST_RETRY);
+				}
+			}
+		});
+	}
+
+	private void startGrabBillResult(final int position,final long consultId,final FastConsultDtoModel model) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager
+				.startStringRequest(DataRequestUtils.getNewGrabBillRequestParam(
+						TAG, token, consultId), JsonParserFactory
+						.parseBaseModel(GrabBillDataModel.class),
+						new IResultReceiver() {
+
+							@Override
+							public void onReceiveResult(int resultCode,
+									Object resultData) {
+								// TODO Auto-generated method stub
+								if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+									final GrabBillDataModel dataModel = (GrabBillDataModel) resultData;
+									if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+											if (ListUtils.isEmpty(mAdapter.refreshListData(position))) {
+												mViewController.showViewStatus(
+														ListViewState.EMPTY_BLANK,
+														res.getString(R.string.refresh_success),R.drawable.grab_single_advertise);
+											} 
+											Bundle bundle = new Bundle();
+											bundle.putLong(
+													IntentTools.EXTRA_CONSULT_ID,
+													consultId);
+											bundle.putSerializable(
+													IntentTools.EXTRA_ELEMENT_MODEL,
+													model);
+											String content = res.getString(R.string.grab_success);
+											String title = res.getString(R.string.dialog_hint_title);
+											String centerText = res.getString(R.string.reply_patient);
+											new SingleHintDlg(getActivity(), content, title, centerText, new OnDialogclickListener() {
+												
+												@Override
+												public void onButtonClick(int type, Dialog dialog) {
+													 ConsultDetailActivity.startActivity(getActivity(), String.valueOf(model.getConsultId()) ,AppConstants.FROM_DETAIL,AppConstants.CONSULT_ING); 
+												     dialog.dismiss();
+												}
+											}, R.layout.dialog_single_button, false).show();
+				                            grab_hint_view.hide();
+									} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+										 LoginActivity.startActivity(getActivity());
+									} else {
+										String content = dataModel.getErrorMsg();
+										String title = res.getString(R.string.dialog_hint_title);
+										String centerText = res.getString(R.string.other_single);
+										new SingleHintDlg(getActivity(), content, title, centerText, new OnDialogclickListener() {
+											
+											@Override
+											public void onButtonClick(int type, Dialog dialog) {
+												//刷新抢单列表
+												Intent intent= new Intent(AppConstants.REFRESH_FAST_CONSULT_LIST);
+									            LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(intent);
+									            dialog.dismiss();
+											}
+										}, R.layout.dialog_single_button, false).show();
+									}
+								} else {
+									if (resultData == null) {
+										ToastUtils.ToastShort(getActivity()
+												.getApplicationContext(),
+												"抢单失败");
+									} else {
+										ToastUtils.ToastShort(getContext()
+												.getApplicationContext(),
+												(String) resultData);
+									}
+								}
+
+								isGrabBillFinished = true;
+							}
+						});
+	}
+	
+	/**
+	 * 获取粉丝数与咨询数
+	 */
+	private void startMyCountRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.getMyCountParam(TAG, token),
+				JsonParserFactory.parseBaseModel(MyCountDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final MyCountDataModel dataModel = (MyCountDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if (dataModel.getfConsultSum() > 0){
+									mViewController.showViewStatus(ListViewState.GRAB_NUMBER,String.valueOf(dataModel.getfConsultSum()),R.drawable.grab_top,R.drawable.grab_bottom);
+								}else{
+									mViewController.showViewStatus(ListViewState.EMPTY_BLANK,res.getString(R.string.refresh_success),R.drawable.grab_single_advertise);
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+							mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+						}
+					}
+				});
+	}
+	
+	private void bellRing(ArrayList<FastConsultDtoModel> afterRefreshElementList){
+		int afterLength = afterRefreshElementList.size();
+		boolean needBellRing = false;
+		if(ListUtils.isEmpty(preConsultIDList)){
+			for(int i=0;i<afterLength;i++){
+				FastConsultDtoModel fastConsultDtoModel = afterRefreshElementList.get(i);
+				if(AppConstants.CONSULT_SINGLE_CAN_ROB==fastConsultDtoModel.getGrabState()){
+					preConsultIDList.add(fastConsultDtoModel.getConsultId());
+					needBellRing = true;
+				}
+			}
+		}else{
+			ArrayList<Long> replaceConsultLists = new ArrayList<Long>();
+			replaceConsultLists.addAll(preConsultIDList);
+			for(int i=0;i<afterLength;i++){
+				FastConsultDtoModel afterFastConsultDtoModel = afterRefreshElementList.get(i);
+				if(AppConstants.CONSULT_SINGLE_CAN_ROB==afterFastConsultDtoModel.getGrabState()){
+					if(!replaceConsultLists.contains(afterFastConsultDtoModel.getConsultId())){
+						//新的抢单
+						needBellRing = true;
+						preConsultIDList.add(afterFastConsultDtoModel.getConsultId());
+					}
+				}else{
+					if(replaceConsultLists.contains(afterFastConsultDtoModel.getConsultId())){
+						preConsultIDList.remove(afterFastConsultDtoModel.getConsultId());
+					}
+				}
+			}
+			replaceConsultLists.removeAll(replaceConsultLists);
+		}
+		boolean ring = PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_CONSULT_RING);
+		if(needBellRing&&ring)
+			mSoundPool.play(1, 1, 1, 0, 0, 1);
+	}
+	
+	private static class InnerHandler extends Handler {
+		private WeakReference<FastConsultListFragment> fragmentReference;
+
+		public InnerHandler(FastConsultListFragment fragment) {
+			fragmentReference = new WeakReference<FastConsultListFragment>(fragment);
+		}
+
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			final FastConsultListFragment fragment = fragmentReference.get();
+			if (fragment == null) {
+				return;
+			}
+			switch (msg.what) {
+			default:
+				break;
+			}
+		}
+	}
+
+	// 当播放按钮被click时调用此方法，开始或停止播放
+	private void onPlay(boolean start, String url) {
+		if (start) {
+			startPlaying(url);
+		} else {
+			stopPlaying();
+		}
+	}
+
+	private void startPlaying(String url) {
+		mPlayer = new MediaPlayer();
+		try {
+			// 设置要播放的文件
+			mPlayer.setDataSource(url);
+			mPlayer.prepare();
+			// 播放之
+			mPlayer.start();
+		} catch (IOException e) {
+			LogUtils.e(TAG, "prepare() failed");
+		}
+	} // 停止播放
+
+	private void stopPlaying() {
+		if (mPlayer != null) {
+			mPlayer.release();
+			mPlayer = null;
+		}
+	}
+
+	public void onResume() {
+		super.onResume();
+		Global.updateStatus();
+		if(Global.getUserStatus() == AppConstants.ALL_PERMISSIONS){  
+			startConsultListRefreshRequest(false);
+		}else {
+			mViewController.showViewStatus(ListViewState.EMPTY_BLANK,res.getString(R.string.refresh_success),R.drawable.grab_single_advertise);
+		}
+        Global.authHint(grab_hint_view, getActivity());
+	}
+
+	public void onPause() {
+		super.onPause();
+
+		if (mPlayer != null) {
+			mPlayer.release();
+			
+			mPlayer = null;
+		}
+	}
+
+	public void onDestroy() {
+		super.onDestroy();
+		pageIndex = 1;
+		HttpTaskManager.stop(TAG);
+		unRegisterUpdateReceiver();
+	}
+
+	/**
+	 * @return
+	 * @see com.qdoc.client.ui.fragment.BaseFragment#getReqestTag()
+	 */
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+	@Override
+	public void onHeaderRefresh(PullToRefreshView view) {
+		LogUtils.i(TAG, "-------------onHeaderRefresh-------------");
+		 startConsultListRefreshRequest(true);
+	}
+	
+	/***
+	 * 注册广播
+	 */
+	public void registerUpdateReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.UPDATE_USER_STATUS_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.REFRESH_FAST_CONSULT_LIST);
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance())
+				.registerReceiver(updateReceiver, myIntentFilter);
+	}
+	
+	private BroadcastReceiver updateReceiver = new BroadcastReceiver() {
+		 public void onReceive(Context context, Intent intent) {
+			 String action = intent.getAction();
+			 if (AppConstants.UPDATE_USER_STATUS_INTENT_ACTION.equals(action)) {
+				 grab_hint_view.setVisibility(View.GONE);
+			     startConsultListRefreshRequest(false);
+			 }else if(AppConstants.REFRESH_FAST_CONSULT_LIST.equals(action)){
+				 mListView.setSelection(0);
+				 mListView.showRefreshingState();
+			 }
+		 };
+	};
+	
+	/**
+	 *  注销广播
+	 */
+	public void unRegisterUpdateReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance())
+				.unregisterReceiver(updateReceiver);
+	}
+}

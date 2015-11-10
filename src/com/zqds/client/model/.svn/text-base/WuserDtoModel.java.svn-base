@@ -1,0 +1,305 @@
+/*
+ * ConsultWUserDtoModel.java
+ * classes : com.qdoc.client.model.ConsultWUserDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:10:06
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.model.ConsultWUserDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:10:06
+ */
+public class WuserDtoModel implements Serializable, Cloneable {
+    private static final String TAG = "WuserDtoModel";
+    private static final long serialVersionUID = -524290884880456593L;
+    private String city;
+    private String country;
+    private String groupName;
+    private String headimgurl;
+    private int id;
+    private int isadd;
+    private String language;
+    private ArrayList<Integer> nickname;
+    private String nicknameStr;
+    private String openId;
+    private String province;
+    private String remarkName;
+    private String remarks;
+    private int sex;
+    private boolean status;
+    private boolean subscribe;
+    private String subscribe_time;
+    private String uuid;
+
+    /**
+     * @return the city
+     */
+    public String getCity() {
+        return city;
+    }
+
+    /**
+     * @param city the city to set
+     */
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    /**
+     * @return the country
+     */
+    public String getCountry() {
+        return country;
+    }
+
+    /**
+     * @param country the country to set
+     */
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    /**
+     * @return the groupName
+     */
+    public String getGroupName() {
+        return groupName;
+    }
+
+    /**
+     * @param groupName the groupName to set
+     */
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
+    }
+
+    /**
+     * @return the headimgurl
+     */
+    public String getHeadimgurl() {
+        return headimgurl;
+    }
+
+    /**
+     * @param headimgurl the headimgurl to set
+     */
+    public void setHeadimgurl(String headimgurl) {
+        this.headimgurl = headimgurl;
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the isadd
+     */
+    public int getIsadd() {
+        return isadd;
+    }
+
+    /**
+     * @param isadd the isadd to set
+     */
+    public void setIsadd(int isadd) {
+        this.isadd = isadd;
+    }
+
+    /**
+     * @return the language
+     */
+    public String getLanguage() {
+        return language;
+    }
+
+    /**
+     * @param language the language to set
+     */
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    /**
+     * @return the nickname
+     */
+    public ArrayList<Integer> getNickname() {
+        return nickname;
+    }
+
+    /**
+     * @param nickname the nickname to set
+     */
+    public void setNickname(ArrayList<Integer> nickname) {
+        this.nickname = nickname;
+    }
+
+    /**
+     * @return the nicknameStr
+     */
+    public String getNicknameStr() {
+        return nicknameStr;
+    }
+
+    /**
+     * @param nicknameStr the nicknameStr to set
+     */
+    public void setNicknameStr(String nicknameStr) {
+        this.nicknameStr = nicknameStr;
+    }
+
+    /**
+     * @return the openId
+     */
+    public String getOpenId() {
+        return openId;
+    }
+
+    /**
+     * @param openId the openId to set
+     */
+    public void setOpenId(String openId) {
+        this.openId = openId;
+    }
+
+    /**
+     * @return the province
+     */
+    public String getProvince() {
+        return province;
+    }
+
+    /**
+     * @param province the province to set
+     */
+    public void setProvince(String province) {
+        this.province = province;
+    }
+
+    /**
+     * @return the remarkName
+     */
+    public String getRemarkName() {
+        return remarkName;
+    }
+
+    /**
+     * @param remarkName the remarkName to set
+     */
+    public void setRemarkName(String remarkName) {
+        this.remarkName = remarkName;
+    }
+
+    /**
+     * @return the remarks
+     */
+    public String getRemarks() {
+        return remarks;
+    }
+
+    /**
+     * @param remarks the remarks to set
+     */
+    public void setRemarks(String remarks) {
+        this.remarks = remarks;
+    }
+
+    /**
+     * @return the sex
+     */
+    public int getSex() {
+        return sex;
+    }
+
+    /**
+     * @param sex the sex to set
+     */
+    public void setSex(int sex) {
+        this.sex = sex;
+    }
+
+    /**
+     * @return the status
+     */
+    public boolean isStatus() {
+        return status;
+    }
+
+    /**
+     * @param status the status to set
+     */
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
+
+    /**
+     * @return the subscribe
+     */
+    public boolean isSubscribe() {
+        return subscribe;
+    }
+
+    /**
+     * @param subscribe the subscribe to set
+     */
+    public void setSubscribe(boolean subscribe) {
+        this.subscribe = subscribe;
+    }
+
+    /**
+     * @return the subscribe_time
+     */
+    public String getSubscribe_time() {
+        return subscribe_time;
+    }
+
+    /**
+     * @param subscribe_time the subscribe_time to set
+     */
+    public void setSubscribe_time(String subscribe_time) {
+        this.subscribe_time = subscribe_time;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    @Override
+    public Object clone() {
+        WuserDtoModel model = null;
+        try {
+            model = (WuserDtoModel) super.clone();
+        } catch (CloneNotSupportedException e) {
+            LogUtils.e(TAG, "copy ElementsModel break out exception!", e);
+        }
+        return model;
+    }
+}

@@ -1,0 +1,149 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.UserFocusDoctorCategoryDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ItemOnclickListener;
+
+/**
+ * create at 2015-06-09
+ * @author Antony
+ *
+ */
+public class CategoryAdapter extends BaseAdapter {
+	
+	private List<UserFocusDoctorCategoryDto> categoryList;
+	private LayoutInflater inflater;
+	private long selectedGroupId;
+	private ItemOnclickListener mListener;
+	
+	/**
+	 * @param categoryList the categoryList to set
+	 */
+	public void setCategoryList(List<UserFocusDoctorCategoryDto> categoryList) {
+		if(null==categoryList)
+			this.categoryList = new ArrayList<UserFocusDoctorCategoryDto>();
+		else
+			this.categoryList = categoryList;
+	}
+	
+	public CategoryAdapter(Context context,List<UserFocusDoctorCategoryDto> categoryList,long selectedGroupId,ItemOnclickListener mListener){
+		setCategoryList(categoryList);
+		inflater = LayoutInflater.from(context);
+		this.selectedGroupId = selectedGroupId;
+		this.mListener = mListener;
+	}
+	
+	public void changeData(List<UserFocusDoctorCategoryDto> categoryList){
+		setCategoryList(categoryList);
+		notifyDataSetChanged();
+	}
+
+	@Override
+	public int getCount() {
+		return categoryList.size();
+	}
+
+	@Override
+	public Object getItem(int position) {
+		return categoryList.get(position);
+	}
+
+
+	@Override
+	public long getItemId(int position) {
+		return categoryList.get(position).getId();
+	}
+
+	@Override
+	public View getView(final int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			convertView = inflater.inflate(R.layout.fans_group_item, null);
+			holder = new ViewHolder();
+			holder.categoryTitle = (TextView) convertView.findViewById(R.id.tv_fans_group_title);
+			holder.editCategoryTitle = (EditText) convertView.findViewById(R.id.et_fans_group_title);
+			holder.selectCategory = (CheckBox) convertView.findViewById(R.id.cb_select_fans_group);
+			holder.deleteCategory = (Button) convertView.findViewById(R.id.bt_delete_fans_group);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		final ViewHolder finalHolder = holder;
+		final UserFocusDoctorCategoryDto userFocusDoctorCategoryDto = categoryList.get(position);
+		holder.categoryTitle.setText(userFocusDoctorCategoryDto.getCategoryName());
+		holder.editCategoryTitle.setText(userFocusDoctorCategoryDto.getCategoryName());
+		//处理分组选中状态
+		if(userFocusDoctorCategoryDto.getId()==selectedGroupId){
+			holder.selectCategory.setChecked(true);
+			holder.selectCategory.setClickable(false);
+		}else{
+			holder.selectCategory.setChecked(false);
+			holder.selectCategory.setClickable(true);
+		}
+		if(AppConstants.FANS_CATEGORY_FITER==userFocusDoctorCategoryDto.getType()){
+			holder.deleteCategory.setClickable(true);
+			holder.editCategoryTitle.setEnabled(true);
+			holder.deleteCategory.setBackgroundResource(R.drawable.fans_group_delete_press);
+		}else{
+			holder.deleteCategory.setClickable(false);
+			holder.editCategoryTitle.setEnabled(false);
+			holder.deleteCategory.setBackgroundResource(R.drawable.fans_group_delete_normal);
+		}
+		//处理是否编辑状态
+		if(userFocusDoctorCategoryDto.isDeleteable()){
+			holder.categoryTitle.setVisibility(View.GONE);
+			holder.editCategoryTitle.setVisibility(View.VISIBLE);
+			holder.deleteCategory.setVisibility(View.VISIBLE);
+			holder.selectCategory.setVisibility(View.GONE);
+		}else{
+			holder.categoryTitle.setVisibility(View.VISIBLE);
+			holder.editCategoryTitle.setVisibility(View.GONE);
+			holder.deleteCategory.setVisibility(View.GONE);
+			holder.selectCategory.setVisibility(View.VISIBLE);
+		}
+		holder.editCategoryTitle.setOnFocusChangeListener(new OnFocusChangeListener() {
+			
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				if(!hasFocus)
+					mListener.onButtonClick(0, userFocusDoctorCategoryDto, finalHolder.editCategoryTitle, null, position);
+			}
+		});
+		holder.deleteCategory.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				mListener.onButtonClick(userFocusDoctorCategoryDto, null, null, position);
+			}
+		});
+		holder.selectCategory.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				mListener.onButtonClick(0, userFocusDoctorCategoryDto, null, null);
+			}
+		});
+		return convertView;
+	}
+
+	class ViewHolder{
+		TextView categoryTitle;
+		EditText editCategoryTitle;
+		CheckBox selectCategory;
+		Button deleteCategory;
+	}
+}

@@ -1,0 +1,158 @@
+/*
+ * ImageDetailActivity.java
+ * classes : com.qdoc.client.ui.ImageDetailActivity
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-17 下午11:23:25
+ */
+package com.qdoc.client.ui;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.ImageDtoModel;
+import com.qdoc.client.ui.fragment.ImageDetailResFragment;
+import com.qdoc.client.ui.widget.HackyViewPager;
+import com.qdoc.client.util.IntentTools;
+
+/**
+ * FileName    : ImageDetailResActivity.java
+ * Description : 本地图片详情
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-3-13 
+ **/
+public class ImageDetailResActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = ImageDetailResActivity.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private HackyViewPager mPager;
+    private TextView indicator;
+
+    /**
+     * params
+     */
+    private static final String STATE_POSITION = "STATE_POSITION";
+    private int[] imageArray;
+//    private ArrayList<ImageDtoModel> imageList = new ArrayList<ImageDtoModel>();
+    private int pagerPosition;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (savedInstanceState != null) {
+            pagerPosition = savedInstanceState.getInt(STATE_POSITION);
+        }
+        setContentView(R.layout.activity_imagedetail);
+        parseIntent();
+        initView();
+        initListener();
+    }
+
+    private void parseIntent() {
+        // TODO Auto-generated method stub
+        pagerPosition = getIntent().getIntExtra(IntentTools.EXTRA_IMAGE_INDEX, 0);
+        imageArray = (int[]) getIntent().getIntArrayExtra(IntentTools.EXTRA_IMAGE_RES_IDS);
+//        bindImageList(imageList);
+    }
+
+//    public void bindImageList(ArrayList<ImageDtoModel> list) {
+//        int size = list.size();
+//        imageArray = new String[size];
+//        for (int i = 0; i < size; i++) {
+//            imageArray[i] = list.get(i).getRealUrl();
+//        }
+//    }
+
+    @Override
+    protected void initView() {
+        // TODO Auto-generated method stub
+        mPager = (HackyViewPager) findViewById(R.id.pager);
+        ImagePagerAdapter mAdapter = new ImagePagerAdapter(getSupportFragmentManager(), imageArray);
+        mPager.setAdapter(mAdapter);
+        indicator = (TextView) findViewById(R.id.indicator);
+        CharSequence text = getString(R.string.viewpager_indicator, 1, mPager.getAdapter().getCount());
+        indicator.setText(text);
+        // 更新下标
+        mPager.setOnPageChangeListener(new OnPageChangeListener() {
+
+            @Override
+            public void onPageScrollStateChanged(int arg0) {
+            }
+
+            @Override
+            public void onPageScrolled(int arg0, float arg1, int arg2) {
+            }
+
+            @Override
+            public void onPageSelected(int arg0) {
+                CharSequence text = getString(R.string.viewpager_indicator, arg0 + 1, mPager.getAdapter().getCount());
+                indicator.setText(text);
+            }
+
+        });
+
+        mPager.setCurrentItem(pagerPosition);
+    }
+
+    @Override
+    protected void initListener() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putInt(STATE_POSITION, mPager.getCurrentItem());
+    }
+
+    private class ImagePagerAdapter extends FragmentStatePagerAdapter {
+        public int[] imageResID;
+
+        public ImagePagerAdapter(FragmentManager fm, int[] imageResId) {
+            super(fm);
+            this.imageResID = imageResId;
+        }
+
+        @Override
+        public int getCount() {
+            return imageResID == null ? 0 : imageResID.length;
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            int resId = imageResID[position];
+            return ImageDetailResFragment.newInstance(resId);
+        }
+    }
+
+    public static void startActivity(Context context, int position, int[] list) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getImageDetailResIntent(context, position, list));
+    }
+    
+    public static void startActivity(Context context, int position, int resId) {
+        if (context == null) {
+            return;
+        }
+        int[] list = {resId};
+        context.startActivity(IntentTools.getImageDetailResIntent(context, position, list));
+    }
+}

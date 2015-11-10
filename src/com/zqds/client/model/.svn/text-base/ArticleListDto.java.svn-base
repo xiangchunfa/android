@@ -1,0 +1,147 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 资讯列表对象
+ * @author Antony
+ *
+ */
+public class ArticleListDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6229566065981874874L;
+	
+	private long articleId;//文本ID
+	private String artTitle;//文章标题
+	private String artHeadImgUrl;//文章头像外部图片
+	private String artDigest;//文章摘要
+	private String artPublishTime;//文章发布时间
+	private String artAuthor;//文章作者
+	private long reviewCount;//评论数
+	private long readCount;
+	private int artStatus;//文章状态（0：草稿；1：审核中；2：审核通过；3：回收站）
+	private int newStatus;//是否當天咨詢(0 不是，1 是)
+	/**
+	 * @return the articleId
+	 */
+	public long getArticleId() {
+		return articleId;
+	}
+	/**
+	 * @param articleId the articleId to set
+	 */
+	public void setArticleId(long articleId) {
+		this.articleId = articleId;
+	}
+	/**
+	 * @return the artTitle
+	 */
+	public String getArtTitle() {
+		return artTitle;
+	}
+	/**
+	 * @param artTitle the artTitle to set
+	 */
+	public void setArtTitle(String artTitle) {
+		this.artTitle = artTitle;
+	}
+	/**
+	 * @return the artHeadImgUrl
+	 */
+	public String getArtHeadImgUrl() {
+		return artHeadImgUrl;
+	}
+	/**
+	 * @param artHeadImgUrl the artHeadImgUrl to set
+	 */
+	public void setArtHeadImgUrl(String artHeadImgUrl) {
+		this.artHeadImgUrl = artHeadImgUrl;
+	}
+	/**
+	 * @return the artDigest
+	 */
+	public String getArtDigest() {
+		return artDigest;
+	}
+	/**
+	 * @param artDigest the artDigest to set
+	 */
+	public void setArtDigest(String artDigest) {
+		this.artDigest = artDigest;
+	}
+	/**
+	 * @return the artPublishTime
+	 */
+	public String getArtPublishTime() {
+		return artPublishTime;
+	}
+	/**
+	 * @param artPublishTime the artPublishTime to set
+	 */
+	public void setArtPublishTime(String artPublishTime) {
+		this.artPublishTime = artPublishTime;
+	}
+	/**
+	 * @return the artAuthor
+	 */
+	public String getArtAuthor() {
+		return artAuthor;
+	}
+	/**
+	 * @param artAuthor the artAuthor to set
+	 */
+	public void setArtAuthor(String artAuthor) {
+		this.artAuthor = artAuthor;
+	}
+	/**
+	 * @return the reviewCount
+	 */
+	public long getReviewCount() {
+		return reviewCount;
+	}
+	/**
+	 * @param reviewCount the reviewCount to set
+	 */
+	public void setReviewCount(long reviewCount) {
+		this.reviewCount = reviewCount;
+	}
+	/**
+	 * @return the readCount
+	 */
+	public long getReadCount() {
+		return readCount;
+	}
+	/**
+	 * @param readCount the readCount to set
+	 */
+	public void setReadCount(long readCount) {
+		this.readCount = readCount;
+	}
+	/**
+	 * @return the artStatus
+	 */
+	public int getArtStatus() {
+		return artStatus;
+	}
+	/**
+	 * @param artStatus the artStatus to set
+	 */
+	public void setArtStatus(int artStatus) {
+		this.artStatus = artStatus;
+	}
+	/**
+	 * @return the newStatus
+	 */
+	public int getNewStatus() {
+		return newStatus;
+	}
+	/**
+	 * @param newStatus the newStatus to set
+	 */
+	public void setNewStatus(int newStatus) {
+		this.newStatus = newStatus;
+	}
+}

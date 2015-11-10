@@ -1,0 +1,42 @@
+/*
+ * TabFragmentPagerAdapter.java
+ * classes : com.ledu.ledubuyer.ui.adapter.TabFragmentPagerAdapter
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-6-10 下午10:24:54
+ */
+package com.qdoc.client.ui.adapter;
+
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+
+/**
+ * com.ledu.ledubuyer.ui.adapter.TabFragmentPagerAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-6-10 下午10:24:54
+ */
+public abstract class TabFragmentPagerAdapter extends FragmentStatePagerAdapter {
+    private static final String TAG = "TabFragmentPagerAdapter";
+
+    protected String[] mTabTitles;
+
+    public TabFragmentPagerAdapter(FragmentManager fm, String[] tabTitles) {
+        super(fm);
+        mTabTitles = tabTitles;
+    }
+
+    @Override
+    public abstract Fragment getItem(int index);
+
+    @Override
+    public int getCount() {
+        return mTabTitles.length;
+    }
+
+    @Override
+    public int getItemPosition(Object object) {
+        return POSITION_NONE;
+    }
+}

@@ -1,0 +1,48 @@
+package com.qdoc.client.model;
+
+/**
+ * FileName    : CommonProblemDtoModel.java
+ * Description : 客服消息常见问题对象
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2014-6-8 
+ **/
+public class CommonProblemDtoModel {
+
+    /**常见问题编号 */
+    private int id;
+
+    /**问题 */
+    private String problemName;
+
+    /**回答 */
+    private String problemAnswer;
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public String getProblemName() {
+		return problemName;
+	}
+
+	public void setProblemName(String problemName) {
+		this.problemName = problemName;
+	}
+
+	public String getProblemAnswer() {
+		return problemAnswer;
+	}
+
+	public void setProblemAnswer(String problemAnswer) {
+		this.problemAnswer = problemAnswer;
+	}
+
+    
+}

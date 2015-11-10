@@ -1,0 +1,129 @@
+/*
+w * MessageActivity.java
+ * classes : com.qdoc.client.ui.MessageActivity
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-11 下午11:25:40
+ */
+package com.qdoc.client.ui;
+
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+
+import com.qdoc.client.R;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.fragment.MsgListFragment;
+
+/**
+ * com.qdoc.client.ui.MessageActivity
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-11 下午11:25:40
+ */
+public class MessageActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = MessageActivity.class.getSimpleName();
+    /**
+     * view
+     */
+    private BaseFragment mCurFragment;
+    private BaseFragment msgListFragment;
+//    private BaseFragment myconsultlistFragment;
+//    private BaseFragment flowerFragment;
+//    private BaseFragment thankletterFragment;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_message);
+
+        initView();
+        initListener();
+    }
+
+    @Override
+    protected void initView() {
+        // TODO Auto-generated method stub
+        msgListFragment = new MsgListFragment();
+//        myconsultlistFragment = new MyConsultFragment();
+//        flowerFragment = new FlowerFragment();
+//        thankletterFragment = new ThankLetterFragment();
+
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.fragment_msg_list, msgListFragment, MsgListFragment.TAG);
+//        ft.add(R.id.fragment_msg_list_myconsult, myconsultlistFragment, MyConsultFragment.TAG);
+//        ft.add(R.id.fragment_msg_list_thankletter, thankletterFragment, ThankLetterFragment.TAG);
+//        ft.add(R.id.fragment_msg_list_flower, flowerFragment, FlowerFragment.TAG);
+        ft.show(msgListFragment);
+//        ft.hide(myconsultlistFragment);
+//        ft.hide(thankletterFragment);
+//        ft.hide(flowerFragment);
+        ft.commitAllowingStateLoss();
+
+        mCurFragment = msgListFragment;
+    }
+
+    @Override
+    protected void initListener() {
+
+    }
+
+    public void switchContent(BaseFragment from, BaseFragment to) {
+        if (mCurFragment != to) {
+            mCurFragment = to;
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            if (!to.isAdded()) { // 先判断是否被add过
+                transaction.hide(from).add(R.id.fragment_msg_list, to, to.getReqestTag()).commitAllowingStateLoss(); // 隐藏当前的fragment，add下一个到Activity中
+            } else {
+                transaction.hide(from).show(to).commitAllowingStateLoss(); // 隐藏当前的fragment，显示下一个
+            }
+        }
+    }
+
+//    public void switchToThankList() {
+//        switchContent(mCurFragment, thankletterFragment);
+//        ((ThankLetterFragment) thankletterFragment).startThankLetterInitRequest();
+//    }
+//
+//    public void switchToFlowerList() {
+//        switchContent(mCurFragment, flowerFragment);
+//        ((FlowerFragment) flowerFragment).startConsultListInitRequest();
+//    }
+//
+//    public void switchToMsgList() {
+//        switchContent(mCurFragment, msgListFragment);
+//    }
+//
+//    public void switchToMyConsultList() {
+//        switchContent(mCurFragment, myconsultlistFragment);
+//        ((MyConsultFragment) myconsultlistFragment).startMyConsultListInitRequest();
+//    }
+
+    public void onDestroy() {
+        super.onDestroy();
+    }
+    
+    @Override
+    protected void onResume() {
+    	// TODO Auto-generated method stub
+    	super.onResume();
+    }
+    
+    @Override
+    protected void onPause() {
+    	// TODO Auto-generated method stub
+    	super.onPause();
+    }
+    
+    @Override
+    protected void onStop() {
+    	// TODO Auto-generated method stub
+    	super.onStop();
+    }
+   
+ 
+}

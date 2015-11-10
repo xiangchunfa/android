@@ -1,0 +1,128 @@
+package com.qdoc.client.db.bean;
+
+import java.io.Serializable;
+
+/**
+ * FileName    : CustomContent.java
+ * Description : 信鸽自定义数据实体类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-1-10 
+ **/
+public class CustomContent implements Serializable{
+	private static final long serialVersionUID = 1L;
+	private Integer action;//操作类型
+    private Long consultId;//咨询ID
+ /**
+   * 是否需要重新获取完整的咨询消息（0表示不需要，1表示需要），只有在action=7的时候才有用，需要重新获取完整的咨询消息的情况有以下几种：
+   *（1、当文本消息，且字数超过了20个字）
+   *（2、所有图片消息）
+   *（3、所有语音消息）
+   */   
+    private int reFreshMsg;
+    private long msgId;//咨询消息编号，通过咨询消息接口获取完整的咨询消息，只有在action=7的时候才有用。
+    private String msgtime;//消息发送时间，只有在action=7的时候才有用。
+    private String msgtype;//消息类型（text文本，image图片，voice语音），只有在action=7的时候才有用。
+    private String content;//消息内容
+    private String account;//用户账号
+    private int consultOption;//咨询单类型
+    
+    
+    public String getAccount() {
+		return account;
+	}
+
+	public void setAccount(String account) {
+		this.account = account;
+	}
+
+	public String getMsgtype() {
+		return msgtype;
+	}
+
+	public void setMsgtype(String msgtype) {
+		this.msgtype = msgtype;
+	}
+
+	public CustomContent() {
+    }
+
+    public CustomContent(Integer action, Long consultID) {
+        super();
+        this.action = action;
+        this.consultId = consultID;
+        
+    }
+    
+    public Integer getAction() {
+		return action;
+	}
+
+	public void setAction(Integer action) {
+		this.action = action;
+	}
+
+	public Long getConsultId() {
+		return consultId;
+	}
+
+	public void setConsultId(Long consultId) {
+		this.consultId = consultId;
+	}
+     
+	
+	
+	public int getReFreshMsg() {
+		return reFreshMsg;
+	}
+
+	public void setReFreshMsg(int reFreshMsg) {
+		this.reFreshMsg = reFreshMsg;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+	
+	public long getMsgId() {
+		return msgId;
+	}
+
+	public void setMsgId(long msgId) {
+		this.msgId = msgId;
+	}
+
+	public String getMsgtime() {
+		return msgtime;
+	}
+
+	public void setMsgtime(String msgtime) {
+		this.msgtime = msgtime;
+	}
+
+	@Override
+    public String toString() {
+        return "CustomContent [action=" + action + ", consultID=" + consultId+"]";
+    }
+
+	/**
+	 * @return the consultOption
+	 */
+	public int getConsultOption() {
+		return consultOption;
+	}
+
+	/**
+	 * @param consultOption the consultOption to set
+	 */
+	public void setConsultOption(int consultOption) {
+		this.consultOption = consultOption;
+	}
+
+}

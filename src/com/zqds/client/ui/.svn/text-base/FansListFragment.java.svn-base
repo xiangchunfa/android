@@ -1,0 +1,447 @@
+package com.qdoc.client.ui;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AbsListView.LayoutParams;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.EditText;
+import android.widget.ExpandableListView;
+import android.widget.ExpandableListView.OnChildClickListener;
+import android.widget.ExpandableListView.OnGroupClickListener;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.DoctorFansCategoryModel;
+import com.qdoc.client.model.MyFansListDataModel;
+import com.qdoc.client.model.MyFansListDto;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.model.UserFocusDoctorCategoryDto;
+import com.qdoc.client.model.UserFocusDoctorCategoryModel;
+import com.qdoc.client.system.ItemOnclickListener;
+import com.qdoc.client.ui.adapter.FansGroupListAdapter;
+import com.qdoc.client.ui.adapter.SearchFansResultAdapter;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.view.PinnedHeaderExpandableListView;
+import com.qdoc.client.ui.view.PinnedHeaderExpandableListView.OnHeaderUpdateListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+public class FansListFragment extends BaseFragment implements OnChildClickListener,OnGroupClickListener,OnHeaderUpdateListener{
+	
+	public static final String TAG = FansListFragment.class.getSimpleName();
+	
+	
+	private TitleBar mTitleBar;
+	//搜索内容编辑布局
+	private RelativeLayout rl_search_edit_layout;
+	//取消搜索文本按钮
+	private TextView tv_cancel_search_fans;
+	//开始搜索时的半透明遮挡层
+	private TextView tv_translucent_top_bg;
+	//搜索内容编辑框
+	private EditText et_search_fans;
+	private LinearLayout ll_search_text_layout;
+	//内容显示标题文本框
+	private TextView tv_content_title;
+	//分组及粉丝列表
+	private PinnedHeaderExpandableListView expandableListView;
+	private String token;
+	
+	private FansGroupListAdapter adapter;
+	private List<UserFocusDoctorCategoryDto> categoryList;
+	private ItemOnclickListener mListener;
+	
+	//管理分组布局
+	private LinearLayout ll_manager_group;
+	
+	/*
+	 * 搜索結果显示部分
+	 */
+	private RelativeLayout rl_search_result_layout;
+	private ListView lv_search_result_list;
+	private TextView tv_search_result_count;
+	private int searchPageSize = 20;
+	private SearchFansResultAdapter searchFansResultAdapter;
+	private ArrayList<MyFansListDto> searchFansResultList;
+	
+	//输入法管理器
+	private InputMethodManager imm;
+	
+    public static FansListFragment newInstance(Bundle bundle) {
+        final FansListFragment fragment = new FansListFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+    
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    		Bundle savedInstanceState) {
+    	return inflater.inflate(R.layout.fragment_fans_list, container,false);
+    }
+    
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+    	super.onViewCreated(view, savedInstanceState);
+    	
+    	initView(view);
+    	initParam();
+    	initListener();
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    	getFansGroupList();
+    }
+    
+    private void initView(View view){
+    	//标题栏
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.my_fans, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        rl_search_edit_layout = (RelativeLayout) view.findViewById(R.id.rl_search_edit_layout);
+        tv_cancel_search_fans = (TextView) view.findViewById(R.id.tv_cancel_search_fans);
+        tv_translucent_top_bg = (TextView) view.findViewById(R.id.tv_translucent_top_bg);
+        et_search_fans = (EditText) view.findViewById(R.id.et_search_fans);
+        ll_search_text_layout = (LinearLayout) view.findViewById(R.id.ll_search_text_layout);
+        tv_content_title = (TextView) view.findViewById(R.id.tv_content_title);
+        expandableListView = (PinnedHeaderExpandableListView) view.findViewById(R.id.expandablelist);
+        //管理分组布局
+        ll_manager_group = (LinearLayout) view.findViewById(R.id.ll_manager_group);
+        //初始化搜索结果部分
+        rl_search_result_layout = (RelativeLayout) view.findViewById(R.id.rl_search_result_layout);
+    	lv_search_result_list = (ListView) view.findViewById(R.id.lv_search_result_list);
+    	tv_search_result_count = (TextView) view.findViewById(R.id.tv_search_result_count);
+    	
+    	imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
+        
+    }
+    
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+            MemberDetailActivity msgActivity = (MemberDetailActivity) getActivity();
+            if (msgActivity == null)
+            	return;
+            msgActivity.finish();
+		}
+	};
+    
+    private void initListener(){
+    	ll_search_text_layout.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				//显示搜索边框布局
+				rl_search_edit_layout.setVisibility(View.VISIBLE);
+				//显示半透明遮挡层
+				tv_translucent_top_bg.setVisibility(View.VISIBLE);
+				//隐藏搜索编辑框入口布局
+				ll_search_text_layout.setVisibility(View.GONE);
+			}
+		});
+    	
+    	tv_cancel_search_fans.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				//内容标题变更为“我的分组”
+				tv_content_title.setText("我的分组");
+				//清空搜索内容
+				et_search_fans.setText("");
+				//隐藏输入法
+				hideEditor(et_search_fans);
+				//隐藏搜索编辑布局
+				rl_search_edit_layout.setVisibility(View.GONE);
+				//隐藏半透明遮挡层
+				tv_translucent_top_bg.setVisibility(View.GONE);
+				//清空上次的搜索结果
+				searchFansResultList.removeAll(searchFansResultList);
+				searchFansResultAdapter.changeData(searchFansResultList);
+				//隐藏搜索结果布局
+				rl_search_result_layout.setVisibility(View.GONE);
+				//显示搜索编辑框入口布局
+				ll_search_text_layout.setVisibility(View.VISIBLE);
+				//显示分组及粉丝列表控件
+				expandableListView.setVisibility(View.VISIBLE);
+			}
+		});
+    	
+    	ll_manager_group.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(getContext(), FansGroupListActivity.class);
+				intent.putExtra(IntentTools.EXTRA_CATEGORY_ID, -1);
+				intent.putExtra(IntentTools.EXTRA_OPEN_ID, "");
+				startActivity(intent);
+			}
+		});
+    	
+    	et_search_fans.setOnEditorActionListener(new OnEditorActionListener() {
+			
+			@Override
+			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				if(actionId==EditorInfo.IME_ACTION_SEARCH ||(event!=null&&event.getKeyCode()==KeyEvent.KEYCODE_SEARCH)){
+					//点击了键盘的搜索按钮
+					String searchWord = et_search_fans.getText().toString().trim();
+					//搜索内容不为空时请求服务器
+					if(!TextUtils.isEmpty(searchWord)){
+						getSearchFansList(searchWord, searchPageSize);
+					}else{
+						//没有搜索内容，搜索筛选条件下的第一页数据
+						ToastUtils.ToastShort(getContext(), "搜索内容不能为空");
+					}
+					return true;
+				}
+				return false;
+			}
+		});
+    	
+    	mListener = new ItemOnclickListener() {
+			
+			@Override
+			public void onReplyClick(int type, Object obj, View view) {}
+			
+			@Override
+			public void onButtonClick(int type, Object obj, View view1, View view2,int position) {
+				UserFocusDoctorCategoryDto userFocusDoctorCategoryDto = (UserFocusDoctorCategoryDto) obj;
+				int page = position/searchPageSize+2;
+				getFansListMore(page, searchPageSize, userFocusDoctorCategoryDto.getId(),type);
+			}
+			
+			@Override
+			public void onButtonClick(int type, Object obj, View view1, View view2) {}
+			
+			@Override
+			public void onButtonClick(Object obj, View view1, View view2, int position) {}
+		};
+		
+		lv_search_result_list.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				MyFansListDto myFans = (MyFansListDto) parent.getAdapter().getItem(position);
+				String openId = myFans.getOpenId();
+				FansDetailInfoActivity.startActivity(getContext(), openId);
+			}
+		});
+    }
+    
+    private void initParam(){
+    	searchFansResultList = new ArrayList<MyFansListDto>();
+    	searchFansResultAdapter = new SearchFansResultAdapter(getContext(), searchFansResultList);
+    	lv_search_result_list.setAdapter(searchFansResultAdapter);
+    }
+    
+    private void getSearchFansList(String searchWord,int pageSize){
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getMyFansListParam(TAG, token, null, searchWord, 1, pageSize), 
+    			JsonParserFactory.parseBaseModel(MyFansListDataModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final MyFansListDataModel dataModel = (MyFansListDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						Pagination<MyFansListDto> pager = dataModel.getPager();
+						ArrayList<MyFansListDto> focusFansList = pager.getElements();
+						//变更内容标题为“搜索结果”
+						tv_content_title.setText("搜索结果");
+						//清空之前的所有结果
+						searchFansResultList.removeAll(searchFansResultList);
+						searchFansResultAdapter.changeData(searchFansResultList);
+						//隐藏半透明遮挡层
+						tv_translucent_top_bg.setVisibility(View.GONE);
+						//隐藏分组及粉丝列表
+						expandableListView.setVisibility(View.GONE);
+						//显示搜索结果控件
+						rl_search_result_layout.setVisibility(View.VISIBLE);
+						if(ListUtils.isEmpty(focusFansList)){
+							//没有搜索到结果
+							tv_search_result_count.setText("共有0个搜索结果");
+						}else{
+							//有搜索到结果
+							searchFansResultList.addAll(focusFansList);
+							searchFansResultAdapter.changeData(searchFansResultList);
+							tv_search_result_count.setText("共有"+searchFansResultList.size()+"个搜索结果");
+						}
+					}else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getActivity(), dataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+    
+    /**
+     * 加载更多粉丝
+     * @param searchWord
+     * @param page
+     * @param pageSize
+     */
+    private void getFansListMore(int page,int pageSize,long id,final int groupposition){
+    	if(TextUtils.isEmpty(token))
+    		token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getCategoryFansList(TAG, token, page, pageSize, id), 
+    			JsonParserFactory.parseBaseModel(UserFocusDoctorCategoryModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					UserFocusDoctorCategoryModel userFocusDoctorCategoryModel = (UserFocusDoctorCategoryModel) resultData;
+					if(null!=userFocusDoctorCategoryModel&&userFocusDoctorCategoryModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						//获取更多分组粉丝成功
+						categoryList.get(groupposition).getUserList().addAll(userFocusDoctorCategoryModel.getPager().getElements());
+						adapter.changeData(categoryList);
+						
+					}else if(null!=userFocusDoctorCategoryModel&&userFocusDoctorCategoryModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getActivity(), userFocusDoctorCategoryModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+			}
+		});
+    }
+    
+	private void getFansGroupList(){
+		if(TextUtils.isEmpty(token))
+			token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		Global.progressDialog = ProgressDialog.show(getActivity(), null, getString(R.string.loading), true, true);
+		HttpTaskManager.startStringRequest(DataRequestUtils.findDoctorFansCategory(TAG, token), 
+				JsonParserFactory.parseBaseModel(DoctorFansCategoryModel.class),
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					DoctorFansCategoryModel doctorFansCategoryModel = (DoctorFansCategoryModel) resultData;
+					if(null!=doctorFansCategoryModel&&ServerErrorCode.INTERFACE_SUCCESS==doctorFansCategoryModel.getState()){
+						categoryList = doctorFansCategoryModel.getCategoryList();
+				    	adapter = new FansGroupListAdapter(getContext(), categoryList,mListener);
+				    	expandableListView.setAdapter(adapter);
+				        
+				        expandableListView.setOnHeaderUpdateListener(FansListFragment.this);
+				        expandableListView.setOnChildClickListener(FansListFragment.this);
+				        expandableListView.setOnGroupClickListener(FansListFragment.this);
+					}else if(null!=doctorFansCategoryModel&&ServerErrorCode.TOKEN_INVALID==doctorFansCategoryModel.getState()){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getActivity(), doctorFansCategoryModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getActivity(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getActivity(), (String) resultData);
+                    }
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+	@Override
+	public View getPinnedHeader() {
+        View headerView = (ViewGroup) getActivity().getLayoutInflater().inflate(R.layout.fans_list_group_item, null);
+        headerView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        return headerView;
+	}
+
+	@Override
+	public void updatePinnedHeader(View headerView, int firstVisibleGroupPos,boolean isGroupExpand) {
+        UserFocusDoctorCategoryDto firstVisibleGroup = (UserFocusDoctorCategoryDto) adapter.getGroup(firstVisibleGroupPos);
+        ImageView fans_list_group_item_left_icon = (ImageView) headerView.findViewById(R.id.fans_list_group_item_left_icon);
+        TextView textView = (TextView) headerView.findViewById(R.id.fans_group_name);
+        TextView consultCount = (TextView) headerView.findViewById(R.id.group_fans_count);
+        if(isGroupExpand)
+        	fans_list_group_item_left_icon.setImageResource(R.drawable.fans_list_group_icon_expand);
+        else
+        	fans_list_group_item_left_icon.setImageResource(R.drawable.fans_list_group_icon);
+        textView.setText(firstVisibleGroup.getCategoryName());
+        consultCount.setText(firstVisibleGroup.getFansNubm()+"");
+	}
+
+	@Override
+	public boolean onGroupClick(ExpandableListView parent, View v,int groupPosition, long id) {
+		return false;
+	}
+
+	@Override
+	public boolean onChildClick(ExpandableListView parent, View v,int groupPosition, int childPosition, long id) {
+		
+		UserFocusDoctorCategoryDto userFocusDoctorCategoryDto = (UserFocusDoctorCategoryDto) parent.getAdapter().getItem(groupPosition);
+		String openid = userFocusDoctorCategoryDto.getUserList().get(childPosition).getwUserDto().getOpenId();
+		FansDetailInfoActivity.startActivity(getContext(), openid);
+		return false;
+	}
+	
+	// 隐藏输入发表回帖状态
+    private void hideEditor(View v) {
+    	if(!et_search_fans.isFocusable())
+    		return;
+    	imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+    	et_search_fans.clearFocus();
+    }
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+}

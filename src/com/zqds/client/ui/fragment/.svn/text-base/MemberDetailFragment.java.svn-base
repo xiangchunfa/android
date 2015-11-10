@@ -1,0 +1,536 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.MyFansListDataModel;
+import com.qdoc.client.model.MyFansListDto;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.FansDetailInfoActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MemberDetailActivity;
+import com.qdoc.client.ui.adapter.MyFansListAdapter;
+import com.qdoc.client.ui.adapter.MyFansListAdapter.ViewHolder;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class MemberDetailFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = MemberDetailFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private Spinner screening_conditions;
+    private EditText fans_search_keyword;
+    private String[] focus_type;
+    private PullRefreshView mListView;
+    private PullListMaskController mViewController;
+	private int currentPage;//当前页码
+	private int PAGE_SIZE = 10;
+	private String currentFansType;
+	
+    private MyFansListAdapter fansListAdapter;
+    private ArrayList<MyFansListDto> fansList;
+    
+    private CheckedTextView screen_fans_type;
+    
+    private MyFansListAdapter.ViewHolder holder;
+    private MyFansListDto refreshMyFansListDto;
+
+    public static MemberDetailFragment newInstance(Bundle bundle) {
+        final MemberDetailFragment fragment = new MemberDetailFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+    	return inflater.inflate(R.layout.fragment_my_fans, container,false);
+        //return inflater.inflate(R.layout.fragment_member_detail, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+       /* initView(view);
+        initParams();
+        initNavigationTitle();
+        initListener();*/
+        
+        initViewNew(view);
+        initListenerNew();
+        initDataNew();
+    }
+    
+    private void initViewNew(View view){
+    	//标题栏
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.my_fans, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+                getResources().getColor(R.color.titlebar_bg));
+        //Spinner控件初始化
+        screening_conditions = (Spinner) view.findViewById(R.id.screening_conditions);
+        fans_search_keyword = (EditText) view.findViewById(R.id.fans_search_keyword);
+        focus_type = getResources().getStringArray(R.array.fans_screening_type);
+        ArrayAdapter<String> screening_conditions_adapter = new ArrayAdapter<String>(getContext(), R.layout.screen_frame_item);
+        for(int i=0;i<focus_type.length;i++){
+        	screening_conditions_adapter.add(focus_type[i]);
+        }
+        screening_conditions_adapter.setDropDownViewResource(R.layout.screen_spinner_dropdown_item);
+        screening_conditions.setAdapter(screening_conditions_adapter);
+        //列表控件初始化
+        mListView = (PullRefreshView) view.findViewById(R.id.listView);
+        // 自定义emptyview
+        ErrorMaskView maskView = (ErrorMaskView) view.findViewById(R.id.maskView);
+        mViewController = new PullListMaskController(mListView, maskView);
+        mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+        //Spinner头部CheckTextView控件
+        
+        screen_fans_type = (CheckedTextView) screening_conditions_adapter.getView(0, null, null);
+        //screen_fans_type = (CheckedTextView) LayoutInflater.from(getActivity()).inflate(R.layout.screen_frame_item, null).findViewById(R.id.screen_fans_type);
+        screen_fans_type.setTextColor(getResources().getColor(R.color.red));
+    }
+    
+    private void initDataNew(){
+    	currentPage = 1;
+    	fansList = new ArrayList<MyFansListDto>();
+    	fansListAdapter = new MyFansListAdapter(getActivity(), fansList);
+    	mListView.setAdapter(fansListAdapter);
+    	registerUpdateStatusReceiver();
+    	//startHttpRequest();
+    }
+    
+    private void initListenerNew(){
+    	
+    	screen_fans_type.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				System.out.println("----------------screen_fans_type-----------------------");
+			}
+		});
+    	
+    	//下拉选项卡选择监听器
+    	screening_conditions.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View item,
+					int position, long arg3) {
+				String search_keyWord = fans_search_keyword.getText().toString().trim();
+				switch (position) {
+				case 0:
+					//选择查找类型为“所有粉丝”
+					currentFansType = null;
+					getFansByTypeAndSearchInit(null, search_keyWord, PAGE_SIZE);
+					break;
+				case 1:
+					//选择查找类型为“复诊粉丝”
+					currentFansType = AppConstants.FANS_TYPE_REVISIT;
+					getFansByTypeAndSearchInit(AppConstants.FANS_TYPE_REVISIT, search_keyWord, PAGE_SIZE);
+					break;
+				case 2:
+					//选择查找类型“扫描粉丝”
+					currentFansType = AppConstants.FANS_TYPE_QRCODE;
+					getFansByTypeAndSearchInit(AppConstants.FANS_TYPE_QRCODE, search_keyWord, PAGE_SIZE);
+					break;
+				}
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> arg0) {}
+		});
+    	
+    	mListView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View item, int position,
+					long arg3) {
+				MyFansListDto myFanListDto = (MyFansListDto) parent.getAdapter().getItem(position);
+				holder = (ViewHolder) item.getTag();
+				/*Intent intent = new Intent(getActivity(), FansDetailInfoActivity.class);
+				intent.putExtra(MyFansListDto.INTENT_KEY, myFanListDto);
+				getContext().startActivity(intent);*/
+				//FansDetailInfoActivity.startActivity(getActivity(), myFanListDto);
+				FansDetailInfoActivity.startActivity(getActivity(), myFanListDto.getOpenId());
+			}
+		});
+    	
+    	mViewController.setOnRetryClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				//点击重试
+				String searchKeyWord = fans_search_keyword.getText().toString().trim();
+				getFansByTypeAndSearchInit(currentFansType, searchKeyWord, PAGE_SIZE);
+			}
+		});
+    	
+    	mViewController.setOnRefreshListener(new OnRefreshListener() {
+			
+			@Override
+			public void onRefresh() {
+				//下拉刷新
+				getFansByTypeAndSearchRefresh(currentFansType, fans_search_keyword.getText().toString().trim(), PAGE_SIZE);
+			}
+		});
+    	mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+			
+			@Override
+			public void onClickFootView() {
+				currentPage = currentPage+1;
+				getFansByTypeAndSearchMore(currentFansType, fans_search_keyword.getText().toString().trim(), currentPage, PAGE_SIZE);
+			}
+		});
+    	//搜索编辑框的搜索监听器
+    	fans_search_keyword.setOnEditorActionListener(new OnEditorActionListener() {
+			
+			@Override
+			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				if(actionId==EditorInfo.IME_ACTION_SEARCH ||(event!=null&&event.getKeyCode()==KeyEvent.KEYCODE_SEARCH)){
+					//点击了键盘的搜索按钮
+					String searchWord = fans_search_keyword.getText().toString().trim();
+					//搜索内容不为空时请求服务器
+					if(!TextUtils.isEmpty(searchWord)){
+						//搜索联动下拉筛选，筛选条件变成“所有粉丝”
+						screening_conditions.setSelection(0);
+						getFansByTypeAndSearchInit(null, searchWord, PAGE_SIZE);
+					}else{
+						//没有搜索内容，搜索筛选条件下的第一页数据
+						getFansByTypeAndSearchInit(currentFansType, null, PAGE_SIZE);
+					}
+					return true;
+				}
+				return false;
+			}
+		});
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    }
+
+/*    private void initParams() {
+        // TODO Auto-generated method stub
+        mTabTitles = getResources().getStringArray(R.array.newmember_tab_title_array);
+        mAdapter = new NewMemberTabsAdapter(getActivity().getSupportFragmentManager(), mTabTitles);
+        mViewPager.setAdapter(mAdapter);
+        currentPage = 1;
+        startHttpRequest();
+    }*/
+
+/*    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.aboutus_member, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+                getResources().getColor(R.color.titlebar_bg));
+
+        // 设置tab
+        mHorNavBarParent = (SyncHorizontalScrollView) view.findViewById(R.id.hor_tab);
+        rg_nav_content = (RadioGroup) view.findViewById(R.id.rg_nav_content);
+        mViewPager = (ViewPager) view.findViewById(R.id.viewpager_constainer);
+    }*/
+
+/*    private void initNavigationTitle() {
+        DisplayMetrics dm = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
+
+        int indicatorWidth = dm.widthPixels >> 1;
+        // 获取布局填充器
+        mInflater = (LayoutInflater) getActivity().getSystemService(getActivity().LAYOUT_INFLATER_SERVICE);
+        rg_nav_content.removeAllViews();
+
+        ColorStateList colorState = getResources().getColorStateList(R.drawable.indicator_bg);
+
+        for (int i = 0; i < mTabTitles.length; i++) {
+            RadioButton rb = (RadioButton) mInflater.inflate(R.layout.nav_radiogroup_item, null);
+            rb.setId(i);
+            rb.setText(mTabTitles[i]);
+            rb.setLayoutParams(new LayoutParams(indicatorWidth, LayoutParams.MATCH_PARENT));
+            rb.setTextColor(colorState);
+            rg_nav_content.addView(rb);
+        }
+    }*/
+
+    private void startHttpRequest() {
+    	//初始加载，加载所有粉丝，没有所有内容
+    	getFansByTypeAndSearchInit(null, null, PAGE_SIZE);
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            final MemberDetailActivity msgActivity = (MemberDetailActivity) getActivity();
+            if (msgActivity == null) {
+                LogUtils.d(TAG, "msgActivity == null!!!!");
+                return;
+            }
+
+            msgActivity.finish();
+        }
+    };
+
+/*    private void initListener() {
+        // TODO Auto-generated method stub
+        ((RadioButton) rg_nav_content.getChildAt(mPageIndex)).setChecked(true);
+        mViewPager.setOnPageChangeListener(new OnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                if (rg_nav_content != null && rg_nav_content.getChildCount() > position) {
+                    ((RadioButton) rg_nav_content.getChildAt(position)).performClick();
+                }
+            }
+
+            @Override
+            public void onPageScrolled(int arg0, float arg1, int arg2) {
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int arg0) {
+
+            }
+        });
+        rg_nav_content.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if (rg_nav_content.getChildAt(checkedId) != null) {
+                    TranslateAnimation animation = new TranslateAnimation(currentIndicatorLeft,
+                            ((RadioButton) rg_nav_content.getChildAt(checkedId)).getLeft(), 0f, 0f);
+                    animation.setInterpolator(new LinearInterpolator());
+                    animation.setDuration(100);
+                    animation.setFillAfter(true);
+
+                    mViewPager.setCurrentItem(checkedId); // ViewPager 跟随一起 切换
+
+                    // 记录当前 下标的距最左侧的 距离
+                    currentIndicatorLeft = ((RadioButton) rg_nav_content.getChildAt(checkedId)).getLeft();
+
+                    mHorNavBarParent.smoothScrollTo(
+                            (checkedId > 1 ? ((RadioButton) rg_nav_content.getChildAt(checkedId)).getLeft() : 0)
+                                    - ((RadioButton) rg_nav_content.getChildAt(1)).getLeft(), 0);
+
+                    mPageIndex = checkedId;
+                }
+            }
+        });
+    }*/
+    
+    
+    private void getFansByTypeAndSearchInit(String fansType,String searchWord,int pageSize){
+    	currentPage = 1;
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getMyFansListParam(TAG, token, fansType, searchWord, currentPage, pageSize), 
+    			JsonParserFactory.parseBaseModel(MyFansListDataModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final MyFansListDataModel dataModel = (MyFansListDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						Pagination<MyFansListDto> pager = dataModel.getPager();
+						ArrayList<MyFansListDto> focusFansList = pager.getElements();
+						if(ListUtils.isEmpty(focusFansList)){
+							mViewController.showViewStatus(ListViewState.EMPTY_BLANK, "暂无关注粉丝，请点击刷新");
+						}else if(pager.isHasNext()){
+							fansList.clear();
+							fansList = focusFansList;
+							fansListAdapter.changeData(fansList);
+							mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						}else{
+							fansList.clear();
+							fansList = focusFansList;
+							fansListAdapter.changeData(fansList);
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getActivity(), dataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+    
+    private void getFansByTypeAndSearchMore(String fansType,String searchWord,int page,int pageSize){
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getMyFansListParam(TAG, token, fansType, searchWord, page, pageSize), 
+    			JsonParserFactory.parseBaseModel(MyFansListDataModel.class), new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					final MyFansListDataModel dataModel = (MyFansListDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						Pagination<MyFansListDto> pager = dataModel.getPager();
+						ArrayList<MyFansListDto> focusFansList = pager.getElements();
+						if(ListUtils.isEmpty(focusFansList)){
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}else if(pager.isHasNext()){
+							fansList.addAll(focusFansList);
+							fansListAdapter.changeData(fansList);
+							mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						}else{
+							fansList.addAll(focusFansList);
+							fansListAdapter.changeData(fansList);
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getActivity(), dataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.LIST_RETRY);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+    
+    private void getFansByTypeAndSearchRefresh(String fansType,String searchWord,int pageSize){
+    	currentPage = 1;
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getMyFansListParam(TAG, token, fansType, searchWord, currentPage, pageSize), JsonParserFactory.parseBaseModel(MyFansListDataModel.class), new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final MyFansListDataModel dataModel = (MyFansListDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						Pagination<MyFansListDto> pager = dataModel.getPager();
+						ArrayList<MyFansListDto> focusFansList = pager.getElements();
+						if(ListUtils.isEmpty(focusFansList)){
+							mViewController.showViewStatus(ListViewState.EMPTY_BLANK, "暂无关注粉丝，请点击刷新");
+						}else{
+							fansList.clear();
+							fansList = focusFansList;
+							fansListAdapter.changeData(fansList);
+							mViewController.showViewStatus(ListViewState.LIST_REFRESH_COMPLETE);
+						}
+					}else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getActivity(), dataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+    
+    BroadcastReceiver updateRemarkNameReceiver = new BroadcastReceiver(){
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			
+		}};
+    
+	private void registerUpdateStatusReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.ACTION_REFRESH_REMARK_NAME);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(updateRemarkNameReceiver, myIntentFilter);
+	}
+	
+	private void unRegisterUpdateStatusReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(updateRemarkNameReceiver);
+	}
+
+    @Override
+    public String getReqestTag() {
+        return TAG;
+    }
+
+    @Override
+    public void onClick(View v) {}
+    
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+    	HttpTaskManager.stop(TAG);
+    	unRegisterUpdateStatusReceiver();
+    }
+}

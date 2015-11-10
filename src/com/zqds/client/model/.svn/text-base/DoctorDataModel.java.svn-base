@@ -1,0 +1,37 @@
+/*
+ * DoctorDataModel.java
+ * classes : com.qdoc.client.model.DoctorDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-22 下午11:00:17
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.DoctorDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-22 下午11:00:17
+ */
+public class DoctorDataModel extends AbstractBaseModel {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 6552802532237682261L;
+	private DoctorModel doctorDto;
+
+    /**
+     * @return the doctorDto
+     */
+    public DoctorModel getDoctorDto() {
+        return doctorDto;
+    }
+
+    /**
+     * @param doctorDto the doctorDto to set
+     */
+    public void setDoctorDto(DoctorModel doctorDto) {
+        this.doctorDto = doctorDto;
+    }
+
+}

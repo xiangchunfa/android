@@ -1,0 +1,967 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.LogoutDataModel;
+import com.qdoc.client.model.PersonalizedDtoShowDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.InputTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class ConsultSettingFragment extends BaseFragment implements
+		OnClickListener ,OnCheckedChangeListener{
+	/**
+	 * TAG
+	 */
+	public static final String TAG = ConsultSettingFragment.class
+			.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private TitleBar mTitleBar;
+	private ImageView consult_toggle;
+	private EditText et_consult_cost_other;
+	private EditText et_consult_number_other;
+	private TextView day0;
+	private TextView day1;
+	private TextView day2;
+	private TextView day3;
+	private TextView day4;
+	private TextView day5;
+	private TextView day6;
+	private ImageView iv_obligation_diagnose_toggle;//义诊开关
+	private RadioButton rbtn_consult_cost1;
+	private RadioButton rbtn_consult_cost2;
+	private RadioButton rbtn_consult_cost3;
+	private RadioButton rbtn_consult_number1;
+	private RadioButton rbtn_consult_number2;
+	private RadioButton rbtn_consult_number3;
+	private Button btn_save;
+	private RadioGroup rg_consult_cost;
+	private RadioGroup rg_consult_number;
+	/**
+	 * params
+	 */
+	private String strDay0 = "1";
+	private String strDay1 = "1";
+	private String strDay2 = "1";
+	private String strDay3 = "1";
+	private String strDay4 = "1";
+	private String strDay5 = "1";
+	private String strDay6 = "1";
+	private int launcherFrom;
+	public List<TextView> consultNumberBtns = new ArrayList<TextView>();
+	public List<TextView> consultCostBtns = new ArrayList<TextView>();
+	private PersonalizedDtoShowDataModel dataModel;
+	private String consultCost;// 咨询费用
+	private String consultNumber;// 咨询人数
+     
+	public static ConsultSettingFragment newInstance(Bundle bundle) {
+		final ConsultSettingFragment fragment = new ConsultSettingFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+		super.onCreate(savedInstanceState);
+	}
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		return inflater.inflate(R.layout.fragment_consultsetting, container,
+				false);
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		initView(view);
+		initListener();
+		initParams();
+	}
+
+
+	private void initParams() {
+		startHttpRequest();
+	}
+
+	private void initView(View view) {
+		// TODO Auto-generated method stub
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfoWithRightText(R.string.aboutus_consult_title,
+				R.drawable.icon_back,0,
+				actionBarLeftBtnListener, null,
+				getResources().getColor(R.color.titlebar_bg));
+
+		consult_toggle = (ImageView) view.findViewById(R.id.consult_toggle);
+		rbtn_consult_cost1 = (RadioButton) view
+				.findViewById(R.id.rbtn_consult_cost1);
+		rbtn_consult_cost2 = (RadioButton) view
+				.findViewById(R.id.rbtn_consult_cost2);
+		rbtn_consult_cost3 = (RadioButton) view
+				.findViewById(R.id.rbtn_consult_cost3);
+
+		rbtn_consult_number1 = (RadioButton) view
+				.findViewById(R.id.rbtn_consult_number1);
+		rbtn_consult_number2 = (RadioButton) view
+				.findViewById(R.id.rbtn_consult_number2);
+		rbtn_consult_number3 = (RadioButton) view
+				.findViewById(R.id.rbtn_consult_number3);
+
+		et_consult_cost_other = (EditText) view
+				.findViewById(R.id.et_consult_cost_other);
+		et_consult_number_other = (EditText) view
+				.findViewById(R.id.et_consult_number_other);
+
+		rg_consult_cost = (RadioGroup) view.findViewById(R.id.rg_consult_cost);
+		rg_consult_number = (RadioGroup) view
+				.findViewById(R.id.rg_consult_number);
+		iv_obligation_diagnose_toggle = (ImageView) view.findViewById(R.id.iv_obligation_diagnose_toggle);  
+		btn_save = (Button) view.findViewById(R.id.btn_save);
+		day0 = (TextView) view.findViewById(R.id.day0);
+		day1 = (TextView) view.findViewById(R.id.day1);
+		day2 = (TextView) view.findViewById(R.id.day2);
+		day3 = (TextView) view.findViewById(R.id.day3);
+		day4 = (TextView) view.findViewById(R.id.day4);
+		day5 = (TextView) view.findViewById(R.id.day5);
+		day6 = (TextView) view.findViewById(R.id.day6);
+
+		int toggle = PersonalConfig
+				.getInt(PersonalConfigKey.EXTRA_CONSULT_TOGGLE);
+		consult_toggle.setImageResource(toggle == 0 ? R.drawable.toggle_off
+				: R.drawable.toggle_on);
+		consultCostBtns.add(rbtn_consult_cost1);
+		consultCostBtns.add(rbtn_consult_cost2);
+		consultCostBtns.add(rbtn_consult_cost3);
+		consultCostBtns.add(et_consult_cost_other);
+
+		consultNumberBtns.add(rbtn_consult_number1);
+		consultNumberBtns.add(rbtn_consult_number2);
+		consultNumberBtns.add(rbtn_consult_number3);
+		consultNumberBtns.add(et_consult_number_other);
+	}
+
+	protected void initListener() {
+		consult_toggle.setOnClickListener(this);
+		iv_obligation_diagnose_toggle.setOnClickListener(this);
+		day0.setOnClickListener(this);
+		day1.setOnClickListener(this);
+		day2.setOnClickListener(this);
+		day3.setOnClickListener(this);
+		day4.setOnClickListener(this);
+		day5.setOnClickListener(this);
+		day6.setOnClickListener(this);
+
+		rbtn_consult_cost1.setOnCheckedChangeListener(consultCostListener);
+		rbtn_consult_cost2.setOnCheckedChangeListener(consultCostListener);
+		rbtn_consult_cost3.setOnCheckedChangeListener(consultCostListener);
+		
+		rbtn_consult_number1.setOnCheckedChangeListener(consultNumberListener);
+		rbtn_consult_number2.setOnCheckedChangeListener(consultNumberListener);
+		rbtn_consult_number3.setOnCheckedChangeListener(consultNumberListener);
+		
+		btn_save.setOnClickListener(this);
+		et_consult_cost_other.addTextChangedListener(new TextWatcher() {
+
+			@Override
+			public void onTextChanged(CharSequence input, int arg1, int arg2,
+					int arg3) {
+				// consultCost = input.toString();
+				if (StringUtils.isEmpty(input)||dataModel == null) {
+					return;
+				}
+				long consultCost = Long.valueOf(input.toString());
+				int minMoney = Integer.valueOf(dataModel.getPersonalizedDto()
+						.getMinMoney());
+				int maxMoney = Integer.valueOf(dataModel.getPersonalizedDto()
+						.getMaxMoney());
+				if (consultCost == 0){
+					iv_obligation_diagnose_toggle.setImageResource(R.drawable.toggle_on);
+				}else{
+					iv_obligation_diagnose_toggle.setImageResource(R.drawable.toggle_off);
+				}
+				if (consultCost < minMoney) {
+					ToastUtils.ToastShort(getActivity(), getActivity()
+							.getString(R.string.consult_cost_floor_limit)
+							+ minMoney);
+					return;
+				}
+				if (consultCost > maxMoney) {
+					ToastUtils.ToastShort(getActivity(), getActivity()
+							.getString(R.string.consult_cost_upper_limit)
+							+ maxMoney);
+					return;
+				}
+			}
+
+			@Override
+			public void beforeTextChanged(CharSequence arg0, int arg1,
+					int arg2, int arg3) {
+			}
+
+			@Override
+			public void afterTextChanged(Editable arg0) {
+			}
+		});
+		
+
+		et_consult_cost_other.setOnFocusChangeListener(new OnFocusChangeListener() {
+
+					@Override
+					public void onFocusChange(View arg0, boolean isFocus) {
+						if (isFocus) {
+							et_consult_cost_other.setSelected(true);
+							consultCost=null;
+							switch (rg_consult_cost.getCheckedRadioButtonId()) {
+							case R.id.rbtn_consult_cost1:
+								rbtn_consult_cost1.setBackgroundResource(R.drawable.consult_setting_uncheck);
+								rbtn_consult_cost1.setChecked(false);
+								break;
+
+							case R.id.rbtn_consult_cost2:
+								rbtn_consult_cost2
+										.setBackgroundResource(R.drawable.consult_setting_uncheck);
+								rbtn_consult_cost2.setChecked(false);
+								break;
+
+							case R.id.rbtn_consult_cost3:
+								rbtn_consult_cost3
+										.setBackgroundResource(R.drawable.consult_setting_uncheck);
+								rbtn_consult_cost3.setChecked(false);
+								break;
+							}
+						}
+					}
+				});
+		et_consult_number_other.addTextChangedListener(new TextWatcher() {
+
+			@Override
+			public void onTextChanged(CharSequence input, int arg1, int arg2,
+					int arg3) {
+				// consultNumber = input.toString();
+				if (StringUtils.isEmpty(input)||dataModel == null) {
+					return;
+				}
+				long dayConsults = Long.valueOf(input.toString());
+				if (dayConsults > dataModel.getPersonalizedDto()
+						.getMaxDayConsults()) {
+					ToastUtils.ToastShort(getActivity(), getActivity()
+							.getString(R.string.consult_number_verify)
+							+ dataModel.getPersonalizedDto()
+									.getMaxDayConsults());
+				}
+			}
+
+			@Override
+			public void beforeTextChanged(CharSequence arg0, int arg1,
+					int arg2, int arg3) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void afterTextChanged(Editable arg0) {
+				// TODO Auto-generated method stub
+
+			}
+		});
+		et_consult_number_other.setOnFocusChangeListener(new OnFocusChangeListener() {
+
+					@Override
+					public void onFocusChange(View arg0, boolean isFocus) {
+						// TODO Auto-generated method stub
+						if (isFocus) {
+							et_consult_number_other.setSelected(true);
+                            consultNumber=null;
+							switch (rg_consult_number.getCheckedRadioButtonId()) {
+							case R.id.rbtn_consult_number1:
+								rbtn_consult_number1
+										.setBackgroundResource(R.drawable.consult_setting_uncheck);
+								rbtn_consult_number1.setChecked(false);
+								break;
+
+							case R.id.rbtn_consult_number2:
+								rbtn_consult_number2
+										.setBackgroundResource(R.drawable.consult_setting_uncheck);
+								rbtn_consult_number2.setChecked(false);
+								break;
+
+							case R.id.rbtn_consult_number3:
+								rbtn_consult_number3
+										.setBackgroundResource(R.drawable.consult_setting_uncheck);
+								rbtn_consult_number3.setChecked(false);
+								break;
+							}
+						}
+					}
+				});
+	}
+
+	public void startHttpRequest() {
+		getShowConsultSettingRequest();
+	}
+    
+	/**
+	 * 保存咨询设置对话框
+	 */
+	public void saveConsultSettingDlg(){
+		String content = getString(R.string.dialog_consult_setting_text);
+		String title = getString(R.string.dialog_hint_title);
+	    String btnLeftText = getString(R.string.dialog_no_save);
+	    String btnRightText = getString(R.string.dialog_save);
+        new HintDlg(getActivity(), content, title, btnLeftText, btnRightText, new OnDialogclickListener() {
+			
+			@Override
+			public void onButtonClick(int type,Dialog dialog) {
+				switch(type){
+				case AppConstants.RIGHT_BUTTON:
+					getSaveConsultSettingRequest();
+					dialog.dismiss();
+				  break;
+				case AppConstants.LEFT_BUTTON:
+					dialog.dismiss();
+					getActivity().finish(); 
+				  break;
+				}
+				
+			}
+		},R.layout.print_card_dialog).show();
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+            if(isModifyText()){
+            	saveConsultSettingDlg();
+                return;
+            }
+			getActivity().finish();
+			InputTools.KeyBoard(et_consult_number_other, InputTools.CLOSE);
+		}
+	};
+
+	/**
+	 * 获取咨询设置
+	 */
+	public String getConsultSetting() {
+		StringBuffer strBuffer = new StringBuffer();
+		strBuffer.setLength(0);
+		strBuffer.append(strDay0);
+		strBuffer.append(strDay1);
+		strBuffer.append(strDay2);
+		strBuffer.append(strDay3);
+		strBuffer.append(strDay4);
+		strBuffer.append(strDay5);
+		strBuffer.append(strDay6);
+		return strBuffer.toString();
+	}
+
+	/**
+	 * 数字校验
+	 */
+	public boolean checkConsultCost(String strMax, String strMin,
+			String strInput) {
+		int max = Integer.valueOf(strMax);
+		int min = Integer.valueOf(strMin);
+		int input = Integer.valueOf(strInput);
+		if (input <= max && input <= min)
+			return true;
+		return false;
+	}
+
+	/**
+	 * 是否修改咨询建议数据
+	 * @return 
+	 */
+	public boolean isModifyText(){
+		if(dataModel == null){
+			return false;
+		}
+		//初始的咨询建议数据
+		String money = dataModel.getPersonalizedDto().getMoney();//咨询费用
+		boolean consultStatus = dataModel.getPersonalizedDto().isConsultStatus();//是否开启咨询
+		int dayConsults = dataModel.getPersonalizedDto().getDayConsults();//每天接受咨询的次数
+		String weeklyconsultTime = dataModel.getPersonalizedDto().getWeeklyconsultTime();//每周咨询时间
+    	//修改后的咨询建议数据
+		boolean status = PersonalConfig
+				.getInt(PersonalConfigKey.EXTRA_CONSULT_TOGGLE)==1?true:false;
+		String time = getConsultSetting();
+		//对比数据
+		if(!money.equals(consultCost)||consultStatus != status||dayConsults != Integer.valueOf(consultNumber)||!weeklyconsultTime.equals(time)){
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * 显示咨询日期
+	 */
+	public void showWeekSet(String consultSetList) {
+		for (int i = 0; i < consultSetList.length(); i++) {
+			char ch = consultSetList.charAt(i);
+			int consultSet = Integer.valueOf(String.valueOf(ch));
+			switch (i) {
+			case 0:
+				strDay0=String.valueOf(consultSet);
+				if (consultSet == 1)
+					day0.setBackgroundResource(R.drawable.weekset_check);
+				
+				else {
+					day0.setBackgroundResource(R.drawable.weekset_uncheck);
+				}
+				break;
+			case 1:
+				strDay1=String.valueOf(consultSet);
+				if (consultSet == 1)
+					day1.setBackgroundResource(R.drawable.weekset_check);
+				else {
+					day1.setBackgroundResource(R.drawable.weekset_uncheck);
+				}
+				break;
+			case 2:
+				strDay2=String.valueOf(consultSet);
+				if (consultSet == 1)
+					day2.setBackgroundResource(R.drawable.weekset_check);
+				else {
+					day2.setBackgroundResource(R.drawable.weekset_uncheck);
+				}
+				break;
+			case 3:
+				strDay3=String.valueOf(consultSet);
+				if (consultSet == 1)
+					day3.setBackgroundResource(R.drawable.weekset_check);
+				else {
+					day3.setBackgroundResource(R.drawable.weekset_uncheck);
+				}
+				break;
+			case 4:
+				strDay4=String.valueOf(consultSet);
+				if (consultSet == 1)
+					day4.setBackgroundResource(R.drawable.weekset_check);
+				else {
+					day4.setBackgroundResource(R.drawable.weekset_uncheck);
+				}
+				break;
+			case 5:
+				strDay5=String.valueOf(consultSet);
+				if (consultSet == 1)
+					day5.setBackgroundResource(R.drawable.weekset_check);
+				else {
+					day5.setBackgroundResource(R.drawable.weekset_uncheck);
+				}
+				break;
+			case 6:
+				strDay6=String.valueOf(consultSet);
+				if (consultSet == 1)
+					day6.setBackgroundResource(R.drawable.weekset_check);
+				else {
+					day6.setBackgroundResource(R.drawable.weekset_uncheck);
+				}
+				break;
+			}
+		}
+	}
+
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+
+	@Override
+	public void onClick(View view) {
+		// save to sharepreference
+		switch (view.getId()) {
+		case R.id.btn_save:
+			getSaveConsultSettingRequest();
+			break;
+		case R.id.consult_toggle: {
+			int toggle = PersonalConfig
+					.getInt(PersonalConfigKey.EXTRA_CONSULT_TOGGLE);
+			if (toggle == 0) {
+				toggle = 1;
+			} else {
+				toggle = 0;
+			}
+			consult_toggle.setImageResource(toggle == 0 ? R.drawable.toggle_off: R.drawable.toggle_on);
+			PersonalConfig.putInt(PersonalConfigKey.EXTRA_CONSULT_TOGGLE,toggle);
+			PersonalConfig.asyncCommit();
+			break;
+		}
+		case R.id.iv_obligation_diagnose_toggle:
+			int toggle = PersonalConfig.getInt(PersonalConfigKey.EXTAR_OBLIGATION_DIAGNOSE_TOGGLE);
+			if (toggle == 0) {
+				et_consult_cost_other.setText("0");
+//				rbtn_consult_cost1.setChecked(false);
+//				et_consult_cost_other.setFocusable(true);
+//				et_consult_cost_other.setFocusableInTouchMode(true);
+				et_consult_cost_other.requestFocus();
+				toggle = 1;
+			} else {
+				rbtn_consult_cost1.setChecked(true);
+				toggle = 0;
+			}
+			iv_obligation_diagnose_toggle.setImageResource(toggle == 0 ? R.drawable.toggle_off
+					: R.drawable.toggle_on);
+
+			PersonalConfig.putInt(PersonalConfigKey.EXTAR_OBLIGATION_DIAGNOSE_TOGGLE,
+					toggle);
+			PersonalConfig.asyncCommit();
+			break;
+		case R.id.day0:
+			LogUtils.d(TAG, "day0.getBackground() === " + day0.getBackground());
+			if (strDay0.equals("1")) {
+				day0.setBackgroundResource(R.drawable.weekset_uncheck);
+				strDay0 = "0";
+			} else {
+				day0.setBackgroundResource(R.drawable.weekset_check);
+				strDay0 = "1";
+			}
+
+			break;
+		case R.id.day1:
+			if (strDay1.equals("1")) {
+				day1.setBackgroundResource(R.drawable.weekset_uncheck);
+				strDay1 = "0";
+			} else {
+				day1.setBackgroundResource(R.drawable.weekset_check);
+				strDay1 = "1";
+			}
+			break;
+		case R.id.day2:
+			LogUtils.d(TAG, "day2.getBackground() === " + day2.getBackground());
+			if (strDay2.equals("1")) {
+				day2.setBackgroundResource(R.drawable.weekset_uncheck);
+				strDay2 = "0";
+			} else {
+				day2.setBackgroundResource(R.drawable.weekset_check);
+				strDay2 = "1";
+			}
+			break;
+		case R.id.day3:
+			if (strDay3.equals("1")) {
+				day3.setBackgroundResource(R.drawable.weekset_uncheck);
+				strDay3 = "0";
+			} else {
+				day3.setBackgroundResource(R.drawable.weekset_check);
+				strDay3 = "1";
+			}
+			break;
+		case R.id.day4:
+			if (strDay4.equals("1")) {
+				day4.setBackgroundResource(R.drawable.weekset_uncheck);
+				strDay4 = "0";
+			} else {
+				day4.setBackgroundResource(R.drawable.weekset_check);
+				strDay4 = "1";
+			}
+			break;
+		case R.id.day5:
+			if (strDay5.equals("1")) {
+				day5.setBackgroundResource(R.drawable.weekset_uncheck);
+				strDay5 = "0";
+			} else {
+				day5.setBackgroundResource(R.drawable.weekset_check);
+				strDay5 = "1";
+			}
+			break;
+		case R.id.day6:
+			if (strDay6.equals("1")) {
+				day6.setBackgroundResource(R.drawable.weekset_uncheck);
+				strDay6 = "0";
+			} else {
+				day6.setBackgroundResource(R.drawable.weekset_check);
+				strDay6 = "1";
+			}
+			break;
+		}
+	}
+
+	/**
+	 * 设置选项
+	 */
+	public void setOption(String[] options, String set, List<TextView> buttons) {
+		if (options == null || buttons == null)
+			return;
+		boolean isMatching = false;
+		for (int i = 0; i < options.length; i++) {
+			if (options[i].equals(set)) {
+				buttons.get(i).setText(set);
+				((RadioButton) buttons.get(i)).setChecked(true);
+				isMatching = true;
+			} else {
+				buttons.get(i).setText(options[i]);
+			}
+		}
+		if (isMatching) {
+			buttons.get(buttons.size() - 1).setText("");
+		} else {
+			buttons.get(buttons.size() - 1).setText(set);
+			buttons.get(buttons.size() - 1).setSelected(true);
+		}
+	}
+
+	private void getShowConsultSettingRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		Global.progressDialog = ProgressDialog.show(getActivity(), null,getActivity().getString(R.string.load_data), true, true);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getShowConsultSettingRequestParam(TAG, token),
+				JsonParserFactory.parseBaseModel(PersonalizedDtoShowDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						Global.progressDialog.dismiss();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							dataModel = (PersonalizedDtoShowDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if (dataModel.getPersonalizedDto() != null) {
+									showConsultSeeting();
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+					}
+				});
+	}
+	
+    /**
+     * 显示咨询设置
+     */
+    public void showConsultSeeting(){
+    	if(dataModel==null){
+    		return;
+    	}
+    	int status = dataModel.getPersonalizedDto().isConsultStatus() ? 1 : 0;
+		consult_toggle.setImageResource(status == 0 ? R.drawable.toggle_off: R.drawable.toggle_on);
+		PersonalConfig.putInt(PersonalConfigKey.EXTRA_CONSULT_TOGGLE,status);
+		PersonalConfig.asyncCommit();
+		consultNumber = String.valueOf(dataModel.getPersonalizedDto().getDayConsults());
+		setOption(dataModel.getPersonalizedDto().getDayReference(),consultNumber,consultNumberBtns);
+		consultCost = dataModel.getPersonalizedDto().getMoney();
+		if(Integer.valueOf(consultCost) == 0){
+           iv_obligation_diagnose_toggle.setImageResource(R.drawable.toggle_on);          
+		}else{
+		   iv_obligation_diagnose_toggle.setImageResource(R.drawable.toggle_off);	
+		}
+		setOption(dataModel.getPersonalizedDto().getOptional(), consultCost,consultCostBtns);
+		showWeekSet(dataModel.getPersonalizedDto().getWeeklyconsultTime());
+    }
+    
+	/**
+	 *保存咨询设置 
+	 */
+	private void getSaveConsultSettingRequest() {
+		if (!StringUtils.isEmpty(et_consult_cost_other.getText())) {
+			consultCost = et_consult_cost_other.getText().toString();
+		}
+		if (!StringUtils.isEmpty(et_consult_number_other.getText())) {
+			consultNumber = et_consult_number_other.getText().toString();
+		}
+		if (StringUtils.isEmpty(consultCost)) {
+			ToastUtils.ToastShort(getActivity(), "请输入费用");
+			return;
+		}
+		if (StringUtils.isEmpty(consultNumber)) {
+			ToastUtils.ToastShort(getActivity(), "请输入咨询数");
+			return;
+		}
+        if(dataModel == null){
+        	ToastUtils.ToastShort(getActivity(), R.string.network_error);
+        	return;
+        }
+		long dayConsults = Long.valueOf(consultNumber);
+		if (dayConsults > dataModel.getPersonalizedDto().getMaxDayConsults()) {
+			ToastUtils.ToastShort(getActivity(),
+					getActivity().getString(R.string.consult_number_verify)
+					+ dataModel.getPersonalizedDto()
+									.getMaxDayConsults());
+			return;
+		}
+		int minMoney = Integer.valueOf(dataModel.getPersonalizedDto()
+				.getMinMoney());
+		int maxMoney = Integer.valueOf(dataModel.getPersonalizedDto()
+				.getMaxMoney());
+		long inputMoney = Long.valueOf(consultCost);
+		if (inputMoney < minMoney) {
+			ToastUtils.ToastShort(getActivity(),
+					getActivity().getString(R.string.consult_cost_floor_limit)
+							+ minMoney);
+			return;
+		}
+		if (inputMoney > maxMoney) {
+			ToastUtils.ToastShort(getActivity(),
+					getActivity().getString(R.string.consult_cost_upper_limit)
+							+ maxMoney);
+			return;
+		}
+		Global.progressDialog = ProgressDialog.show(getActivity(), null,
+				getActivity().getString(R.string.consult_setting), true,
+						true);
+		int status = PersonalConfig
+				.getInt(PersonalConfigKey.EXTRA_CONSULT_TOGGLE);
+		String time = getConsultSetting();
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getSaveConsultSettingRequestParam(TAG, token, consultCost,
+						consultNumber, status, time), JsonParserFactory
+				.parseBaseModel(LogoutDataModel.class), new IResultReceiver() {
+			@SuppressWarnings("unused")
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				Global.progressDialog.dismiss();
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					LogoutDataModel dataModel = (LogoutDataModel) resultData;
+					if (dataModel != null && dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						AboutmeFragment.getDoctorInfo = true;
+						ToastUtils.ToastShort(getActivity(), "保存成功");
+						getActivity().finish();
+						InputTools.KeyBoard(et_consult_number_other, InputTools.CLOSE);
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					} else {
+						ToastUtils.ToastShort(getContext()
+								.getApplicationContext(), dataModel
+								.getErrorMsg());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext()
+								.getApplicationContext(),
+								R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext()
+								.getApplicationContext(), (String) resultData);
+					}
+				}
+			}
+		});
+	}
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return TAG;
+	}
+
+
+	@Override
+	public void onResume() {
+		super.onResume();
+	}
+
+	/**
+	 * @param launcherFrom the launcherFrom to set
+	 */
+	public void setLauncherFrom(int launcherFrom) {
+		this.launcherFrom = launcherFrom;
+	}
+
+	@Override
+	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+		if(!isChecked)
+			return;
+		et_consult_cost_other.setSelected(false);
+		et_consult_cost_other.setText("");
+		switch (buttonView.getId()) {
+		case R.id.rbtn_consult_cost1:
+			consultCost = rbtn_consult_cost1.getText()
+					.toString();
+			rbtn_consult_cost1
+					.setBackgroundResource(R.drawable.consult_setting_check);
+			rbtn_consult_cost2
+					.setBackgroundResource(R.drawable.consult_setting_uncheck);
+			rbtn_consult_cost3
+					.setBackgroundResource(R.drawable.consult_setting_uncheck);
+			rg_consult_cost.requestFocus();
+			rg_consult_cost.requestFocusFromTouch();
+			break;
+
+		case R.id.rbtn_consult_cost2:
+			consultCost = rbtn_consult_cost2.getText()
+					.toString();
+			rbtn_consult_cost1
+					.setBackgroundResource(R.drawable.consult_setting_uncheck);
+			rbtn_consult_cost2
+					.setBackgroundResource(R.drawable.consult_setting_check);
+			rbtn_consult_cost3
+					.setBackgroundResource(R.drawable.consult_setting_uncheck);
+			rg_consult_cost.requestFocus();
+			rg_consult_cost.requestFocusFromTouch();
+			break;
+
+		case R.id.rbtn_consult_cost3:
+			consultCost = rbtn_consult_cost3.getText()
+					.toString();
+			rbtn_consult_cost1
+					.setBackgroundResource(R.drawable.consult_setting_uncheck);
+			rbtn_consult_cost2
+					.setBackgroundResource(R.drawable.consult_setting_uncheck);
+			rbtn_consult_cost3
+					.setBackgroundResource(R.drawable.consult_setting_check);
+			rg_consult_cost.requestFocus();
+			rg_consult_cost.requestFocusFromTouch();
+			break;
+		}
+	}
+	
+	private OnCheckedChangeListener consultCostListener=new OnCheckedChangeListener() {
+		
+		@Override
+		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+			if(!isChecked)
+				return;
+			et_consult_cost_other.setSelected(false);
+			et_consult_cost_other.setText("");
+			rg_consult_cost.requestFocus();
+			rg_consult_cost.requestFocusFromTouch();
+			iv_obligation_diagnose_toggle.setImageResource(R.drawable.toggle_off);
+			switch (buttonView.getId()) {
+			case R.id.rbtn_consult_cost1:
+				consultCost = rbtn_consult_cost1.getText()
+						.toString();
+				rbtn_consult_cost1
+						.setBackgroundResource(R.drawable.consult_setting_check);
+				rbtn_consult_cost2
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				rbtn_consult_cost3
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				break;
+
+			case R.id.rbtn_consult_cost2:
+				consultCost = rbtn_consult_cost2.getText()
+						.toString();
+				rbtn_consult_cost1
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				rbtn_consult_cost2
+						.setBackgroundResource(R.drawable.consult_setting_check);
+				rbtn_consult_cost3
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				break;
+
+			case R.id.rbtn_consult_cost3:
+				consultCost = rbtn_consult_cost3.getText()
+						.toString();
+				rbtn_consult_cost1
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				rbtn_consult_cost2
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				rbtn_consult_cost3
+						.setBackgroundResource(R.drawable.consult_setting_check);
+				break;
+			}
+		}
+	};
+	
+	private OnCheckedChangeListener consultNumberListener=new OnCheckedChangeListener() {
+		
+		@Override
+		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+			if(!isChecked)
+				return;
+			et_consult_number_other.setSelected(false);
+			et_consult_number_other.setText("");
+			rg_consult_number.requestFocus();
+			rg_consult_number.requestFocusFromTouch();
+			switch (buttonView.getId()) {
+			case R.id.rbtn_consult_number1:
+				consultNumber = rbtn_consult_number1.getText()
+						.toString();
+				rbtn_consult_number1
+						.setBackgroundResource(R.drawable.consult_setting_check);
+				rbtn_consult_number2
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				rbtn_consult_number3
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				break;
+
+			case R.id.rbtn_consult_number2:
+				consultNumber = rbtn_consult_number2.getText()
+						.toString();
+				rbtn_consult_number1
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				rbtn_consult_number2
+						.setBackgroundResource(R.drawable.consult_setting_check);
+				rbtn_consult_number3
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				break;
+
+			case R.id.rbtn_consult_number3:
+				consultNumber = rbtn_consult_number3.getText()
+						.toString();
+				rbtn_consult_number1
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				rbtn_consult_number2
+						.setBackgroundResource(R.drawable.consult_setting_uncheck);
+				rbtn_consult_number3
+						.setBackgroundResource(R.drawable.consult_setting_check);
+				break;
+			}
+		}
+	};
+}

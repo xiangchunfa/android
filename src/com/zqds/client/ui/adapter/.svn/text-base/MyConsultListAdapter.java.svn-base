@@ -1,0 +1,221 @@
+/*
+ * MessageListAdapter.java
+ * classes : com.qdoc.client.ui.adapter.MessageListAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午5:57:58
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.MyConsultDtoModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.view.DashedView;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.Tools;
+
+/**
+ * com.qdoc.client.ui.adapter.MessageListAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午5:57:58
+ */
+public class MyConsultListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = MyConsultListAdapter.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private final LayoutInflater mInflater;
+    private ArrayList<MyConsultDtoModel> mElementsList;
+    private Context mContext;
+
+    /**
+     * param 
+     */
+    private ItemOnclickListener mListener;
+    public MyConsultListAdapter(Context context, ItemOnclickListener listener) {
+        mContext = context;
+        mListener = listener;
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mElementsList = new ArrayList<MyConsultDtoModel>();
+    }
+
+    public void addListData(ArrayList<MyConsultDtoModel> elementsList) {
+        mElementsList.clear();
+        mElementsList.addAll(elementsList);
+        notifyDataSetChanged();
+    }
+
+    public void addMoreListData(ArrayList<MyConsultDtoModel> elementsList) {
+        mElementsList.addAll(elementsList);
+        notifyDataSetChanged();
+    }
+
+    public void clearListData() {
+        mElementsList.clear();
+        mElementsList = null;
+    }
+    
+    /**
+     * 刷新数据
+     * @param position :item的位置
+     * @param shareStatus 分享状态
+     */
+    public void notifyListData(int position, int shareStatus) {
+    	if (position >= 0) {
+    		MyConsultDtoModel model = mElementsList.get(position);
+        	model.setShareStatus(shareStatus);
+        	notifyDataSetChanged();
+    	}
+    }
+    
+    @Override
+    public int getCount() {
+        return ListUtils.isEmpty(mElementsList) ? 0 : mElementsList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        if (!ListUtils.isEmpty(mElementsList)) {
+            return mElementsList.get(position);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return 0;
+    }
+
+    @Override
+    public View getView(final int position, View convertView, ViewGroup parent) {
+        ViewHolder holder = null;
+        if (convertView == null) {
+            holder = new ViewHolder();  
+            convertView = mInflater.inflate(R.layout.listitem_myconsult, null);
+            holder.icon_head = (ImageView) convertView.findViewById(R.id.icon_head);
+            holder.tv_name = (TextView) convertView.findViewById(R.id.tv_name);
+            holder.iv_fans = (ImageView) convertView.findViewById(R.id.iv_fans);
+            holder.tv_sex = (TextView) convertView.findViewById(R.id.tv_sex);
+            holder.tv_age = (TextView) convertView.findViewById(R.id.tv_age);
+            holder.tv_price = (TextView) convertView.findViewById(R.id.tv_consult_price);
+            holder.tv_consult_state = (TextView) convertView.findViewById(R.id.tv_consult_status);
+            holder.tv_description = (TextView) convertView.findViewById(R.id.tv_description);
+            holder.tv_share = (TextView) convertView.findViewById(R.id.tv_share);
+            holder.tv_cancel_share = (TextView) convertView.findViewById(R.id.tv_cancel_share);
+            holder.lly_more = (LinearLayout) convertView.findViewById(R.id.lly_more);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+        if (getCount() > position) {
+            final MyConsultDtoModel model = mElementsList.get(position);
+            if (model != null) {
+            	ImageLoaderHelper.getInstance(mContext).displayImage(model.getHeadImageUrl(), holder.icon_head, R.drawable.bank_owener_default_header);
+                holder.tv_name.setText(StringUtils.getHighLightSpinner(mContext, model.getUserName()));
+                holder.tv_sex.setText(model.getSex());
+                if(!StringUtils.isEmpty(model.getAge())){
+                	 holder.tv_age.setText(mContext.getResources().getString(R.string.consult_age,model.getAge()));//显示具体咨询单年龄
+                }else{
+                	 holder.tv_age.setText("");//没有年龄显示为空
+                }
+                if (model.getFans()) {
+                	 holder.iv_fans.setImageResource(R.drawable.icon_fans);
+                } else {
+                	 holder.iv_fans.setImageResource(0);
+                }
+                if(Integer.valueOf(model.getConsultMoney())==0){
+                    holder.tv_price.setText(mContext.getResources().getString(R.string.free_diagnosis));
+                    holder.tv_price.setCompoundDrawablePadding(Tools.convertDIP2PX(mContext, 2));
+                    holder.tv_price.setCompoundDrawablesWithIntrinsicBounds(R.drawable.red_star, 0, 0, 0);
+                }else{
+                    holder.tv_price.setText(mContext.getResources().getString(R.string.cny,model.getConsultMoney()));
+                    holder.tv_price.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+                }
+                holder.tv_consult_state.setText(model.getConsultStateStr());
+                holder.tv_description.setText(StringUtils.getHighLightSpinner(mContext, model.getDescription()));
+                if (model.getShareStatus() == AppConstants.MAY_SHARE) {
+					holder.lly_more.setVisibility(View.VISIBLE);
+					holder.tv_cancel_share.setVisibility(View.GONE);
+					holder.tv_share.setText(mContext.getString(R.string.str_share_mobile_clinic));
+                } else if (model.getShareStatus() == AppConstants.ALREADY_SHARE){
+                	holder.lly_more.setVisibility(View.VISIBLE);
+                	holder.tv_cancel_share.setVisibility(View.VISIBLE);
+                	holder.tv_share.setText(mContext.getString(R.string.str_examine));
+                } else {
+                	holder.lly_more.setVisibility(View.GONE);
+                }
+            	holder.icon_head.setOnClickListener(new OnClickListener() {
+					
+					@Override
+					public void onClick(View v) {
+						mListener.onButtonClick(AppConstants.BUTTON_USER_INFO, model, null, null);
+					}
+				});
+            	holder.tv_name.setOnClickListener(new OnClickListener() {
+					
+					@Override
+					public void onClick(View v) {
+                       mListener.onButtonClick(AppConstants.BUTTON_USER_INFO, model, null, null);
+					}
+				});
+            	holder.tv_cancel_share.setOnClickListener(new OnClickListener() {
+					
+					@Override
+					public void onClick(View v) {
+					   mListener.onButtonClick(AppConstants.CONSULT_CANCEL_SHARE, model, null, null, position);						
+					}
+				});
+            	holder.tv_share.setOnClickListener(new OnClickListener() {
+					
+					@Override
+					public void onClick(View v) {
+						if (model.getShareStatus() == AppConstants.MAY_SHARE){
+							mListener.onButtonClick(AppConstants.CONSULT_SHARE, model, null, null, position);
+						} else if (model.getShareStatus() == AppConstants.ALREADY_SHARE){
+							mListener.onButtonClick(AppConstants.CONSULT_EXAMINE, model, null, null, position);
+						}
+					}
+				});
+            }
+        }
+        return convertView;
+    }
+
+    public interface ItemOnclickListener {
+        public void onButtonClick(int type, Object obj, View view1, View view2);
+        public void onButtonClick(int type, Object obj, View view1, View view2,int position);
+    }
+
+    
+    private static class ViewHolder {
+        private ImageView icon_head;
+        private TextView tv_name;
+        private ImageView iv_fans;
+        private TextView tv_price;
+        private TextView tv_sex;
+        private TextView tv_age;
+        private TextView tv_consult_state;
+        private TextView tv_description; 
+        private TextView tv_cancel_share;
+        private TextView tv_share;
+        private LinearLayout lly_more;
+    }
+}

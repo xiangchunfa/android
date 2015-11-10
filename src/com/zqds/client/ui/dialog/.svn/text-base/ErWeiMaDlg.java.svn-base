@@ -1,0 +1,253 @@
+package com.qdoc.client.ui.dialog;
+
+import java.io.File;
+import java.io.IOException;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.text.TextUtils;
+import android.view.Display;
+import android.view.Gravity;
+import android.view.View;
+import android.view.View.MeasureSpec;
+import android.view.View.OnLongClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.ViewInitial;
+import com.qdoc.client.model.DoctorCardDataModel;
+import com.qdoc.client.model.DoctorCardModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.view.HorizontalLine;
+import com.qdoc.client.util.BitmapUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.PinyinUtil;
+import com.qdoc.client.util.ToastUtils;
+
+public  class ErWeiMaDlg extends Dialog implements ViewInitial,android.view.View.OnClickListener {
+	
+	private static final String TAG = ErWeiMaDlg.class.getSimpleName();
+
+	private Window window;
+	private Context context;
+	private ImageView mycard;// 医生二维码图片空间
+	private TextView wechat_scan_ask;// 显示“微信扫一扫，问诊”文案的TextView
+	private TextView doc_first_name;// 医生的姓
+	private TextView name_pinyin;// 医生的姓的拼音
+	private HorizontalLine dotted_line;// 虚线分割线
+	private TextView name;// 医生的全名
+	private TextView hospital;// 医生从属的医院
+	private TextView detail;// 医生的职称
+	private LinearLayout lly_main;
+	
+	/**
+	 * params
+	 */
+	private DoctorCardModel doctorDto;
+	private StringBuffer strBuffer = new StringBuffer();
+
+	public ErWeiMaDlg(Context context,DoctorCardDataModel dataModel) {
+		super(context);
+		this.context=context;
+		this.doctorDto = dataModel.getDoctorCard();
+		setCanceledOnTouchOutside(true);
+		setCancelable(true);
+	}
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+	    setContentView(R.layout.dialog_erweima);
+	    getWindow().setBackgroundDrawableResource(android.R.color.transparent);//设置dialog圆角效果
+	    initViews();
+	    initDatas();
+	    initListeners();
+	}
+
+	@Override
+	public void initViews() {
+		// TODO Auto-generated method stub
+		mycard = (ImageView) findViewById(R.id.mycard);
+		wechat_scan_ask = (TextView) findViewById(R.id.wechat_scan_and_ask);
+		doc_first_name = (TextView) findViewById(R.id.doc_first_name);
+		name_pinyin = (TextView) findViewById(R.id.name_pinyin);
+		dotted_line = (HorizontalLine) findViewById(R.id.dotted_line);
+		name = (TextView) findViewById(R.id.name);
+		hospital = (TextView) findViewById(R.id.hospital);
+		detail = (TextView) findViewById(R.id.detail);
+		lly_main = (LinearLayout) findViewById(R.id.main_layout);
+		
+	}
+
+	@Override
+	public void initDatas() {
+		name.setText(doctorDto.getDoctorName());
+		if (Global.getUserStatus() == AppConstants.ALL_PERMISSIONS) {
+			// 已审核通过的医生，获得所有的权限，可以生产二维码名片，显示所有控件
+			wechat_scan_ask.setVisibility(View.VISIBLE);
+			doc_first_name.setVisibility(View.VISIBLE);
+			name_pinyin.setVisibility(View.VISIBLE);
+			dotted_line.setVisibility(View.VISIBLE);
+			hospital.setVisibility(View.VISIBLE);
+			detail.setVisibility(View.VISIBLE);
+			ImageLoaderHelper.getInstance(context).displayImage(doctorDto.getRealQzCodeUrl(),mycard);
+			String first_name = doctorDto.getDoctorName().substring(0, 1);// 得到姓
+/*			String first_name_to_pinyin = PinyinUtil.getPinYinFirstWordToUpperCase(first_name);// 得到姓的拼音
+			doc_first_name.setText(TextUtils.isEmpty(first_name) ? "": first_name + "医生");
+			name_pinyin.setText(TextUtils.isEmpty(first_name_to_pinyin) ? "": "Dr." + first_name_to_pinyin);*/
+			String first_name_to_pinyin = null;
+			if(TextUtils.isEmpty(doctorDto.getEnName())){
+				if("单秋妹".equals(doctorDto.getDoctorName())){
+					first_name_to_pinyin = "Shan";
+				}else{
+					first_name_to_pinyin = PinyinUtil.getPinYinFirstWordToUpperCase(first_name);// 得到姓的拼音
+				}
+			}else{
+				first_name_to_pinyin = doctorDto.getEnName();
+			}
+			doc_first_name.setText(TextUtils.isEmpty(first_name) ? "": first_name + "医生");
+			name_pinyin.setText(TextUtils.isEmpty(first_name_to_pinyin) ? "": "Dr." + first_name_to_pinyin);
+			hospital.setText(TextUtils.isEmpty(doctorDto.getHospitalName()) ? "": doctorDto.getHospitalName());
+			strBuffer.setLength(0);
+			strBuffer.append(TextUtils.isEmpty(doctorDto.getDepartName()) ? "": doctorDto.getDepartName());
+			strBuffer.append(" | ");
+			strBuffer.append(TextUtils.isEmpty(doctorDto.getDictinoaryLable()) ? "": doctorDto.getDictinoaryLable());
+			detail.setText(strBuffer.toString());
+			
+			window=getWindow();
+			WindowManager wm=(WindowManager) context.getSystemService(Context.WINDOW_SERVICE);  
+			Display d = wm.getDefaultDisplay(); // 获取屏幕宽、高用  
+			WindowManager.LayoutParams p = window.getAttributes(); // 获取对话框当前的参数值  
+			//p.height = (int) (d.getHeight() * 0.6); // 高度设置为屏幕的0.5  
+			p.width = (int) (d.getWidth() * 0.95); // 宽度设置为屏幕的0.8  
+			window.setAttributes(p);
+			// 取消进度条
+			Global.progressDialog.dismiss();
+		} else {
+			// 未审核通过的医生，权限受限，只显示医生姓名，不显示科室、职称、医院
+			wechat_scan_ask.setVisibility(View.GONE);
+			doc_first_name.setVisibility(View.GONE);
+			name_pinyin.setVisibility(View.GONE);
+			dotted_line.setVisibility(View.GONE);
+			hospital.setVisibility(View.GONE);
+			detail.setVisibility(View.GONE);
+			Global.progressDialog.dismiss();
+		}
+	
+		
+	}
+
+	@Override
+	public void initListeners() {
+		lly_main.setOnClickListener(this);
+		//长按保存二维码
+		lly_main.setOnLongClickListener(new OnLongClickListener() {
+			
+			@Override
+			public boolean onLongClick(View v) {
+				showPopupWindow(lly_main);
+				return true;
+			}
+		});
+	}
+	
+	/**
+	 * 显示保存到手机的PopupWindow
+	 */
+	private void showPopupWindow(View v){
+		//外层灰色半透明背景
+		LinearLayout layout = new LinearLayout(context);
+		layout.setBackgroundColor(context.getResources().getColor(R.color.color_c0000000));
+		layout.setPadding(50, 0, 50, 0);
+		layout.setGravity(Gravity.CENTER);
+		//保存到手机的文本框
+		TextView tv = new TextView(context); 
+		tv.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		tv.setPadding(0, 10, 0, 10);
+		tv.setText(context.getString(R.string.save_card_photo_to_album));
+		tv.setTextColor(context.getResources().getColor(R.color.color_393939));
+		tv.setTextSize(context.getResources().getDimension(R.dimen.text_size_xmicro));
+		tv.setBackgroundColor(context.getResources().getColor(R.color.color_fbfbfb));
+		tv.setGravity(Gravity.CENTER);
+		layout.addView(tv);
+		//组成PopupWindow
+		final PopupWindow popupWindow = new PopupWindow(layout,LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT);
+		popupWindow.setFocusable(true);
+		popupWindow.setOutsideTouchable(true);
+		popupWindow.setBackgroundDrawable(new BitmapDrawable());  
+		popupWindow.showAtLocation(v, Gravity.CENTER, 0, 0);
+		//点击PopupWindow隐藏
+		layout.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				popupWindow.dismiss();
+			}
+		});
+		//点击保存到手机相册，将名片视图以图片的形式保存起来
+		tv.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				lly_main.setDrawingCacheEnabled(true);
+				lly_main.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+				lly_main.buildDrawingCache();
+				Bitmap bitmap= lly_main.getDrawingCache();
+				if(bitmap!=null){
+					if(Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)){
+						try {
+							//图片路径
+							String directory = Environment.getExternalStorageDirectory()+File.separator+"images";
+							//图片名称
+							String fileName = System.currentTimeMillis()+"qrcode.jpg";
+							//保存图片
+							BitmapUtils.saveBitmap(bitmap, directory+File.separator+fileName);
+							ToastUtils.ToastShort(context, context.getResources().getString(R.string.save_qrcode_success));
+							//插入到相册
+							MediaStore.Images.Media.insertImage(context.getContentResolver(), directory+File.separator+fileName, fileName, null);
+							//通知相册去更新图片
+							context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(new File(directory+File.separator+fileName))));
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}else{
+					LogUtils.i(TAG, "bitmap is null");
+				}
+				popupWindow.dismiss();
+			}
+		});
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.main_layout:
+			this.dismiss();
+			break;
+		default:
+			break;
+		}
+		
+	}
+
+	
+	
+	
+}

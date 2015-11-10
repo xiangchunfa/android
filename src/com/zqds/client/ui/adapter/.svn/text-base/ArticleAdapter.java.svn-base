@@ -1,0 +1,104 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.ArticleListDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.system.ItemOnclickListener;
+
+public class ArticleAdapter extends BaseAdapter {
+	
+	private LayoutInflater inflater;
+	private Context context;
+	private ArrayList<ArticleListDto> articleList;
+	private ItemOnclickListener mListener;
+
+	/**
+	 * @param articleList the articleList to set
+	 */
+	public void setArticleList(ArrayList<ArticleListDto> articleList) {
+		if(articleList==null)
+			this.articleList = new ArrayList<ArticleListDto>();
+		else
+			this.articleList = articleList;
+	}
+	
+	public ArticleAdapter(Context context,ArrayList<ArticleListDto> articleList,ItemOnclickListener itemBtClickListener){
+		this.context = context;
+		this.mListener = itemBtClickListener;
+		inflater = LayoutInflater.from(context);
+		setArticleList(articleList);
+	}
+	
+	public void changeData(ArrayList<ArticleListDto> articleList){
+		setArticleList(articleList);
+		notifyDataSetChanged();
+	}
+
+	@Override
+	public int getCount() {
+		return articleList.size();
+	}
+
+	@Override
+	public Object getItem(int arg0) {
+		return articleList.get(arg0);
+	}
+
+	@Override
+	public long getItemId(int position) {
+		return position;
+	}
+
+	@Override
+	public View getView(final int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			holder = new ViewHolder();
+			convertView = inflater.inflate(R.layout.article_item, null);
+			holder.iv_article_icon = (ImageView) convertView.findViewById(R.id.iv_article_icon);
+			holder.tv_article_title = (TextView) convertView.findViewById(R.id.tv_article_title);
+			holder.tv_article_amount_of_read = (TextView) convertView.findViewById(R.id.tv_article_amount_of_ready);
+			holder.tv_article_comment = (TextView) convertView.findViewById(R.id.tv_article_comment);
+			holder.bt_article_share = (Button) convertView.findViewById(R.id.bt_article_share);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		final ArticleListDto articleListDto = articleList.get(position);
+		ImageLoaderHelper.getInstance(context).displayImage(articleListDto.getArtHeadImgUrl(), holder.iv_article_icon, R.drawable.icon_default);
+		holder.tv_article_title.setText(articleListDto.getArtTitle());
+		if(articleListDto.getArtStatus()==AppConstants.ARTICLE_STATUS_PASS)
+			holder.bt_article_share.setBackgroundResource(R.drawable.article_share_bt_bg);
+		else
+			holder.bt_article_share.setBackgroundResource(R.drawable.article_share_bt_unable_bg);
+		holder.bt_article_share.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				mListener.onButtonClick(articleListDto, null, null, position);
+			}
+		});
+		holder.tv_article_amount_of_read.setText(String.valueOf(articleListDto.getReadCount()));
+		holder.tv_article_comment.setText(String.valueOf(articleListDto.getReviewCount()));
+		return convertView;
+	}
+
+	class ViewHolder{
+		ImageView iv_article_icon;
+		TextView tv_article_title;
+		TextView tv_article_amount_of_read;
+		TextView tv_article_comment;
+		Button bt_article_share;
+	}
+}

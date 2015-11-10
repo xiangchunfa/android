@@ -1,0 +1,697 @@
+package com.qdoc.client.ui;
+
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.ShareService;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.PrintCardStatusModel;
+import com.qdoc.client.model.ShareCardDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.adapter.PagerAdapter;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.fragment.AllTypeCardFragment;
+import com.qdoc.client.ui.view.TextProgressBar;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+public class MyCardActivity extends BaseActivity {
+	
+	public static final String TAG = MyCardActivity.class.getSimpleName();
+	
+	private ViewPager myPagerTab;// 页签容器
+	private PagerAdapter mPagerAdapter;
+    private TitleBar mTitleBar;
+    private ImageView card_select_left,card_select_right;
+    private TextProgressBar tender_textProgressBar,hot_textProgressBar;
+    //private TextView addhotcard;
+    private TextView print_card_status_tips_tv,print_hotcard_status_tips;
+    private LinearLayout ll_tendercard_layout;
+    private LinearLayout ll_hotcard_layout;
+    private boolean isLoadHotCardStatus = false;
+    private PrintCardStatusModel tenderCardStatusModel;
+    private PrintCardStatusModel hotCardStatusModel;
+    
+    
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_mycard);
+		
+		registerUpdateStatusReceiver();
+		initView();
+		initListener();
+	}
+
+	@Override
+	protected void initView() {
+        mTitleBar = (TitleBar)findViewById(R.id.titlebar);
+        if(Global.getUserStatus() == AppConstants.ALL_PERMISSIONS)
+        	mTitleBar.setTitleInfoWithRightText(R.string.aboutus_mycard, R.drawable.icon_back,R.string.aboutus_share,
+                actionBarLeftBtnListener, actionBarRightBtnListener, getResources().getColor(R.color.titlebar_bg));
+        else
+        	mTitleBar.setTitleInfo(R.string.aboutus_mycard, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        myPagerTab = (ViewPager) findViewById(R.id.vp_mycard);
+        card_select_left = (ImageView) findViewById(R.id.card_select_left);
+        card_select_right = (ImageView) findViewById(R.id.card_select_right);
+        
+        tender_textProgressBar = (TextProgressBar) findViewById(R.id.tpb_tender_textprogressbar);
+        //addcard = (TextView) findViewById(R.id.addcard);
+        print_card_status_tips_tv = (TextView) findViewById(R.id.print_card_status_tips);
+        ll_tendercard_layout = (LinearLayout) findViewById(R.id.ll_tendercard_layout);
+        
+        //addhotcard = (TextView) findViewById(R.id.addhotcard);
+        hot_textProgressBar = (TextProgressBar) findViewById(R.id.tpb_hot_textprogressbar);
+        print_hotcard_status_tips = (TextView) findViewById(R.id.print_hotcard_status_tips);
+        ll_hotcard_layout = (LinearLayout) findViewById(R.id.ll_hotcard_layout);
+
+        initTabViewPager();
+	}
+	
+
+    private void initTabViewPager() {
+    	ll_tendercard_layout.setVisibility(View.VISIBLE);
+    	ll_hotcard_layout.setVisibility(View.GONE);
+    	mPagerAdapter = new PagerAdapter(this);
+		//温情你我
+		Bundle cacheBundle_tender = new Bundle();
+		cacheBundle_tender.putInt(AppConstants.MYCARD_TYPE_KEY, AppConstants.MYCARD_TYPE_VALUE_TENDER);
+		mPagerAdapter.addTab(AllTypeCardFragment.class, cacheBundle_tender);
+		//热情如火
+		Bundle cacheBundle_hot = new Bundle();
+		cacheBundle_hot.putInt(AppConstants.MYCARD_TYPE_KEY, AppConstants.MYCARD_TYPE_VALUE_HOT);
+		mPagerAdapter.addTab(AllTypeCardFragment.class, cacheBundle_hot);
+		//设置适配器
+		myPagerTab.setAdapter(mPagerAdapter);
+		//当前选中第一个Fragment
+		myPagerTab.setCurrentItem(0);
+		card_select_left.setImageResource(R.drawable.card_current);
+		card_select_right.setImageResource(R.drawable.card_other);
+		//加载第一个Fragment的数据（温情你我）
+		getPrintCardReviewStatus_tender();
+	}
+
+
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	finish();
+        }
+    };
+
+    OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	getShareCardRequest();
+        }
+    };
+
+	@Override
+	protected void initListener() {
+		myPagerTab.setOnPageChangeListener(new OnPageChangeListener() {
+			
+			@Override
+			public void onPageSelected(int position) {
+				switch (position+1) {
+				case AppConstants.MYCARD_TYPE_VALUE_TENDER:
+					//选中了温情你我
+					card_select_left.setImageResource(R.drawable.card_current);
+					card_select_right.setImageResource(R.drawable.card_other);
+			    	ll_tendercard_layout.setVisibility(View.VISIBLE);
+			    	ll_hotcard_layout.setVisibility(View.GONE);
+					break;
+				case AppConstants.MYCARD_TYPE_VALUE_HOT:
+					//选中了热情如火
+					card_select_left.setImageResource(R.drawable.card_other);
+					card_select_right.setImageResource(R.drawable.card_current);
+			    	ll_tendercard_layout.setVisibility(View.GONE);
+			    	ll_hotcard_layout.setVisibility(View.VISIBLE);
+			    	if(!isLoadHotCardStatus)
+			    		getPrintCardReviewStatus_hot();
+					break;
+				}
+			}
+			
+			@Override
+			public void onPageScrolled(int arg0, float arg1, int arg2) {}
+			
+			@Override
+			public void onPageScrollStateChanged(int arg0) {}
+		});
+		
+		tender_textProgressBar.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(Global.getUserStatus()==AppConstants.LIMITED_PERMISSIONS)
+					return;
+				if(null!=tenderCardStatusModel&&tenderCardStatusModel.getStatus()==PrintCardStatusModel.PRINT_CARD_STATUS_SENDING){
+                	
+            		String title = getContext().getString(R.string.dialog_hint_title);
+            		String dialog_content = getString(R.string.receive_dialog_content);
+            		String ok_text = getString(R.string.received_goods);
+            		String cancle_text = getString(R.string.wait_for_receive);
+            		new HintDlg(MyCardActivity.this, dialog_content, title, cancle_text, ok_text, new OnDialogclickListener() {
+						
+						@Override
+						public void onButtonClick(int type,Dialog dialog) {
+							switch (type) {
+							case AppConstants.LEFT_BUTTON:
+								//稍后再说
+								dialog.dismiss();
+								break;
+							case AppConstants.RIGHT_BUTTON:
+								//立刻申请加印名片
+								receiveTenderCard();
+								dialog.dismiss();
+								break;
+							}
+						}
+					},R.layout.print_card_dialog).show();
+            }else{
+            	Intent tenderIntent = new Intent(MyCardActivity.this, TenderCardActivity.class);
+            	startActivity(tenderIntent);
+				}
+			}
+		});
+		
+		hot_textProgressBar.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(Global.getUserStatus()==AppConstants.LIMITED_PERMISSIONS)
+					return;
+				if(null!=hotCardStatusModel&&hotCardStatusModel.getStatus()==PrintCardStatusModel.PRINT_CARD_STATUS_SENDING){
+                	
+            		String title = getContext().getString(R.string.dialog_hint_title);
+            		String dialog_content = getString(R.string.receive_dialog_content);
+            		String ok_text = getString(R.string.received_goods);
+            		String cancle_text = getString(R.string.wait_for_receive);
+            		new HintDlg(MyCardActivity.this, dialog_content, title, cancle_text, ok_text, new OnDialogclickListener() {
+						
+						@Override
+						public void onButtonClick(int type,Dialog dialog) {
+							switch (type) {
+							case AppConstants.LEFT_BUTTON:
+								//稍后再说
+								dialog.dismiss();
+								break;
+							case AppConstants.RIGHT_BUTTON:
+								//立刻申请加印名片
+								receiveHotCard();
+								dialog.dismiss();
+								break;
+							}
+						}
+					},R.layout.print_card_dialog).show();
+            }else{
+            	Intent hotIntent = new Intent(MyCardActivity.this, HotCardActivity.class);
+            	startActivity(hotIntent);
+				}
+			}
+		});
+	}
+	
+    private void getPrintCardReviewStatus_tender(){
+    	//账号未审核通过
+    	if(Global.getUserStatus()==AppConstants.LIMITED_PERMISSIONS){
+    		//文案变更
+    		tender_textProgressBar.setText(getResources().getString(R.string.after_auditing));
+	    	//addcard.setText(R.string.after_auditing);
+	    	//背景变为灰色背景
+    		tender_textProgressBar.setProgress(0);
+	    	//addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+        	//加印名片的View设置成不可点
+        	tender_textProgressBar.setClickable(false);
+    		return;
+    	}
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	Global.progressDialog = ProgressDialog.show(MyCardActivity.this, null, null, true, true);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getPrintCardStatusRequestParam(TAG, token,AppConstants.MYCARD_TYPE_VALUE_TENDER), 
+    			JsonParserFactory.parseBaseModel(PrintCardStatusModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final PrintCardStatusModel dataModel = (PrintCardStatusModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						tenderCardStatusModel = dataModel;
+						switch (dataModel.getStatus()) {
+						case PrintCardStatusModel.PRINT_CARD_STATUS_REFUSE_ACCEPT://-1：不受理
+							print_card_status_tips_tv.setVisibility(View.VISIBLE);
+							print_card_status_tips_tv.setText(R.string.tips_apply_refuse);
+							
+							tender_textProgressBar.setText(getString(R.string.print_card));
+							//addcard.setText(R.string.print_card);
+							tender_textProgressBar.setMax(dataModel.getFansCount());
+							tender_textProgressBar.setProgress(dataModel.getFansCount());
+							//addcard.setBackgroundResource(R.drawable.addcard_able_corner_bg);
+							tender_textProgressBar.setClickable(true);
+							//addcard.setClickable(true);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_NOT_YET_ACCEPT://0:受理中
+							//受理中有是否重新派送的区别
+							if(dataModel.getToSend()==AppConstants.IS_NOT_SEND_AGAIN){
+								print_card_status_tips_tv.setVisibility(View.INVISIBLE);
+							}else{
+								print_card_status_tips_tv.setVisibility(View.VISIBLE);
+								print_card_status_tips_tv.setText(getString(R.string.express_lost));
+							}
+							tender_textProgressBar.setText(getString(R.string.apply_accepted));
+							//addcard.setText(R.string.apply_accepted);
+							tender_textProgressBar.setProgress(0);
+							//addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							tender_textProgressBar.setClickable(false);
+							//addcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_PRINTING://1:印刷中
+							print_card_status_tips_tv.setVisibility(View.VISIBLE);
+							StringBuffer sb_printing = new StringBuffer();
+							sb_printing.append(getContext().getString(R.string.tips_card_status_left));
+							sb_printing.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_printing.append(getContext().getString(R.string.tips_card_status_right));
+							print_card_status_tips_tv.setText(sb_printing.toString());
+							
+							tender_textProgressBar.setText(getString(R.string.card_printing));
+							//addcard.setText(R.string.card_printing);
+							tender_textProgressBar.setProgress(0);
+							//addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							tender_textProgressBar.setClickable(false);
+							//addcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_FINISH://2:印刷完
+							print_card_status_tips_tv.setVisibility(View.VISIBLE);
+							StringBuffer sb_print_finish = new StringBuffer();
+							sb_print_finish.append(getContext().getString(R.string.tips_card_status_left));
+							sb_print_finish.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_print_finish.append(getContext().getString(R.string.tips_card_status_right));
+							print_card_status_tips_tv.setText(sb_print_finish.toString());
+							
+							tender_textProgressBar.setText(getString(R.string.card_print_finish_is_distribution));
+							//addcard.setText(R.string.card_print_finish_is_distribution);
+							tender_textProgressBar.setProgress(0);
+							//addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							tender_textProgressBar.setClickable(false);
+							//addcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_SENDING://3:寄送中
+							print_card_status_tips_tv.setVisibility(View.INVISIBLE);
+							StringBuffer sb_card_sending = new StringBuffer();
+							sb_card_sending.append(getContext().getString(R.string.tips_card_status_left));
+							sb_card_sending.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_card_sending.append(getContext().getString(R.string.tips_card_status_right));
+							print_card_status_tips_tv.setText(sb_card_sending.toString());
+							
+							tender_textProgressBar.setText(getString(R.string.card_is_sending_please_check));
+							//addcard.setText(R.string.card_is_sending_please_check);
+							tender_textProgressBar.setMax(dataModel.getFansCount());
+							tender_textProgressBar.setProgress(dataModel.getFansCount());
+							//addcard.setBackgroundResource(R.drawable.addcard_able_corner_bg);
+							tender_textProgressBar.setClickable(true);
+							//addcard.setClickable(true);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_CAN_APPLY://4：已寄出5天，可以再申请；或者没有申请过
+							String lastSendTime = null==dataModel.getLastSendDate()?"":dataModel.getLastSendDate();
+							if(lastSendTime.length()<=0){
+								print_card_status_tips_tv.setVisibility(View.INVISIBLE);
+							}else{
+								print_card_status_tips_tv.setVisibility(View.VISIBLE);
+								StringBuffer sb_can_apply = new StringBuffer();
+								sb_can_apply.append(getContext().getString(R.string.tips_card_status_sended_left));
+								sb_can_apply.append(dataModel.getLastSendDate());
+								sb_can_apply.append(getContext().getString(R.string.tips_card_status_sended_right));
+								print_card_status_tips_tv.setText(sb_can_apply.toString());
+							}
+							if(PrintCardStatusModel.PRINT_CARD_FIRST_TIME==dataModel.getIsFirst() || dataModel.getFansNumber()>=dataModel.getFansCount()){
+								//扫码粉丝已经达到加印条件
+								tender_textProgressBar.setText(getString(R.string.print_card));
+								tender_textProgressBar.setMax(dataModel.getFansCount());
+								tender_textProgressBar.setProgress(dataModel.getFansCount());
+								tender_textProgressBar.setClickable(true);
+							}else{
+								//扫码粉丝还没有达到加印条件
+								int needFansCount = dataModel.getFansCount()-dataModel.getFansNumber();
+								tender_textProgressBar.setText(String.format(getString(R.string.need_fans_to_get_card),needFansCount+""));
+								tender_textProgressBar.setMax(dataModel.getFansCount());
+								tender_textProgressBar.setProgress(dataModel.getFansNumber());
+								tender_textProgressBar.setClickable(false);
+							}
+							//addcard.setText(R.string.print_card);
+							//addcard.setBackgroundResource(R.drawable.addcard_able_corner_bg);
+							//addcard.setClickable(true);
+							break;
+						}
+					}else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						 LoginActivity.startActivity(MyCardActivity.this);
+					}else{
+						tender_textProgressBar.setClickable(false);
+						ToastUtils.ToastShort(MyCardActivity.this, dataModel.getErrorMsg());
+					}
+				}else{
+					tender_textProgressBar.setClickable(false);
+					 ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+    
+    private void getPrintCardReviewStatus_hot(){
+    	if(Global.getUserStatus()==AppConstants.LIMITED_PERMISSIONS){
+    		//文案变更
+    		hot_textProgressBar.setText(getResources().getString(R.string.after_auditing));
+	    	//addcard.setText(R.string.after_auditing);
+	    	//背景变为灰色背景
+    		hot_textProgressBar.setProgress(0);
+	    	//addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+        	//加印名片的View设置成不可点
+        	hot_textProgressBar.setClickable(false);
+    		return;
+    	}
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	Global.progressDialog = ProgressDialog.show(MyCardActivity.this, null, null, true, true);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getPrintCardStatusRequestParam(TAG, token,AppConstants.MYCARD_TYPE_VALUE_HOT), 
+    			JsonParserFactory.parseBaseModel(PrintCardStatusModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				isLoadHotCardStatus = true;
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final PrintCardStatusModel dataModel = (PrintCardStatusModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						hotCardStatusModel = dataModel;
+						switch (dataModel.getStatus()) {
+						case PrintCardStatusModel.PRINT_CARD_STATUS_REFUSE_ACCEPT://-1：不受理
+							print_hotcard_status_tips.setVisibility(View.VISIBLE);
+							print_hotcard_status_tips.setText(R.string.tips_apply_refuse);
+							
+							hot_textProgressBar.setText(getString(R.string.print_card));
+							hot_textProgressBar.setMax(dataModel.getFansCount());
+							hot_textProgressBar.setProgress(dataModel.getFansCount());
+							hot_textProgressBar.setClickable(true);
+							//addhotcard.setText(R.string.print_card);
+							//addhotcard.setBackgroundResource(R.drawable.addcard_able_corner_bg);
+							//addhotcard.setClickable(true);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_NOT_YET_ACCEPT://0:受理中
+							//受理中有是否重新派送的区别
+							if(dataModel.getToSend()==AppConstants.IS_NOT_SEND_AGAIN){
+								print_hotcard_status_tips.setVisibility(View.INVISIBLE);
+							}else{
+								print_hotcard_status_tips.setVisibility(View.VISIBLE);
+								print_hotcard_status_tips.setText(getString(R.string.express_lost));
+							}
+							hot_textProgressBar.setText(getString(R.string.apply_accepted));
+							hot_textProgressBar.setProgress(0);
+							hot_textProgressBar.setClickable(false);
+							//addhotcard.setText(R.string.apply_accepted);
+							//addhotcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							//addhotcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_PRINTING://1:印刷中
+							print_hotcard_status_tips.setVisibility(View.VISIBLE);
+							StringBuffer sb_printing = new StringBuffer();
+							sb_printing.append(getContext().getString(R.string.tips_card_status_left));
+							sb_printing.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_printing.append(getContext().getString(R.string.tips_card_status_right));
+							print_hotcard_status_tips.setText(sb_printing.toString());
+							
+							hot_textProgressBar.setText(getString(R.string.card_printing));
+							hot_textProgressBar.setProgress(0);
+							hot_textProgressBar.setClickable(false);
+							//addhotcard.setText(R.string.card_printing);
+							//addhotcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							//addhotcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_FINISH://2:印刷完
+							print_hotcard_status_tips.setVisibility(View.VISIBLE);
+							StringBuffer sb_print_finish = new StringBuffer();
+							sb_print_finish.append(getContext().getString(R.string.tips_card_status_left));
+							sb_print_finish.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_print_finish.append(getContext().getString(R.string.tips_card_status_right));
+							print_hotcard_status_tips.setText(sb_print_finish.toString());
+							
+							hot_textProgressBar.setText(getString(R.string.card_print_finish_is_distribution));
+							hot_textProgressBar.setProgress(0);
+							hot_textProgressBar.setClickable(false);
+							//addhotcard.setText(R.string.card_print_finish_is_distribution);
+							//addhotcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							//addhotcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_SENDING://3:寄送中
+							print_hotcard_status_tips.setVisibility(View.INVISIBLE);
+							StringBuffer sb_card_sending = new StringBuffer();
+							sb_card_sending.append(getContext().getString(R.string.tips_card_status_left));
+							sb_card_sending.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_card_sending.append(getContext().getString(R.string.tips_card_status_right));
+							print_hotcard_status_tips.setText(sb_card_sending.toString());
+							
+							hot_textProgressBar.setText(getString(R.string.card_is_sending_please_check));
+							hot_textProgressBar.setMax(dataModel.getFansCount());
+							hot_textProgressBar.setProgress(dataModel.getFansCount());
+							hot_textProgressBar.setClickable(true);
+							//addhotcard.setText(R.string.card_is_sending_please_check);
+							//addhotcard.setBackgroundResource(R.drawable.addcard_able_corner_bg);
+							//addhotcard.setClickable(true);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_CAN_APPLY://4：已寄出5天，可以再申请；或者没有申请过
+							String lastSendTime = null==dataModel.getLastSendDate()?"":dataModel.getLastSendDate();
+							if(lastSendTime.length()<=0){
+								print_hotcard_status_tips.setVisibility(View.INVISIBLE);
+							}else{
+								print_hotcard_status_tips.setVisibility(View.VISIBLE);
+								StringBuffer sb_can_apply = new StringBuffer();
+								sb_can_apply.append(getContext().getString(R.string.tips_card_status_sended_left));
+								sb_can_apply.append(dataModel.getLastSendDate());
+								sb_can_apply.append(getContext().getString(R.string.tips_card_status_sended_right));
+								print_hotcard_status_tips.setText(sb_can_apply.toString());
+							}
+							if(PrintCardStatusModel.PRINT_CARD_FIRST_TIME==dataModel.getIsFirst() || dataModel.getFansNumber()>=dataModel.getFansCount()){
+								//扫码粉丝已经达到加印条件
+								hot_textProgressBar.setText(getString(R.string.print_card));
+								hot_textProgressBar.setMax(dataModel.getFansCount());
+								hot_textProgressBar.setProgress(dataModel.getFansCount());
+								hot_textProgressBar.setClickable(true);
+							}else{
+								//扫码粉丝还没有达到加印条件
+								int needFansCount = dataModel.getFansCount()-dataModel.getFansNumber();
+								hot_textProgressBar.setText(String.format(getString(R.string.need_fans_to_get_card),needFansCount+""));
+								hot_textProgressBar.setMax(dataModel.getFansCount());
+								hot_textProgressBar.setProgress(dataModel.getFansNumber());
+								hot_textProgressBar.setClickable(false);
+							}
+							//addhotcard.setText(R.string.print_card);
+							//addhotcard.setBackgroundResource(R.drawable.addcard_able_corner_bg);
+							//addhotcard.setClickable(true);
+							break;
+						}
+					}else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						 LoginActivity.startActivity(MyCardActivity.this);
+					}else{
+						hot_textProgressBar.setClickable(false);
+						ToastUtils.ToastShort(MyCardActivity.this, dataModel.getErrorMsg());
+					}
+				}else{
+					hot_textProgressBar.setClickable(false);
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+    
+	/**
+	 * 获取医生名片分享的内容
+	 * @return void
+	 */
+	private void getShareCardRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getShareCardInfoParam(TAG, token),
+				JsonParserFactory.parseBaseModel(ShareCardDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final ShareCardDataModel dataModel = (ShareCardDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								ShareService share = new ShareService(MyCardActivity.this);
+								String shareContent = dataModel.getConent();
+								String imageURL = dataModel.getHeadimage();
+								share.configUMShare(MyCardActivity.this,shareContent, dataModel.getTitle(),imageURL,dataModel.getShareurl());
+								share.openShareBoard();
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(MyCardActivity.this);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+					}
+				});
+	}
+	
+	/**
+	 * (温情你我)我已收货
+	 */
+	private void receiveTenderCard(){
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.receiveCard(TAG, token, AppConstants.MYCARD_TYPE_VALUE_TENDER), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					BaseModel baseModel = (BaseModel) resultData;
+					if(null!=baseModel&&baseModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						getPrintCardReviewStatus_tender();
+					}else if(null!=baseModel&&baseModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(MyCardActivity.this);
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+					}
+				}else{
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+					}
+				}
+			}
+		});
+	}
+	
+	/**
+	 * (热情如火)我已收货
+	 */
+	private void receiveHotCard(){
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.receiveCard(TAG, token, AppConstants.MYCARD_TYPE_VALUE_HOT), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					BaseModel baseModel = (BaseModel) resultData;
+					if(null!=baseModel&&baseModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						getPrintCardReviewStatus_hot();
+					}else if(null!=baseModel&&baseModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(MyCardActivity.this);
+					}else{
+						ToastUtils.ToastShort(getContext(),baseModel.getErrorMsg());
+					}
+				}else{
+					ToastUtils.ToastShort(getContext(),R.string.network_error);
+				}
+			}
+		});
+	}
+	
+	/**
+	 * 刷新按钮状态的广播接收器
+	 */
+	BroadcastReceiver updateStatusReceiver = new BroadcastReceiver() {
+		
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+/*			if(AppConstants.REFRESH_TENDER_CARD_APPLY_STATUS.equals(action)){
+				//更新温情你我名片申请状态
+				print_card_status_tips_tv.setVisibility(View.INVISIBLE);
+				tender_textProgressBar.setText(getString(R.string.apply_accepted));
+				//addcard.setText(R.string.apply_accepted);
+				tender_textProgressBar.setProgress(0);
+				//addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+				tender_textProgressBar.setClickable(false);
+				//addcard.setClickable(false);
+			}else if(AppConstants.REFRESH_HOT_CARD_APPLY_STATUS.equals(action)){
+				//更新热情如火名片申请状态
+				print_hotcard_status_tips.setVisibility(View.INVISIBLE);
+				hot_textProgressBar.setText(getString(R.string.apply_accepted));
+				//addhotcard.setText(R.string.apply_accepted);
+				hot_textProgressBar.setProgress(0);
+				//addhotcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+				hot_textProgressBar.setClickable(false);
+				//addhotcard.setClickable(false);
+			}*/
+			if(AppConstants.REFRESH_CARD_APPLY_STATUS.equals(action)){
+				//更新温情你我名片申请状态
+				print_card_status_tips_tv.setVisibility(View.INVISIBLE);
+				tender_textProgressBar.setText(getString(R.string.apply_accepted));
+				tender_textProgressBar.setProgress(0);
+				tender_textProgressBar.setClickable(false);
+				//更新热情如火名片申请状态
+				print_hotcard_status_tips.setVisibility(View.INVISIBLE);
+				hot_textProgressBar.setText(getString(R.string.apply_accepted));
+				hot_textProgressBar.setProgress(0);
+				hot_textProgressBar.setClickable(false);
+			}
+		}
+	};
+	
+	private void registerUpdateStatusReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		//myIntentFilter.addAction(AppConstants.REFRESH_TENDER_CARD_APPLY_STATUS);
+		//myIntentFilter.addAction(AppConstants.REFRESH_HOT_CARD_APPLY_STATUS);
+		myIntentFilter.addAction(AppConstants.REFRESH_CARD_APPLY_STATUS);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(updateStatusReceiver, myIntentFilter);
+	}
+	
+	private void unRegisterUpdateStatusReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(updateStatusReceiver);
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		unRegisterUpdateStatusReceiver();
+	}
+	
+	public static void startActivity(Context context){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startMyCardActivitiy(context));
+	}
+}

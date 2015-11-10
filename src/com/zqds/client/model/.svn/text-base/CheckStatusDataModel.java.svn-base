@@ -1,0 +1,39 @@
+/*
+ * BankDtoDataModel.java
+ * classes : com.qdoc.client.model.BankDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 上午12:20:32
+ */
+package com.qdoc.client.model;
+
+import java.util.Date;
+
+/**
+ * com.qdoc.client.model.CheckStatusDataModel
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-28 上午15:31:32
+ */
+public class CheckStatusDataModel extends AbstractBaseModel {
+
+	private Date insuredEnd;
+    private int  status;
+
+	public Date getInsuredEnd() {
+		return insuredEnd;
+	}
+	public void setInsuredEnd(Date insuredEnd) {
+		this.insuredEnd = insuredEnd;
+	}
+	public int getStatus() {
+		return status;
+	}
+	public void setStatus(int status) {
+		this.status = status;
+	}
+     
+    
+     
+
+}

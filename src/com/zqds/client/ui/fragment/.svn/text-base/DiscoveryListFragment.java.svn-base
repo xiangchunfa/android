@@ -1,0 +1,290 @@
+/*
+ * MyConsultFragment.java
+ * classes : com.qdoc.client.ui.fragment.MyConsultFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午5:36:19
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.AdvanceActivitiesDtoModel;
+import com.qdoc.client.model.CheckStatusDataModel;
+import com.qdoc.client.model.FindActivitiesStatusDataMOdel;
+import com.qdoc.client.model.GainGiftBagStatusDataModel;
+import com.qdoc.client.model.MessageModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.AdvanceDetailActivity;
+import com.qdoc.client.ui.DiscoveryActivity;
+import com.qdoc.client.ui.FansIncentiveActivity;
+import com.qdoc.client.ui.GiftBagActivity;
+import com.qdoc.client.ui.InsuranceDetailActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.adapter.DiscoveryAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.DiscoveryListFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午5:36:19
+ */
+public class DiscoveryListFragment extends BaseFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = DiscoveryListFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private ImageView ivInsureStatus;
+    private ImageView ivGiftBagStatus;
+    private ImageView iv_fans_incentive_status;
+    private LinearLayout llyInsurance;
+    private LinearLayout llyTea;
+    private LinearLayout llyFansIncentive;
+    private PullRefreshView lvDiscovery;
+    private PullListMaskController mViewController; 
+    /**
+     * params
+     */
+    private DiscoveryAdapter mAdapter;
+    private ArrayList<MessageModel> titleList = new ArrayList<MessageModel>();
+    private Map<Integer, Integer> insureStatusMap = new HashMap<Integer, Integer>();
+    private Map<Integer, Integer> giftBagStatusMap = new HashMap<Integer, Integer>();
+    private Map<Integer, Integer> incentiveStatusMap = new HashMap<Integer, Integer>();
+    private int insureStatus = -2;//未获资格
+    private int giftBagStatus = -1;//不可以领取，没有达到领取的条件
+    private int activeStatus = -3;//活动已结束
+    private GainGiftBagStatusDataModel  giftModel;
+    private CheckStatusDataModel insureModel;
+    private FindActivitiesStatusDataMOdel  dataModel;
+    
+    private final int APP_OPEN = 0;//app打开
+    private final int BROWSER_OPEN = 1;//浏览器打开
+    
+
+    
+    public static DiscoveryListFragment newInstance(Bundle bundle) {
+        final DiscoveryListFragment fragment = new DiscoveryListFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.listitem_insurance, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initParams();
+        initListener();
+    }
+
+    private void initParams() {
+    	initData();
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.tab4_title, 0, 0, null, null, getResources().getColor(R.color.titlebar_bg));
+        lvDiscovery = (PullRefreshView) view.findViewById(R.id.listView);
+		// 自定义emptyview
+		ErrorMaskView maskView = (ErrorMaskView) view
+				.findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(lvDiscovery, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+    }
+
+    private void initData() {
+    	  mAdapter = new DiscoveryAdapter(getActivity(), null);
+    	  lvDiscovery.setAdapter(mAdapter);
+    }
+
+    private void initListener() {
+        // TODO Auto-generated method stub
+        final DiscoveryActivity activity = (DiscoveryActivity) getActivity();
+        if (activity == null) {
+            LogUtils.d(TAG, "msgActivity == null!!!!");
+            return;
+        }
+      
+        lvDiscovery.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				AdvanceActivitiesDtoModel dataModel = (AdvanceActivitiesDtoModel) parent.getAdapter().getItem(
+						position);
+                if(dataModel.getActivityName().equals(AppConstants.INSURANCE)){
+                	  InsuranceDetailActivity.startActivity(getActivity(),Integer.valueOf(dataModel.getState()));
+                }else if(dataModel.getActivityName().equals(AppConstants.GIFBAG)){
+                	  GiftBagActivity.startActivity(getActivity(),dataModel.state);
+                }else if(dataModel.getActivityName().equals(AppConstants.ACTIVITY_FANS)){
+                	  if(dataModel.getStatus()==AppConstants.UNDERWAY)
+      				     FansIncentiveActivity.startActivity(getActivity());
+                }else{
+                	      //打开方式为URL
+                	  if(dataModel.getActivityType() == BROWSER_OPEN) {
+                		  AdvanceDetailActivity.startActivity(getActivity(), dataModel);
+                	  }else{
+                		  //假如打开方式为App，就提示活动已停止   
+                		  ToastUtils.ToastShort(getActivity(), R.string.activity_stop);
+                	  }
+                }
+			}
+		});
+    }
+	
+    /**
+     * 显示保险状态
+     */
+    public void showInsuranceStatus(int status){
+    	if(insureStatusMap.get(status)!=null)
+    	  ivInsureStatus.setImageResource(insureStatusMap.get(status));
+    }
+    /**
+     *显示礼品包状态 
+     */
+    public void showGiftBagStatus(int status){
+    	if(giftBagStatusMap.get(status)!=null)
+    	  ivGiftBagStatus.setImageResource(giftBagStatusMap.get(status));
+    }
+    
+    /**
+     *显示粉丝激励状态 
+     */
+    public void showIncentiveStatus(int status){
+    	if(status==AppConstants.NO_STATE || status==AppConstants.NO_ENABLED){
+    		llyFansIncentive.setVisibility(View.GONE);
+    	}else{
+    		llyFansIncentive.setVisibility(View.VISIBLE);
+    		if(incentiveStatusMap.get(status)!=null)
+        		iv_fans_incentive_status.setImageResource(incentiveStatusMap.get(status));
+    	}
+    	
+    }
+    
+    /**
+     *查询保险的状态 
+     */
+    public void startCheckStatusRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        LogUtils.d(TAG, "token  =================== " + token);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.getCheckStatusRequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(CheckStatusDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                             insureModel = (CheckStatusDataModel) resultData;
+                            if (insureModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	insureStatus=insureModel.getStatus();
+                            	showInsuranceStatus(insureModel.getStatus());                          
+                            }else if(insureModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity(), (String) resultData);
+                            }
+                        }
+                    }
+                });
+    }
+
+    
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+    
+    @Override
+    public void onResume() {
+    	// TODO Auto-generated method stub
+    	super.onResume();
+        Global.updateStatus();
+    	startFindActivitiesStatusRequest();
+    }
+    
+    /**
+     * 发现菜单活动状态
+     */
+    public void startFindActivitiesStatusRequest(){
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.getFindActivitiesStatus(TAG, token,"11"),
+                JsonParserFactory.parseBaseModel(FindActivitiesStatusDataMOdel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                        	dataModel = (FindActivitiesStatusDataMOdel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	 if(dataModel.getActivitiesDtos() != null ){
+                            		 if (dataModel.getActivitiesDtos().isEmpty()) {
+ 										mViewController.showViewStatus(ListViewState.EMPTY_BLANK, "暂无发现记录，请点击刷新");
+ 									} else {
+ 										mAdapter.addListData(dataModel.getActivitiesDtos());
+ 										mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+ 									}
+                            	 }
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                  LoginActivity.startActivity(getActivity());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity(), (String) resultData);
+                            }
+                        }
+                    }
+            });
+    }
+    
+    @Override
+    public void onDestroy() {
+    	// TODO Auto-generated method stub
+    	super.onDestroy();
+       	HttpTaskManager.stop(TAG);    	
+    }
+}

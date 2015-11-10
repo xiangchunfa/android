@@ -1,0 +1,44 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 我的粉丝列表
+ * @author antony
+ *
+ */
+public class MyFansListDataModel extends AbstractBaseModel implements
+		Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2814147778931165081L;
+
+	private int page;//页码
+	private Pagination<MyFansListDto> pager;
+	/**
+	 * @return the page
+	 */
+	public int getPage() {
+		return page;
+	}
+	/**
+	 * @param page the page to set
+	 */
+	public void setPage(int page) {
+		this.page = page;
+	}
+	/**
+	 * @return the pager
+	 */
+	public Pagination<MyFansListDto> getPager() {
+		return pager;
+	}
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<MyFansListDto> pager) {
+		this.pager = pager;
+	}
+}

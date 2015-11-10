@@ -1,0 +1,184 @@
+/*
+ * ImageDetailActivity.java
+ * classes : com.qdoc.client.ui.ImageDetailActivity
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-17 下午11:23:25
+ */
+package com.qdoc.client.ui;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ImageDtoModel;
+import com.qdoc.client.ui.fragment.ImageDetailFragment;
+import com.qdoc.client.ui.widget.HackyViewPager;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ScannerUtils;
+import com.qdoc.client.util.ScannerUtils.ScannerType;
+
+/**
+ * com.qdoc.client.ui.ImageDetailActivity
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-17 下午11:23:25
+ */
+public class ImageDetailActivity extends BaseActivity implements OnClickListener{
+    /**
+     * TAG
+     */
+    private static final String TAG = ImageDetailActivity.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private HackyViewPager mPager;
+    private TextView indicator;
+    private TextView tv_save_photo;
+    private TextView tv_cancel;
+    private LinearLayout lly_bottom;
+      
+    /**
+     * params
+     */
+    private static final String STATE_POSITION = "STATE_POSITION";
+    private String[] imageArray;
+    private ArrayList<ImageDtoModel> imageList = new ArrayList<ImageDtoModel>();
+    private int pagerPosition;
+    private ImageDetailFragment currentFragment;
+    
+
+    public LinearLayout getLly_bottom() {
+		return lly_bottom;
+	}
+
+	public void setLly_bottom(LinearLayout lly_bottom) {
+		this.lly_bottom = lly_bottom;
+	}
+
+	@Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (savedInstanceState != null) {
+            pagerPosition = savedInstanceState.getInt(STATE_POSITION);
+        }
+        setContentView(R.layout.activity_imagedetail);
+        parseIntent();
+        initView();
+        initListener();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void parseIntent() {
+        pagerPosition = getIntent().getIntExtra(IntentTools.EXTRA_IMAGE_INDEX, 0);
+        imageList = (ArrayList<ImageDtoModel>) getIntent().getSerializableExtra(IntentTools.EXTRA_IMAGE_URLS);
+        bindImageList(imageList);
+    }
+
+    public void bindImageList(ArrayList<ImageDtoModel> list) {
+        int size = list.size();
+        imageArray = new String[size];
+        for (int i = 0; i < size; i++) {
+            imageArray[i] = list.get(i).getRealUrl();
+        }
+    }
+
+    @Override
+    protected void initView() {
+        mPager = (HackyViewPager) findViewById(R.id.pager);
+        ImagePagerAdapter mAdapter = new ImagePagerAdapter(getSupportFragmentManager(), imageArray);
+        mPager.setAdapter(mAdapter);
+        indicator = (TextView) findViewById(R.id.indicator);
+        tv_save_photo = (TextView) findViewById(R.id.tv_save_photo);
+        tv_cancel = (TextView) findViewById(R.id.tv_cancel);
+        lly_bottom = (LinearLayout) findViewById(R.id.lly_bottom);
+        CharSequence text = getString(R.string.viewpager_indicator, 1, mPager.getAdapter().getCount());
+        indicator.setText(text);
+        // 更新下标
+        mPager.setOnPageChangeListener(new OnPageChangeListener() {
+
+            @Override
+            public void onPageScrollStateChanged(int arg0) {
+            }
+
+            @Override
+            public void onPageScrolled(int arg0, float arg1, int arg2) {
+            }
+
+            @Override
+            public void onPageSelected(int arg0) {
+                CharSequence text = getString(R.string.viewpager_indicator, arg0 + 1, mPager.getAdapter().getCount());
+                indicator.setText(text);
+            }
+        });
+        mPager.setCurrentItem(pagerPosition);
+    }
+
+    @Override
+    protected void initListener() {
+        // TODO Auto-generated method stub
+    	tv_save_photo.setOnClickListener(this);
+    	tv_cancel.setOnClickListener(this);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putInt(STATE_POSITION, mPager.getCurrentItem());
+    }
+
+    private class ImagePagerAdapter extends FragmentStatePagerAdapter {
+        public String[] fileList;
+
+        public ImagePagerAdapter(FragmentManager fm, String[] fileList) {
+            super(fm);
+            this.fileList = fileList;
+        }
+
+        @Override
+        public int getCount() {
+            return fileList == null ? 0 : fileList.length;
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            String url = fileList[position];
+            currentFragment = ImageDetailFragment.newInstance(url);
+            return currentFragment;
+        }
+    }
+
+    public static void startActivity(Context context, int position, ArrayList<ImageDtoModel> list) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getImageDetailIntent(context, position, list));
+    }
+    
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.tv_save_photo:
+			Bitmap image = ((BitmapDrawable)currentFragment.getmImageView().getDrawable()).getBitmap(); 
+			ScannerUtils.saveImageToGallery(this, image, ScannerType.MEDIA, getString(R.string.app_name));
+			lly_bottom.setVisibility(View.GONE);
+			break;
+		case R.id.tv_cancel:
+			lly_bottom.setVisibility(View.GONE);
+			break;
+		}
+		
+	}
+}

@@ -1,0 +1,34 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+import java.util.List;
+
+/**
+ * 门诊时间show接口返回类
+ * @author Administrator
+ *
+ */
+public class OutpatientTimeSettingModel extends AbstractBaseModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8915081843319007213L;
+
+	private List<OutpatientTimeSettingDto> outpatSettings;//返回OutpatientTimeSettingDto对象集合
+
+	/**
+	 * @return the outpatSettings
+	 */
+	public List<OutpatientTimeSettingDto> getOutpatSettings() {
+		return outpatSettings;
+	}
+
+	/**
+	 * @param outpatSettings the outpatSettings to set
+	 */
+	public void setOutpatSettings(List<OutpatientTimeSettingDto> outpatSettings) {
+		this.outpatSettings = outpatSettings;
+	}
+	
+}

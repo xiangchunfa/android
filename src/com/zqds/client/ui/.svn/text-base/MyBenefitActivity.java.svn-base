@@ -1,0 +1,59 @@
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.ui.fragment.MyBenefitFragment;
+import com.qdoc.client.util.IntentTools;
+
+/**
+ * 为了解决应用无法返回卡死的问题，修改框架而创建的Activity
+ * @author antony
+ *
+ */
+public class MyBenefitActivity extends BaseActivity {
+	
+	public static final String TAG = MyBenefitActivity.class.getSimpleName();
+	
+	private MyBenefitFragment mybenefitFragment;
+	private DoctorModel doctorDto;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_mybenefit);
+		parseIntent();
+		initView();
+		initListener();
+	}
+	
+	private void parseIntent() {
+		Bundle cacheBundle = getIntent().getExtras();
+		doctorDto = (DoctorModel) cacheBundle.getSerializable(IntentTools.EXTAR_DOCTORMODEL);
+		mybenefitFragment = MyBenefitFragment.newInstance(cacheBundle);
+		mybenefitFragment.setDoctorModel(doctorDto);
+	}
+
+	@Override
+	protected void initView() {
+		FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.fragment_mybenefit, mybenefitFragment, MyBenefitFragment.TAG);
+        ft.commitAllowingStateLoss();
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+	}
+
+	public static void startActivity(Context context,DoctorModel doctorDto){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startMyBenefitActivity(context,doctorDto));
+	}
+}

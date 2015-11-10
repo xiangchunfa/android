@@ -1,0 +1,444 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.RadioButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.EditText;
+import android.widget.RadioGroup;
+import android.widget.TextView;
+
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.LoginModel;
+import com.qdoc.client.model.ServiceTermModel;
+import com.qdoc.client.model.VertifyCodeDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.AdDetailActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.RegistActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.SystemBarUtil;
+import com.qdoc.client.util.ToastUtil;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class Register1Fragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = Register1Fragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private EditText etName;
+    private EditText etHospital;
+    private EditText etDepartment;
+    private EditText etInviterPhone;
+    private Button btnSubmit;
+	private CheckBox cbCheck;
+	private TextView tvUserAgreement;
+	
+	/**
+	 * 医生职称相关
+	 */
+	private RadioGroup doctor_title;
+	private RadioButton doctor_title_visiting_staff,//主治医师
+						doctor_title_deputy_chief_physician,//副主任医师
+						doctor_title_chief_physician;//主任医师
+	
+	private int doctor_title_value;//当前选择的医生职称
+	
+	public static final int VISITING_STAFF = 2;//主治医师
+	public static final int DEPUTY_CHIEF_PHYSICIAN = 1;//副主任医师
+	public static final int CHIEF_PHYSICIAN = 0;//主任医师
+	
+	
+	
+    /**
+     * params
+     */
+    private StringBuffer strBuffer = new StringBuffer();
+    private String accountName;
+    private Resources res;
+
+    public static Register1Fragment newInstance(Bundle bundle) {
+        final Register1Fragment fragment = new Register1Fragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_register_apply, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    	SystemBarUtil.setSystemStatusBar(false, 0, getActivity());
+    }
+
+    private void initParams() {
+    	Bundle bundle = getArguments();
+    	confirmPWD = bundle.getString("confirmPWD");
+    	doctor_title_value = VISITING_STAFF;//医生职称默认值为"主治医师=2"
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+    	res = getResources();
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.register_apply, R.drawable.icon_back,0,
+                actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        etName=(EditText) view.findViewById(R.id.et_name);
+        etHospital=(EditText) view.findViewById(R.id.et_hospital);
+        etDepartment=(EditText) view.findViewById(R.id.et_department);
+        etInviterPhone=(EditText) view.findViewById(R.id.et_inviter_phone);
+        btnSubmit=(Button)view.findViewById(R.id.btn_submit);
+        tvUserAgreement=(TextView) view.findViewById(R.id.tv_user_agreement);
+        accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+        cbCheck=(CheckBox) view.findViewById(R.id.cb_check);
+        cbCheck.setChecked(true);
+		setEnabled(btnSubmit, true, R.drawable.icon_btn_bg_valid);
+		//医生职称相关
+		doctor_title = (RadioGroup) view.findViewById(R.id.doctor_title);
+		doctor_title_visiting_staff = (RadioButton) view.findViewById(R.id.doctor_title_visiting_staff);
+		doctor_title_deputy_chief_physician = (RadioButton) view.findViewById(R.id.doctor_title_deputy_chief_physician);
+		doctor_title_chief_physician = (RadioButton) view.findViewById(R.id.doctor_title_chief_physician);
+    }
+
+    protected void initListener() {
+    	btnSubmit.setOnClickListener(new OnClickListener() {
+			
+			@Override 
+			public void onClick(View arg0) {
+               String name=etName.getText().toString();
+               String hospital=etHospital.getText().toString();
+               String department=etDepartment.getText().toString();
+               String inviter = etInviterPhone.getText().toString();
+               if(StringUtils.isEmpty(name)){
+  				   ToastUtil.show(getActivity(), getActivity().getString(R.string.name_not_null));
+            	   return;
+               }
+               if(StringUtils.isEmpty(hospital)){
+            	   ToastUtil.show(getActivity(), getActivity().getString(R.string.hospital_not_null));
+            	   return;
+               }
+               if(StringUtils.isEmpty(department)){
+            	   ToastUtil.show(getActivity(), getActivity().getString(R.string.department_not_null));
+            	   return;
+               }
+               LoginActivity activity1 = (LoginActivity) getActivity();
+               Bundle bundle=new Bundle();
+               bundle.putString(IntentTools.EXTRA_NAME, name);
+               bundle.putString(IntentTools.EXTRA_HOSPITAL, hospital);
+               bundle.putString(IntentTools.EXTRA_DEPARTMENT, department);
+               bundle.putInt(IntentTools.EXTRA_DOCTOR_TITLE_VALUE, doctor_title_value);
+               bundle.putString(IntentTools.EXTRA_INVITER, inviter);
+			   //activity1.switchToRegister2Fragment(bundle,Register2Fragment.TAG);
+               // Register2Fragment register2Fragment = new Register2Fragment();
+              registerApplyRequest(name, hospital,department,confirmPWD,doctor_title_value,inviter);
+			}
+		});
+    	
+       	cbCheck.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			
+    			@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+				@SuppressLint("NewApi")
+				@Override
+    			public void onCheckedChanged(CompoundButton arg0, boolean arg1) {
+    				// TODO Auto-generated method stub
+    				if(arg1){
+//    					cbCheck.setButtonDrawable(R.drawable.icon_checked);
+//    					cbCheck.setBackground(null);
+    					setEnabled(btnSubmit, true, R.drawable.icon_btn_bg_valid);
+    				}else{
+//    					cbCheck.setButtonDrawable(R.drawable.icon_nochecked);
+//    					cbCheck.setBackground(null);
+    					setEnabled(btnSubmit, false, R.drawable.icon_btn_bg_invalid);
+    				}
+    			}
+    		});
+       	
+       	SpannableString spannableString1 = new SpannableString(res.getString(R.string.regist_agreement));
+        
+        spannableString1.setSpan(new ClickableSpan()
+        {
+        	 @Override
+             public void updateDrawState(TextPaint ds) {
+                 super.updateDrawState(ds);
+                 ds.setUnderlineText(false);      //设置下划线
+             }
+	
+           @Override
+            public void onClick(View widget)
+            {
+             	startServiceTermRequest(AppConstants.APP_SERVICE,res.getString(R.string.regist_agreement_title));
+            }
+        }, 7, 17, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      
+        //设置字体前景色  
+        spannableString1.setSpan(new ForegroundColorSpan(Color.RED), 7, 17, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);  //设置前景色为红色  
+        tvUserAgreement.setText(spannableString1);
+        //  在单击链接时凡是有要执行的动作，都必须设置MovementMethod对象
+        tvUserAgreement.setMovementMethod(LinkMovementMethod.getInstance());
+        //给医生职称RadioGroup添加监听器
+        doctor_title.setOnCheckedChangeListener(new DoctorTitleCheckChangeListener());
+    }
+
+
+    public void onDestroy() {
+        super.onDestroy();
+
+        HttpTaskManager.stop(TAG);
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	LoginActivity.startActivity(getActivity());
+        	getActivity().finish();  
+        }
+    };
+
+	private String confirmPWD;
+
+    @Override
+    public void onClick(View view) {
+        // save to sharepreference
+        switch (view.getId()) {
+            case R.id.addcard: {
+                break;
+            }
+        }
+    }
+
+
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+    /**
+     *设置是否可以点击
+     */
+	public void setEnabled(View view,boolean isEnabled,int resID){
+		view.setBackgroundResource(resID);
+		view.setEnabled(isEnabled);
+	}
+	
+	 /**
+     * APP服务条框接口
+     */
+    private  void startServiceTermRequest(int type,final String title) {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        LogUtils.d(TAG, "token  =================== " + token);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.serviceTerm(TAG, token, String.valueOf(type)),
+                JsonParserFactory.parseBaseModel(ServiceTermModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                        	ServiceTermModel dataModel = (ServiceTermModel) resultData;
+                            if (dataModel != null&&dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                        		Intent intent = new Intent(getActivity(),
+                    					AdDetailActivity.class);
+                    			intent.putExtra("imglink",dataModel.getTermUrl());
+                    			intent.putExtra("title", title);
+                    			startActivity(intent);
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    @Override
+    public void onDestroyView() {
+    	// TODO Auto-generated method stub
+    	super.onDestroyView();
+    	LogUtils.d(TAG, "onDestroyView");
+    }
+    
+    private void registerApplyRequest(String doctorName,String hospitalName,String departName, String password,int title,String inviter) {
+    	Global.progressDialog = ProgressDialog.show(getActivity(), null,
+	    		  getActivity().getString(R.string.load_data), true,
+					true);
+    	String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+        String devicetoken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+    	//String tag, String doctorName, String telphone,String hospitalName,String departName,String password,String deviceToken,String deviceType
+    	HttpTaskManager.startStringRequest(
+                DataRequestUtils.getDoctorRegisterequestParam(TAG, doctorName, accountName, hospitalName, departName,password,devicetoken,String.valueOf(AppConstants.ANDROID),title,inviter),
+                JsonParserFactory.parseBaseModel(VertifyCodeDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final VertifyCodeDataModel dataModel = (VertifyCodeDataModel) resultData;
+                            if (dataModel != null&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), "注册申请成功");
+                                startLoginRequest();
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel
+										.getErrorMsg());
+                            }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+       });
+    }
+    
+    
+    private void startLoginRequest() {
+        final String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+        String devicetoken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+//      final String password = PersonalConfig.getString(PersonalConfigKey.EXTRA_PWD_HINT);  
+    	Global.progressDialog = ProgressDialog.show(getActivity(), null,
+	    		  getActivity().getString(R.string.load_data), true,
+					true);
+    	if(TextUtils.isEmpty(Global.APP_VERSION_NAME))
+    		Global.APP_VERSION_NAME = Global.getVerName(getContext());
+    	if(TextUtils.isEmpty(Global.OS_VERSION))
+    		Global.OS_VERSION = Global.getOSVersion();
+    	if(TextUtils.isEmpty(Global.PHONE_MODEL))
+    		Global.PHONE_MODEL = Global.getPhoneModel();
+        RequestParams params=DataRequestUtils.getLoginRequestParam(TAG, accountName, "", AppConstants.ANDROID, devicetoken, AppConstants.MODEL_DEFAULT,Global.APP_VERSION_NAME,Global.OS_VERSION,Global.PHONE_MODEL);
+        HttpTaskManager.startStringRequest(
+        		params,
+                JsonParserFactory.parseBaseModel(LoginModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final LoginModel dataModel = (LoginModel) resultData;
+                            // 先清除再保存TOKEN数据
+                            if (PersonalConfig.hasKey(PersonalConfigKey.EXTRA_TOKEN)) {
+                                PersonalConfig.remove(PersonalConfigKey.EXTRA_TOKEN);
+                            }
+                            PersonalConfig.putString(PersonalConfigKey.EXTRA_TOKEN, dataModel.getToken());
+                            PersonalConfig.putString(PersonalConfigKey.EXTRA_ACCOUNT_HINT, accountName);
+//                          PersonalConfig.putString(PersonalConfigKey.EXTRA_PWD_HINT, password);
+                            PersonalConfig.asyncCommit();
+                            
+                            Global.loginSuccess(dataModel.getUserStatus(),true,accountName,dataModel.getDoctorCertificationStatus());
+                            MainActivity.startActivity(getContext(),MainActivity.TAB_INDEX_TAB5_ACTIVITY);
+//                            getActivity().finish();
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                            	
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    /**
+     * 医生职称单选按钮的选择监听器
+     * @author user
+     *
+     */
+    class DoctorTitleCheckChangeListener implements android.widget.RadioGroup.OnCheckedChangeListener{
+
+		@Override
+		public void onCheckedChanged(RadioGroup group, int checkedId) {
+			if(checkedId == doctor_title_visiting_staff.getId()){
+				//主治医师
+				doctor_title_value = VISITING_STAFF;
+			}else if(checkedId == doctor_title_deputy_chief_physician.getId()){
+				//副主任医师
+				doctor_title_value = DEPUTY_CHIEF_PHYSICIAN;
+			}else if(checkedId == doctor_title_chief_physician.getId()){
+				//主任医师
+				doctor_title_value = CHIEF_PHYSICIAN;
+			}
+		}
+    }
+}

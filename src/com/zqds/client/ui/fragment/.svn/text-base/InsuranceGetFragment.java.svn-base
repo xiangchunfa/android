@@ -1,0 +1,209 @@
+/*
+ * ConsultListFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultListFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:03
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ShowInsuranceModel;
+import com.qdoc.client.ui.InsuranceDetailActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.InsuranceDetailzFragment
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-29 上午2:00:03
+ */
+public class InsuranceGetFragment extends BaseFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = InsuranceGetFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private TextView tvInsuredName;
+    private TextView tvAccidentInsuranceNumber;
+    private TextView tvInsuredStart;
+    private TextView tvInsuredEnd;
+    private TextView tvInsuredTel;
+	
+    /**
+     * PARAMS
+     */
+    private Map<Integer, Integer> insureStatusMap = new HashMap<Integer, Integer>();
+    
+	public static InsuranceGetFragment newInstance(Bundle bundle) {
+		final InsuranceGetFragment fragment = new InsuranceGetFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+    
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_insurance_get, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+   	    int[] insuranceStatus = getResources().getIntArray(R.array.insurance_status);
+  	    TypedArray drawables= getResources().obtainTypedArray(R.array.insurance_status_icon);
+        int size = insuranceStatus.length;
+        for (int i = 0; i < size; i++) {
+          insureStatusMap.put(insuranceStatus[i], drawables.getResourceId(i, 0));
+        }
+        startShowInsuranceRequest(getActivity());
+    }
+
+    private void initView(View view) {
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.loveliness_doctor, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+                getResources().getColor(R.color.titlebar_bg));
+        tvInsuredName =(TextView) view.findViewById(R.id.tv_insured_name);
+        tvAccidentInsuranceNumber = (TextView) view.findViewById(R.id.tv_accident_insurance_number);
+        tvInsuredStart = (TextView) view.findViewById(R.id.tv_insured_Start);
+        tvInsuredEnd = (TextView) view.findViewById(R.id.tv_insured_end);
+        tvInsuredTel=(TextView) view.findViewById(R.id.tv_insured_tel);
+
+    }
+
+    protected void initListener() {
+      tvInsuredTel.setOnClickListener(new OnClickListener() {
+		
+		@Override
+		public void onClick(View arg0) {
+			 String phone=tvInsuredTel.getText().toString().replaceAll("-", "");
+			 Global.callPhone(getActivity(), phone);
+		}
+	 });
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            final InsuranceDetailActivity activity = (InsuranceDetailActivity) getActivity();
+            if (activity == null) {
+                LogUtils.d(TAG, "msgActivity == null!!!!");
+                return;
+            }
+            activity.finish();
+        }
+    };
+   
+    
+    private  void startShowInsuranceRequest(final Context context) {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(context, null,
+        		context.getString(R.string.discovery_get_insure), true,
+					true);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.getShowInsuranceRequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(ShowInsuranceModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                        	ShowInsuranceModel dataModel = (ShowInsuranceModel) resultData;
+                            if (dataModel != null&&dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	//showInsurance( dataModel);
+                            	showLongInsurance(dataModel);
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(context, R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(context, (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+   
+   private void showLongInsurance(ShowInsuranceModel model){
+	   tvInsuredName.setText(model.getSimpleInsuranceDto().getInsuredName());
+	   tvAccidentInsuranceNumber.setText(model.getSimpleInsuranceDto().getAinsuredNo());
+	   tvInsuredStart.setText(DateUtil.strTostr1(model.getSimpleInsuranceDto().getInsuredStart()));
+	   tvInsuredEnd.setText(DateUtil.strTostr1(model.getSimpleInsuranceDto().getInsuredEnd()));
+	   tvInsuredTel.setText(model.getSimpleInsuranceDto().getPackageTel());
+   }
+
+    private static class InnerHandler extends Handler {
+        private WeakReference<InsuranceGetFragment> fragmentReference;
+
+        public InnerHandler(InsuranceGetFragment fragment) {
+            fragmentReference = new WeakReference<InsuranceGetFragment>(fragment);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            final InsuranceGetFragment fragment = fragmentReference.get();
+            if (fragment == null) {
+                return;
+            }
+            switch (msg.what) {
+                default:
+                    break;
+            }
+        }
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        HttpTaskManager.stop(TAG);
+    }
+
+    /**
+     * @return
+     * @see com.qdoc.client.ui.fragment.BaseFragment#getReqestTag()
+     */
+    @Override
+    public String getReqestTag() {
+        return TAG;
+    }
+}

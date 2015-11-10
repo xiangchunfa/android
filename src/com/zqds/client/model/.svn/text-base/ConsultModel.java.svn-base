@@ -1,0 +1,261 @@
+/*
+ * ConsultModel.java
+ * classes : com.qdoc.client.model.ConsultModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:14:04
+ */
+package com.qdoc.client.model;
+
+import java.util.ArrayList;
+
+/**
+ * com.qdoc.client.model.ConsultModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:14:04
+ */
+public class ConsultModel {
+
+    private boolean autoCount;
+    private String conditions;
+    private boolean distinct;
+    private ArrayList<ElementsModel> elements;
+    private int first;
+    private boolean hasNext;
+    private boolean hasPre;
+    private int nextPage;
+    private int nextPageFirst;
+    private OrderbyModel orderby;
+    private int pageNo;
+    private int pageSize;
+    private int prePage;
+    private int totalCount;
+    private int totalPages;
+    private String userData;
+
+    /**
+     * @return the autoCount
+     */
+    public boolean isAutoCount() {
+        return autoCount;
+    }
+
+    /**
+     * @param autoCount the autoCount to set
+     */
+    public void setAutoCount(boolean autoCount) {
+        this.autoCount = autoCount;
+    }
+
+    /**
+     * @return the conditions
+     */
+    public String getConditions() {
+        return conditions;
+    }
+
+    /**
+     * @param conditions the conditions to set
+     */
+    public void setConditions(String conditions) {
+        this.conditions = conditions;
+    }
+
+    /**
+     * @return the distinct
+     */
+    public boolean isDistinct() {
+        return distinct;
+    }
+
+    /**
+     * @param distinct the distinct to set
+     */
+    public void setDistinct(boolean distinct) {
+        this.distinct = distinct;
+    }
+
+    /**
+     * @return the elements
+     */
+    public ArrayList<ElementsModel> getElements() {
+        return elements;
+    }
+
+    /**
+     * @param elements the elements to set
+     */
+    public void setElements(ArrayList<ElementsModel> elements) {
+        this.elements = elements;
+    }
+
+    /**
+     * @return the first
+     */
+    public int getFirst() {
+        return first;
+    }
+
+    /**
+     * @param first the first to set
+     */
+    public void setFirst(int first) {
+        this.first = first;
+    }
+
+    /**
+     * @return the hasNext
+     */
+    public boolean isHasNext() {
+        return hasNext;
+    }
+
+    /**
+     * @param hasNext the hasNext to set
+     */
+    public void setHasNext(boolean hasNext) {
+        this.hasNext = hasNext;
+    }
+
+    /**
+     * @return the hasPre
+     */
+    public boolean isHasPre() {
+        return hasPre;
+    }
+
+    /**
+     * @param hasPre the hasPre to set
+     */
+    public void setHasPre(boolean hasPre) {
+        this.hasPre = hasPre;
+    }
+
+    /**
+     * @return the nextPage
+     */
+    public int getNextPage() {
+        return nextPage;
+    }
+
+    /**
+     * @param nextPage the nextPage to set
+     */
+    public void setNextPage(int nextPage) {
+        this.nextPage = nextPage;
+    }
+
+    /**
+     * @return the nextPageFirst
+     */
+    public int getNextPageFirst() {
+        return nextPageFirst;
+    }
+
+    /**
+     * @param nextPageFirst the nextPageFirst to set
+     */
+    public void setNextPageFirst(int nextPageFirst) {
+        this.nextPageFirst = nextPageFirst;
+    }
+
+    /**
+     * @return the orderby
+     */
+    public OrderbyModel getOrderby() {
+        return orderby;
+    }
+
+    /**
+     * @param orderby the orderby to set
+     */
+    public void setOrderby(OrderbyModel orderby) {
+        this.orderby = orderby;
+    }
+
+    /**
+     * @return the pageNo
+     */
+    public int getPageNo() {
+        return pageNo;
+    }
+
+    /**
+     * @param pageNo the pageNo to set
+     */
+    public void setPageNo(int pageNo) {
+        this.pageNo = pageNo;
+    }
+
+    /**
+     * @return the pageSize
+     */
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    /**
+     * @param pageSize the pageSize to set
+     */
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
+    }
+
+    /**
+     * @return the prePage
+     */
+    public int getPrePage() {
+        return prePage;
+    }
+
+    /**
+     * @param prePage the prePage to set
+     */
+    public void setPrePage(int prePage) {
+        this.prePage = prePage;
+    }
+
+    /**
+     * @return the totalCount
+     */
+    public int getTotalCount() {
+        return totalCount;
+    }
+
+    /**
+     * @param totalCount the totalCount to set
+     */
+    public void setTotalCount(int totalCount) {
+        this.totalCount = totalCount;
+    }
+
+    /**
+     * @return the totalPages
+     */
+    public int getTotalPages() {
+        return totalPages;
+    }
+
+    /**
+     * @param totalPages the totalPages to set
+     */
+    public void setTotalPages(int totalPages) {
+        this.totalPages = totalPages;
+    }
+
+    /**
+     * @return the userData
+     */
+    public String getUserData() {
+        return userData;
+    }
+
+    /**
+     * @param userData the userData to set
+     */
+    public void setUserData(String userData) {
+        this.userData = userData;
+    }
+
+}

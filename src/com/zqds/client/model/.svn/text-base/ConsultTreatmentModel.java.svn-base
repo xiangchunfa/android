@@ -1,0 +1,52 @@
+/*
+ * ConsultTreatmentModel.java
+ * classes : com.qdoc.client.model.ConsultTreatmentModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午4:20:26
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.ConsultTreatmentModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午4:20:26
+ */
+public class ConsultTreatmentModel extends AbstractBaseModel {
+
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private ConsultCaseDtoModel consultCaseDto;
+    private TreatmentDtoModel treatmentDto;
+
+    /**
+     * @return the consultCaseDto
+     */
+    public ConsultCaseDtoModel getConsultCaseDto() {
+        return consultCaseDto;
+    }
+
+    /**
+     * @param consultCaseDto the consultCaseDto to set
+     */
+    public void setConsultCaseDto(ConsultCaseDtoModel consultCaseDto) {
+        this.consultCaseDto = consultCaseDto;
+    }
+
+    /**
+     * @return the treatmentDto
+     */
+    public TreatmentDtoModel getTreatmentDto() {
+        return treatmentDto;
+    }
+
+    /**
+     * @param treatmentDto the treatmentDto to set
+     */
+    public void setTreatmentDto(TreatmentDtoModel treatmentDto) {
+        this.treatmentDto = treatmentDto;
+    }
+}

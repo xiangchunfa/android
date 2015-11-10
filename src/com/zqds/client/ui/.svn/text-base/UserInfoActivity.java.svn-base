@@ -1,0 +1,180 @@
+/*
+ * ForgetPwdActivity.java
+ * classes : com.qdoc.client.ui.ForgetPwdActivity
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-10 下午11:08:57
+ */
+package com.qdoc.client.ui;
+
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentTransaction;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ImageView;
+import android.widget.TextView;
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ConsultDtoModel;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.UserInformationDtoDataModel;
+import com.qdoc.client.model.UserInformationDtoModel;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.ForgetPwdActivity
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-9-21 下午15:43:57
+ */
+public class UserInfoActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = UserInfoActivity.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private BaseFragment mCurFragment;
+    private ImageView ivUserIcon;
+    private TextView tvNickname;
+    private TextView tvFans;
+    private TextView tvWay;
+    private TextView tvConsultCount;
+    private TextView tvTotalConsultCount;
+    private TitleBar mTitleBar;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_user_info);
+        initView();
+        initData();
+        initListener();
+    }
+
+    @Override
+    protected void initView() {
+        // TODO Auto-generated method stub
+       ivUserIcon=(ImageView) findViewById(R.id.iv_user_icon);
+       tvNickname=(TextView) findViewById(R.id.tv_nickname);
+       tvFans=(TextView) findViewById(R.id.tv_fans);
+       tvWay=(TextView) findViewById(R.id.tv_way);
+       tvConsultCount=(TextView) findViewById(R.id.tv_consult_count);
+       tvTotalConsultCount=(TextView) findViewById(R.id.tv_total_consult_count);
+       mTitleBar = (TitleBar)findViewById(R.id.titlebar);
+       mTitleBar.setTitleInfo(R.string.user_info, R.drawable.icon_back,0,
+               actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+    }
+    
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+          finish();
+        }
+    };
+    
+    public void initData(){
+    	String openId = getIntent().getStringExtra(IntentTools.EXTRA_OPEN_ID);
+    	startFindUserInfoRequest(openId);
+    }
+    
+    private void startFindUserInfoRequest(String openID) {
+		String token = PersonalConfig
+				.getString(PersonalConfigKey.EXTRA_TOKEN);
+	      Global.progressDialog = ProgressDialog.show(UserInfoActivity.this, null,
+	    		  UserInfoActivity.this.getString(R.string.load_data), true,
+					true);
+		RequestParams params = DataRequestUtils.getFindUserInfoRequestParam(TAG, token, openID);
+		HttpTaskManager.startStringRequest(params,
+				JsonParserFactory.parseBaseModel(UserInformationDtoDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						Global.progressDialog.dismiss();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+						   final UserInformationDtoDataModel dataModel = (UserInformationDtoDataModel) resultData;
+                           if(dataModel != null&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+                        	   showUserInfo(dataModel.getUserInfor());  
+						   }else{
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										dataModel
+										.getErrorMsg());
+						  } 
+						}else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										R.string.network_error);
+							} else {
+
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										(String) resultData);
+							}
+						}
+					}
+				});
+	}
+    
+    public void showUserInfo(UserInformationDtoModel userInformationDto) {
+        // TODO Auto-generated method stub
+    	ImageLoaderHelper.getInstance(this).displayImage(userInformationDto.getHeadimgurl(),
+                   ivUserIcon, R.drawable.bank_owener_default_header);
+        tvNickname.setText(userInformationDto.getNicknameStr());
+        tvFans.setText(userInformationDto.getFocusStatus()==0?"是":"否");
+        tvWay.setText(userInformationDto.getFocusChannel());
+        tvConsultCount.setText(String.valueOf(userInformationDto.getConsultNub()));
+        tvTotalConsultCount.setText(String.valueOf(userInformationDto.getAllConsultNub()));    
+    }
+    
+    public void switchContent(BaseFragment from, BaseFragment to) {
+        if (mCurFragment != to) {
+            mCurFragment = to;
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            if (!to.isAdded()) { // 先判断是否被add过
+                transaction.hide(from).add(R.id.fragment_regist1, to, to.getReqestTag()).commitAllowingStateLoss(); // 隐藏当前的fragment，add下一个到Activity中
+            } else {
+                transaction.hide(from).show(to).commitAllowingStateLoss(); // 隐藏当前的fragment，显示下一个
+            }
+        }
+    }
+
+    public BaseFragment getCurrentFragment(String tag) {
+        return (BaseFragment) getSupportFragmentManager().findFragmentByTag(tag);
+    }
+
+    @Override
+    protected void initListener() {
+        // TODO Auto-generated method stub
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+    public static void startActivity(Context context,String OpenId) {
+        context.startActivity(IntentTools.getUserInfoIntent(context,OpenId));
+    }
+}

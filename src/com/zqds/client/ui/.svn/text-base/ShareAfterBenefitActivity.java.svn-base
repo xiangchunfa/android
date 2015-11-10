@@ -1,0 +1,149 @@
+package com.qdoc.client.ui;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.ShareService;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ShareCardDataModel;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.ToastUtils;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.TextView;
+/**
+ * 体现成功后跳转的分享界面
+ * @author antony create at 2015-01-20
+ *
+ */
+public class ShareAfterBenefitActivity extends BaseActivity {
+	
+	public static final String TAG = ShareAfterBenefitActivity.class.getSimpleName();
+	
+	private double benefit_success_money;//成功提现的金额数
+	//private double total_benefit_money;
+	private TitleBar mTitleBar;//标题栏
+	private TextView benefit_success_money_tv;//显示提现成功金额
+	private TextView total_benefit_money_tv;//累积提现金额
+	private TextView share_next_time;//下次再说文本按钮
+	private TextView invite_friend_attention;//邀请好友关注文本按钮
+	private TextView share_after_to_account_time;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_share_after_benefit);
+		
+		initView();
+		initData();
+		initListener();
+	}
+
+	@Override
+	protected void initView() {
+		mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.benefit_success, R.drawable.icon_back, 0, actionBarLeftBtnListener,
+                null, getResources().getColor(R.color.titlebar_bg));
+        
+        benefit_success_money_tv = (TextView) findViewById(R.id.benefit_success_money);
+        total_benefit_money_tv = (TextView) findViewById(R.id.total_benefit_tv);
+        share_next_time = (TextView) findViewById(R.id.share_next_time);
+        invite_friend_attention = (TextView) findViewById(R.id.invite_friend_attention);
+        share_after_to_account_time = (TextView) findViewById(R.id.share_after_to_account_time);
+	}
+	
+	private void initData(){
+		benefit_success_money = getIntent().getExtras().getDouble(IntentTools.EXTAR_BENEFIT_SECCUSS_MONEY);
+		String totalBenefitString = getIntent().getStringExtra(IntentTools.EXTAR_TOTAL_BENEFIT);
+		LogUtils.i(TAG, benefit_success_money+"");
+		//显示提现成功的金额，如果传递过来问空，就不显示
+		benefit_success_money_tv.setText(0==benefit_success_money?"":"￥"+(int)benefit_success_money);
+		total_benefit_money_tv.setText(TextUtils.isEmpty(totalBenefitString)?"":"￥"+(Double.valueOf(totalBenefitString)+benefit_success_money));
+		String accountTime = getIntent().getExtras().getString(IntentTools.EXTAR_TOACCOUNT_TIME);
+		StringBuffer sb = new StringBuffer();
+		sb.append(getString(R.string.share_toaccount_left_text));
+		sb.append(accountTime);
+		sb.append(getString(R.string.to_accout_time_right));
+		share_after_to_account_time.setText(sb.toString());
+	}
+
+	@Override
+	protected void initListener() {
+		share_next_time.setOnClickListener(actionBarLeftBtnListener);
+		invite_friend_attention.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(!NetworkUtils.isOnline(ShareAfterBenefitActivity.this)){
+					ToastUtils.ToastShort(ShareAfterBenefitActivity.this, R.string.network_error);
+					return;
+				}
+				getShareRequest();
+			}
+		});
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			finish();
+		}
+	};
+	
+	private void getShareRequest(){
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getShareCardInfoParam(TAG, token),JsonParserFactory.parseBaseModel(ShareCardDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {//网络请求成功
+							final ShareCardDataModel dataModel = (ShareCardDataModel) resultData;
+							if(null != dataModel){
+								//获取到的分享内容成功
+								if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+									ShareService share = new ShareService(ShareAfterBenefitActivity.this);
+									String shareContent = dataModel.getConent();
+									String imageURL = dataModel.getHeadimage();
+									share.configUMShare(ShareAfterBenefitActivity.this,shareContent,dataModel.getTitle(),imageURL,dataModel.getShareurl());
+									share.openShareBoard();
+								} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+									LoginActivity.startActivity(ShareAfterBenefitActivity.this);
+								} else {
+									ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+								}
+							}else{
+								//获取到的分享内容失败,提示稍后再试
+								ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_exception_try_again_later);
+							}
+						} else {
+							//网络请求失败
+							if (null==resultData) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+					}
+				});
+	}
+
+	public static void startActivity(Context context,double money,String totalBenefit,String toAccountTime){
+		if(null == context)
+			return;
+		context.startActivity(IntentTools.startShareAfterBenefitActivity(context, money,totalBenefit,toAccountTime));
+	}
+}

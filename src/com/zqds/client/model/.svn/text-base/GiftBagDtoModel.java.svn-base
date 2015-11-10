@@ -1,0 +1,32 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class GiftBagDtoModel  implements Serializable{
+
+	private static final long serialVersionUID = 1L;
+    
+	private String id;
+	private String gainNum;
+	private String description;
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getGainNum() {
+		return gainNum;
+	}
+	public void setGainNum(String gainNum) {
+		this.gainNum = gainNum;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	 
+	
+}

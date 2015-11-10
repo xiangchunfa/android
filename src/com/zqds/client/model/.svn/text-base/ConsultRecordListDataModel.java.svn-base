@@ -1,0 +1,29 @@
+package com.qdoc.client.model;
+/**
+ * 咨询记录列表对象
+ * @author antony
+ *
+ */
+public class ConsultRecordListDataModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1663867153770730458L;
+	
+	private Pagination<ConsultRecordListDto> pager;
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<ConsultRecordListDto> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<ConsultRecordListDto> pager) {
+		this.pager = pager;
+	}
+}

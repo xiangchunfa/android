@@ -1,0 +1,213 @@
+package com.qdoc.client.ui;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.OutpatientTimeSettingDto;
+import com.qdoc.client.model.OutpatientTimeSettingModel;
+import com.qdoc.client.ui.widget.ClinicTimeView;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+/**
+ * 门诊时间设置
+ * @author antony create at 2015-01-22
+ *
+ */
+public class ClinicTimeSetActivity extends BaseActivity {
+	
+	private static final String TAG = ClinicTimeSetActivity.class.getSimpleName();
+	
+	private TitleBar mTitleBar;
+	private LinearLayout clinic_time_parent;//门诊时间设置的父布局
+	private RelativeLayout add_clinic_time_layout;//添加门诊时间设置布局
+	
+	private List<OutpatientTimeSettingDto> outPatientTimeSettingList;//门诊时间设置对象列表
+	private DoctorModel doctorDto;//关于我界面传输过来的医生信息对象
+	
+	/**
+	 * @return the outPatientTimeSettingList
+	 */
+	public List<OutpatientTimeSettingDto> getOutPatientTimeSettingList() {
+		return outPatientTimeSettingList;
+	}
+
+	/**
+	 * @param outPatientTimeSettingList the outPatientTimeSettingList to set
+	 */
+	public void setOutPatientTimeSettingList(
+			List<OutpatientTimeSettingDto> outPatientTimeSettingList) {
+		this.outPatientTimeSettingList = outPatientTimeSettingList;
+	}
+
+	/**
+	 * @return the add_clinic_time_layout
+	 */
+	public RelativeLayout getAdd_clinic_time_layout() {
+		return add_clinic_time_layout;
+	}
+
+	/**
+	 * @param add_clinic_time_layout the add_clinic_time_layout to set
+	 */
+	
+	public void setAdd_clinic_time_layout(RelativeLayout add_clinic_time_layout) {
+		this.add_clinic_time_layout = add_clinic_time_layout;
+	}
+
+	/**
+	 * @return the clinic_time_parent
+	 */
+	public LinearLayout getClinic_time_parent() {
+		return clinic_time_parent;
+	}
+
+	/**
+	 * @param clinic_time_parent the clinic_time_parent to set
+	 */
+	public void setClinic_time_parent(LinearLayout clinic_time_parent) {
+		this.clinic_time_parent = clinic_time_parent;
+	}
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_clinic_set);
+		
+		initView();
+		initData();
+		initListener();
+	}
+
+	@Override
+	protected void initView() {
+		mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.clinic_time, R.drawable.icon_back, 0, titleLeftButtonListener, null, getResources().getColor(R.color.titlebar_bg));
+		clinic_time_parent = (LinearLayout) findViewById(R.id.clinic_time_parent);
+		add_clinic_time_layout = (RelativeLayout) findViewById(R.id.add_clinic_time_layout);
+	}
+	
+	private void initData(){
+		outPatientTimeSettingList = new ArrayList<OutpatientTimeSettingDto>();
+		doctorDto = (DoctorModel) getIntent().getExtras().getSerializable(IntentTools.EXTAR_DOCTORMODEL);
+		//防止doctorDto传输失败而出现null的情况
+		if(null == doctorDto)
+			doctorDto = new DoctorModel();
+		getClinicTime();
+		//saveClinicTime();
+	}
+
+	@Override
+	protected void initListener() {
+		add_clinic_time_layout.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				//首先保存目前所有的门诊时间设置(本地保存)
+				int childViewCount = clinic_time_parent.getChildCount();
+				outPatientTimeSettingList.removeAll(outPatientTimeSettingList);
+				for(int i=0;i<childViewCount;i++){
+					((ClinicTimeView)clinic_time_parent.getChildAt(i)).saveClinicTimeTemporary();
+				}
+				//判断已有的门诊时间设置个数是否超过2个，超过2个不能再添加
+				if(outPatientTimeSettingList.size()>=2){
+					ToastUtils.ToastShort(ClinicTimeSetActivity.this, R.string.out_of_clinic_time_limit);
+					return;
+				}
+				//点击添加门诊时间布局后，隐藏该添加门诊时间布局
+				add_clinic_time_layout.setVisibility(View.GONE);
+				//添加门诊时间布局
+				clinic_time_parent.removeAllViews();
+				int clinicTimeListSize = outPatientTimeSettingList.size();
+				OutpatientTimeSettingDto newOutpatientTimeSettingDto = new OutpatientTimeSettingDto();
+				StringBuffer defaultClinicAddress = new StringBuffer();
+				defaultClinicAddress.append(TextUtils.isEmpty(doctorDto.getHospitalName())?"":doctorDto.getHospitalName());
+				defaultClinicAddress.append(TextUtils.isEmpty(doctorDto.getDepartName())?"":doctorDto.getDepartName());
+				newOutpatientTimeSettingDto.setOutpatientAddress(defaultClinicAddress.toString());
+				newOutpatientTimeSettingDto.setOutpatientTime("00000000000000");
+				ClinicTimeView newClinicTimeTableLayout =  new ClinicTimeView(ClinicTimeSetActivity.this, newOutpatientTimeSettingDto,true,clinicTimeListSize+1);
+				clinic_time_parent.addView(newClinicTimeTableLayout);
+				
+				for(int i=0;i<clinicTimeListSize;i++){
+					OutpatientTimeSettingDto outpatientTimeSettingDto = outPatientTimeSettingList.get(i);
+					ClinicTimeView clinicTimeTableLayout =  new ClinicTimeView(ClinicTimeSetActivity.this, outpatientTimeSettingDto,false,i);
+					clinic_time_parent.addView(clinicTimeTableLayout);
+				}
+				//outPatientTimeSettingList.add(newOutpatientTimeSettingDto);
+			}
+		});
+	}
+
+	OnClickListener titleLeftButtonListener  = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			finish();
+		}
+	};
+	
+	private void getClinicTime(){
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(this, null, getString(R.string.loading), true, true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getClinicTime(TAG, token), 
+        		JsonParserFactory.parseBaseModel(OutpatientTimeSettingModel.class), 
+        		new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode == ServerErrorCode.STATUS_SUCCESS){
+					OutpatientTimeSettingModel outpatientTimeSettingModel = (OutpatientTimeSettingModel) resultData;
+					if(null!=outpatientTimeSettingModel && outpatientTimeSettingModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						if(null!=outpatientTimeSettingModel.getOutpatSettings() && outpatientTimeSettingModel.getOutpatSettings().size()>0){
+							outPatientTimeSettingList = outpatientTimeSettingModel.getOutpatSettings();
+							int clinicTimeCount = outpatientTimeSettingModel.getOutpatSettings().size();
+							for(int i=0;i<clinicTimeCount;i++){
+								OutpatientTimeSettingDto outpatientTimeSettingDto = outpatientTimeSettingModel.getOutpatSettings().get(i);
+								ClinicTimeView clinicTimeTableLayout =  new ClinicTimeView(ClinicTimeSetActivity.this, outpatientTimeSettingDto,false,i);
+								clinic_time_parent.addView(clinicTimeTableLayout);
+							}
+						} else {
+						 	PersonalConfig.remove(PersonalConfigKey.EXTAR_CLINIC_TIME);
+						    PersonalConfig.putBoolean(PersonalConfigKey.EXTAR_CALL_CLINIC_TIME, true);
+						}
+					}else if(null!=outpatientTimeSettingModel && outpatientTimeSettingModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(ClinicTimeSetActivity.this);
+					}else{
+						ToastUtils.ToastShort(ClinicTimeSetActivity.this, outpatientTimeSettingModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+				Global.progressDialog.dismiss();
+			}
+		});
+	}
+	
+	public static void startActivity(Context context,DoctorModel doctorDto){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startClinicTimeSetActivity(context, doctorDto));
+	}
+}

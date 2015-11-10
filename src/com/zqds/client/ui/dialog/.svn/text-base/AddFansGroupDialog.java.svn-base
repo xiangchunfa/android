@@ -1,0 +1,72 @@
+package com.qdoc.client.ui.dialog;
+
+import android.app.Dialog;
+import android.content.Context;
+import android.os.Bundle;
+import android.view.Display;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.helper.ViewInitial;
+
+public class AddFansGroupDialog extends Dialog implements ViewInitial {
+	
+	private TextView savegroup;
+	private EditText et_groupName;
+	private Window window;
+	private Context context;
+	private OnSaveButtonClickListener listener;
+
+	public AddFansGroupDialog(Context context,OnSaveButtonClickListener listener) {
+		super(context);
+		this.context = context;
+		this.listener = listener;
+	}
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(R.layout.add_new_group_dialog);
+		getWindow().setBackgroundDrawableResource(android.R.color.transparent);//设置dialog圆角效果
+		initViews();
+		initDatas();
+		initListeners();
+	}
+
+	@Override
+	public void initViews() {
+		savegroup = (TextView) findViewById(R.id.tv_save_new_group);
+		et_groupName = (EditText) findViewById(R.id.et_group_name);
+	}
+
+	@Override
+	public void initDatas() {
+		window=getWindow();
+		WindowManager wm=(WindowManager) context.getSystemService(Context.WINDOW_SERVICE);  
+		Display d = wm.getDefaultDisplay(); // 获取屏幕宽、高用  
+		WindowManager.LayoutParams p = window.getAttributes(); // 获取对话框当前的参数值  
+		//p.height = (int) (d.getHeight() * 0.6); // 高度设置为屏幕的0.5  
+		p.width = (int) (d.getWidth() * 0.95); // 宽度设置为屏幕的0.8  
+		window.setAttributes(p);
+	}
+
+	@Override
+	public void initListeners() {
+		savegroup.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				listener.onButtonClick(et_groupName, AddFansGroupDialog.this);
+			}
+		});
+	}
+
+	public interface OnSaveButtonClickListener{
+		public void onButtonClick(EditText editText,Dialog dialog);
+	}
+}

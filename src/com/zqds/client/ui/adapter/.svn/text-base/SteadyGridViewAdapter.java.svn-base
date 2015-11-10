@@ -1,0 +1,142 @@
+/*
+ * SteadyGridViewAdapter.java
+ * classes : com.qdoc.client.ui.adapter.SteadyGridViewAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:35:19
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ImageDtoModel;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.ImageDetailActivity;
+import com.qdoc.client.util.ListUtils;
+
+/**
+ * com.qdoc.client.ui.adapter.SteadyGridViewAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:35:19
+ */
+public class SteadyGridViewAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = SteadyGridViewAdapter.class.getSimpleName();
+
+    /**
+     * params
+     */
+    private final LayoutInflater mInflater;
+    private ArrayList<ImageDtoModel> mDataList;
+    private Context mContext;
+
+    public SteadyGridViewAdapter(Context context) {
+        mContext = context;
+        mDataList = new ArrayList<ImageDtoModel>();
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+    }
+
+    public void addListData(ArrayList<ImageDtoModel> list) {
+        mDataList.clear();
+        mDataList.addAll(list);
+        notifyDataSetChanged();
+    }
+
+    public void clearListData() {
+        mDataList.clear();
+        mDataList = null;
+    }
+
+    public void resetListData() {
+        notifyDataSetChanged();
+    }
+
+    /**
+     * @return
+     * @see android.widget.Adapter#getCount()
+     */
+    @Override
+    public int getCount() {
+        // TODO Auto-generated method stub
+        return ListUtils.isEmpty(mDataList) ? 0 : mDataList.size();
+    }
+
+    /**
+     * @param position
+     * @return
+     * @see android.widget.Adapter#getItem(int)
+     */
+    @Override
+    public Object getItem(int position) {
+        // TODO Auto-generated method stub
+        if (mDataList != null) {
+            int size = mDataList.size();
+            return mDataList.get(position % size);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * @param position
+     * @return
+     * @see android.widget.Adapter#getItemId(int)
+     */
+    @Override
+    public long getItemId(int position) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    /**
+     * @param position
+     * @param convertView
+     * @param parent
+     * @return
+     * @see android.widget.Adapter#getView(int, android.view.View,
+     *      android.view.ViewGroup)
+     */
+    @Override
+    public View getView(final int position, View convertView, ViewGroup parent) {
+        // TODO Auto-generated method stub
+        ViewHolder holder = null;
+        if (convertView == null) {
+            holder = new ViewHolder();
+            convertView = mInflater.inflate(R.layout.listitem_consult_image, null);
+            holder.mThumbImg = (ImageView) convertView.findViewById(R.id.image_des);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        ImageDtoModel model = mDataList.get(position);
+        ImageLoaderHelper.getInstance(mContext).displayImage(model.getRealThumbuUrl(), holder.mThumbImg);
+        holder.mThumbImg.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                ImageDetailActivity.startActivity(mContext, position, mDataList);
+            }
+        });
+
+        return convertView;
+    }
+
+    private static class ViewHolder {
+        private ImageView mThumbImg;
+    }
+
+}

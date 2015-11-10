@@ -1,0 +1,115 @@
+/*
+ * BenefitListAdapter.java
+ * classes : com.qdoc.client.ui.adapter.BenefitListAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午5:57:58
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.MessageModel;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ViewUtils;
+
+/**
+ * com.qdoc.client.ui.adapter.BenefitListAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午5:57:58
+ *         
+ * update at 2014-11-10 15:36
+ */
+public class BenefitListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = BenefitListAdapter.class.getSimpleName();
+
+    /**
+     * params
+     */
+    private ArrayList<MessageModel> msgList = new ArrayList<MessageModel>();
+    private LayoutInflater inflater;
+    private Context mContext;
+    private int doctorWithDrawCount;
+
+    public BenefitListAdapter(Context context) {
+        mContext = context;
+        inflater = LayoutInflater.from(context);
+        doctorWithDrawCount = 0;
+    }
+
+    public void addListData(ArrayList<MessageModel> list,int doctorWithDrawCount) {
+    	this.doctorWithDrawCount = doctorWithDrawCount;
+        msgList.clear();
+        msgList.addAll(list);
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public int getCount() {
+        return msgList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return msgList.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder;
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.listitem_benefit_list, null);
+            holder = new ViewHolder();
+            holder.iconLogo = (ImageView) convertView.findViewById(R.id.icon_logo);
+            holder.textView = (TextView) convertView.findViewById(R.id.tv_name);
+            holder.size = (TextView) convertView.findViewById(R.id.tv_size);
+            holder.more = (ImageView) convertView.findViewById(R.id.more);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        int size = msgList.size();
+        holder.textView.setText(msgList.get(position % size).getName());
+        if (msgList.get(position % size).getIcon() != 0) {
+            holder.iconLogo.setImageResource(msgList.get(position % size).getIcon());
+            holder.size.setText(msgList.get(position % size).getSize());
+            ViewUtils.setVisibility(holder.iconLogo, View.VISIBLE);
+        } else {
+            ViewUtils.setVisibility(holder.iconLogo, View.GONE);
+        }
+        if(position==0 && doctorWithDrawCount<=0){
+        	//提现记录item中（下标为0），没有提现记录（doctorWithDrawCount《=0），不显示向右箭头
+        	ViewUtils.setVisibility(holder.more, View.GONE);
+        }else{
+        	//其他情况下箭头都要显示
+        	ViewUtils.setVisibility(holder.more, View.VISIBLE);
+        }
+        return convertView;
+    }
+
+    private static class ViewHolder {
+        ImageView iconLogo;
+        TextView textView;
+        TextView size;
+        ImageView more;
+    }
+}

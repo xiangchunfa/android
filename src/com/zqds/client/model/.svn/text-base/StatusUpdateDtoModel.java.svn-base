@@ -1,0 +1,165 @@
+/*
+ * StatusUpdateDtoModel.java
+ * classes : com.qdoc.client.model.StatusUpdateDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-14 下午5:25:43
+ */
+package com.qdoc.client.model;
+
+import java.util.ArrayList;
+
+/**
+ * com.qdoc.client.model.StatusUpdateDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-14 下午5:25:43
+ */
+public class StatusUpdateDtoModel {
+
+    private int consultStatus;//APP的咨询菜单是否有新内容（0：无新内容 1：有新内容）
+    private int msgStatus;//APP的消息菜单是否有新内容（0：无新内容 1：有新内容）
+    private int grabOrderStatus;//APP的抢单菜单是否有新内容（0：无新内容 1：有新内容）
+    private int findStatus;//APP的发现菜单是否有新内容（0：无新内容 1：有新内容）
+    private int doctorStatus;//APP的个人菜单是否有新内容（0：无新内容 1：有新内容）
+    private int doctorId;//医生编号
+    private String updateTime;//更新时间
+    private int userStatus;//用户权限
+	private int certificationStatus;//认证状态
+	private ArrayList<Long> consultList;
+
+	/**
+	 * @return the userStatus
+	 */
+	public int getUserStatus() {
+		return userStatus;
+	}
+
+	/**
+	 * @param userStatus the userStatus to set
+	 */
+	public void setUserStatus(int userStatus) {
+		this.userStatus = userStatus;
+	}
+
+    
+    /**
+     * @return the consultStatus
+     */
+    public int getConsultStatus() {
+        return consultStatus;
+    }
+
+    /**
+     * @param consultStatus the consultStatus to set
+     */
+    public void setConsultStatus(int consultStatus) {
+        this.consultStatus = consultStatus;
+    }
+
+    /**
+     * @return the msgStatus
+     */
+    public int getMsgStatus() {
+        return msgStatus;
+    }
+
+    /**
+     * @param msgStatus the msgStatus to set
+     */
+    public void setMsgStatus(int msgStatus) {
+        this.msgStatus = msgStatus;
+    }
+
+    /**
+     * @return the grabOrderStatus
+     */
+    public int getGrabOrderStatus() {
+        return grabOrderStatus;
+    }
+
+    /**
+     * @param grabOrderStatus the grabOrderStatus to set
+     */
+    public void setGrabOrderStatus(int grabOrderStatus) {
+        this.grabOrderStatus = grabOrderStatus;
+    }
+
+    /**
+     * @return the findStatus
+     */
+    public int getFindStatus() {
+        return findStatus;
+    }
+
+    /**
+     * @param findStatus the findStatus to set
+     */
+    public void setFindStatus(int findStatus) {
+        this.findStatus = findStatus;
+    }
+
+    /**
+     * @return the doctorStatus
+     */
+    public int getDoctorStatus() {
+        return doctorStatus;
+    }
+
+    /**
+     * @param doctorStatus the doctorStatus to set
+     */
+    public void setDoctorStatus(int doctorStatus) {
+        this.doctorStatus = doctorStatus;
+    }
+
+    /**
+     * @return the doctorId
+     */
+    public int getDoctorId() {
+        return doctorId;
+    }
+
+    /**
+     * @param doctorId the doctorId to set
+     */
+    public void setDoctorId(int doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    /**
+     * @return the updateTime
+     */
+    public String getUpdateTime() {
+        return updateTime;
+    }
+
+    /**
+     * @param updateTime the updateTime to set
+     */
+    public void setUpdateTime(String updateTime) {
+        this.updateTime = updateTime;
+    }
+
+	public int getCertificationStatus() {
+		return certificationStatus;
+	}
+
+	public void setCertificationStatus(int certificationStatus) {
+		this.certificationStatus = certificationStatus;
+	}
+	
+	/**
+	 * @return the consultList
+	 */
+	public ArrayList<Long> getConsultList() {
+		return consultList;
+	}
+
+	/**
+	 * @param consultList the consultList to set
+	 */
+	public void setConsultList(ArrayList<Long> consultList) {
+		this.consultList = consultList;
+	}
+}

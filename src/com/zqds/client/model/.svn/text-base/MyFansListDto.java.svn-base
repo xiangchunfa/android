@@ -1,0 +1,123 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 我的粉丝对象
+ * @author antony
+ *
+ */
+public class MyFansListDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1716885543082939806L;
+
+	private String nicknameStr;//用户的昵称
+	private String headimgurl;//用户头像
+	private int focusChannel;//关注渠道   0:二维码，1:平台搜索
+	private long consultNub;//咨询当前医生的次数 
+	private int sex;//用户的性别，值为1时是男性，值为2时是女性，值为0时是未知
+	private String openId;//用户编号
+	private String focusTime;
+	private String age;
+	
+	
+	/**
+	 * @return the nicknameStr
+	 */
+	public String getNicknameStr() {
+		return nicknameStr;
+	}
+	/**
+	 * @param nicknameStr the nicknameStr to set
+	 */
+	public void setNicknameStr(String nicknameStr) {
+		this.nicknameStr = nicknameStr;
+	}
+	/**
+	 * @return the headimgurl
+	 */
+	public String getHeadimgurl() {
+		return headimgurl;
+	}
+	/**
+	 * @param headimgurl the headimgurl to set
+	 */
+	public void setHeadimgurl(String headimgurl) {
+		this.headimgurl = headimgurl;
+	}
+	/**
+	 * @return the focusChannel
+	 */
+	public int getFocusChannel() {
+		return focusChannel;
+	}
+	/**
+	 * @param focusChannel the focusChannel to set
+	 */
+	public void setFocusChannel(int focusChannel) {
+		this.focusChannel = focusChannel;
+	}
+	/**
+	 * @return the consultNub
+	 */
+	public long getConsultNub() {
+		return consultNub;
+	}
+	/**
+	 * @param consultNub the consultNub to set
+	 */
+	public void setConsultNub(long consultNub) {
+		this.consultNub = consultNub;
+	}
+	/**
+	 * @return the sex
+	 */
+	public int getSex() {
+		return sex;
+	}
+	/**
+	 * @param sex the sex to set
+	 */
+	public void setSex(int sex) {
+		this.sex = sex;
+	}
+	/**
+	 * @return the openId
+	 */
+	public String getOpenId() {
+		return openId;
+	}
+	/**
+	 * @param openId the openId to set
+	 */
+	public void setOpenId(String openId) {
+		this.openId = openId;
+	}
+	/**
+	 * @return the focusTime
+	 */
+	public String getFocusTime() {
+		return focusTime;
+	}
+	/**
+	 * @param focusTime the focusTime to set
+	 */
+	public void setFocusTime(String focusTime) {
+		this.focusTime = focusTime;
+	}
+	/**
+	 * @return the age
+	 */
+	public String getAge() {
+		return age;
+	}
+	/**
+	 * @param age the age to set
+	 */
+	public void setAge(String age) {
+		this.age = age;
+	}
+}

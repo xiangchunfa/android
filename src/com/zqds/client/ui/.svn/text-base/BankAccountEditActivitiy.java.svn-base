@@ -1,0 +1,59 @@
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.BankDtoDataModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.ui.fragment.BankAccountEditFragment;
+import com.qdoc.client.util.IntentTools;
+
+public class BankAccountEditActivitiy extends BaseActivity {
+	
+	public static final String TAG = BankAccountEditActivitiy.class.getSimpleName();
+	
+	private BankAccountEditFragment mBankAccountEditFragment;
+	
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_bankaccountedit);
+		parseIntent();
+		initView();
+		initListener();
+	}
+	
+	private void parseIntent() {
+		Bundle cacheBundle = getIntent().getExtras();
+		BankDtoDataModel dataModel = (BankDtoDataModel) cacheBundle.getSerializable(IntentTools.EXTAR_BANKDTODATAMODEL);
+		DoctorModel doctorModel = (DoctorModel) cacheBundle.getSerializable(IntentTools.EXTAR_DOCTORMODEL);
+		mBankAccountEditFragment = BankAccountEditFragment.newInstance(cacheBundle);
+		mBankAccountEditFragment.setGlobal_bankDtoModel(dataModel);
+		mBankAccountEditFragment.setDoctorModel(doctorModel);
+	}
+
+	@Override
+	protected void initView() {
+		FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.fragment_bankaccountedit, mBankAccountEditFragment, BankAccountEditFragment.TAG);
+        ft.commitAllowingStateLoss();
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+
+	}
+	
+	public static void startActivity(Context context,BankDtoDataModel bankDtoDataModel,DoctorModel doctorDto){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startBankAccountEditActivity(context,bankDtoDataModel,doctorDto));
+	}
+
+}

@@ -1,0 +1,63 @@
+/*
+ * OrderbyModel.java
+ * classes : com.qdoc.client.model.OrderbyModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:12:34
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.OrderbyModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:12:34
+ */
+public class OrderbyModel {
+    private String order;
+    private boolean orderBySetted;
+    private String orderby;
+
+    /**
+     * @return the order
+     */
+    public String getOrder() {
+        return order;
+    }
+
+    /**
+     * @param order the order to set
+     */
+    public void setOrder(String order) {
+        this.order = order;
+    }
+
+    /**
+     * @return the orderBySetted
+     */
+    public boolean isOrderBySetted() {
+        return orderBySetted;
+    }
+
+    /**
+     * @param orderBySetted the orderBySetted to set
+     */
+    public void setOrderBySetted(boolean orderBySetted) {
+        this.orderBySetted = orderBySetted;
+    }
+
+    /**
+     * @return the orderby
+     */
+    public String getOrderby() {
+        return orderby;
+    }
+
+    /**
+     * @param orderby the orderby to set
+     */
+    public void setOrderby(String orderby) {
+        this.orderby = orderby;
+    }
+
+}

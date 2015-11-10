@@ -1,0 +1,119 @@
+package com.qdoc.client.ui.dialog;
+
+import android.app.Dialog;
+import android.content.Context;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.helper.ViewInitial;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.util.StringUtils;
+/**
+ * FileName    : HintDlg.java
+ * Description : 提示对话框
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : Andy
+ * @version    : 1.0 
+ * Create Date : 2014-11-27 
+ **/
+public class HintDlg extends BaseDlg implements ViewInitial{
+
+	private Button btnLeft;
+	private Button btnRight;
+	private TextView tvTitle;
+	private TextView tvContent;
+	
+	private String title, content;
+    private String btnLeftText;
+    private String btnRightText;
+    private int resID;//布局ID
+
+    private OnDialogclickListener listener;
+    
+    public HintDlg(Context context, String content, String title, OnDialogclickListener listener,int resID) {
+		super(context);
+		this.content = content;
+		this.title = title;
+		this.listener = listener;
+		this.resID = resID;
+	}
+    
+	public HintDlg(Context context, String content, String title,String btnLeftText, String btnRightText, OnDialogclickListener onDialogclickListener,int resID) {
+		super(context);
+		this.content = content;
+		this.title = title;
+		this.btnLeftText = btnLeftText;
+		this.btnRightText = btnRightText;
+		this.listener = onDialogclickListener;
+		this.resID = resID;
+	}
+	
+	public HintDlg(Context context, String content, String title,String btnLeftText, String btnRightText,OnDialogclickListener listener,int resID,boolean cancelable) {
+		this(context, content, title, btnLeftText, btnRightText, listener, resID);
+		setCanceledOnTouchOutside(cancelable);
+	}
+	
+	
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(resID);
+        initViews();
+        initDatas();
+        initListeners();
+	}
+
+	@Override
+	public void initViews() {
+		// TODO Auto-generated method stub
+		btnLeft = (Button) findViewById(R.id.btn_left_dialog);
+		btnRight = (Button) findViewById(R.id.btn_right_dialog);
+		tvContent = (TextView) findViewById(R.id.tv_text);
+		tvTitle = (TextView) findViewById(R.id.message_title);
+	}
+
+	@Override
+	public void initDatas() {
+		// TODO Auto-generated method stub
+        if(!StringUtils.isEmpty(title))		
+		    tvTitle.setText(title);
+		if(!StringUtils.isEmpty(content))
+            tvContent.setText(content);
+		if(!StringUtils.isEmpty(btnRightText))
+		    btnRight.setText(btnRightText);
+		if(!StringUtils.isEmpty(btnLeftText))
+			btnLeft.setText(btnLeftText);
+	}
+
+	@Override
+	public void initListeners() {
+		// TODO Auto-generated method stub
+		 if(btnLeft!=null){
+	       btnLeft.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+		          listener.onButtonClick(AppConstants.LEFT_BUTTON,HintDlg.this);		
+			}
+		  }) ; 
+		 }
+		 if(btnRight!=null){
+	     btnRight.setOnClickListener(new View.OnClickListener() {
+				
+			@Override
+		    public void onClick(View v) {
+			     listener.onButtonClick(AppConstants.RIGHT_BUTTON,HintDlg.this);		
+				}
+			}) ; 
+		 }
+	}
+	
+    public interface OnDialogclickListener {
+        public void onButtonClick(int type, Dialog dialog);
+    }
+}

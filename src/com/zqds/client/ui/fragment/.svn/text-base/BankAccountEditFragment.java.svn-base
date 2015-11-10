@@ -1,0 +1,532 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+
+import java.util.ArrayList;
+
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BankDtoDataModel;
+import com.qdoc.client.model.BankDtoModel;
+import com.qdoc.client.model.BankInfoDtoModel;
+import com.qdoc.client.model.DocBankDataModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.ValiBankAccountModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.BankAccountEditActivitiy;
+import com.qdoc.client.ui.BankSelectActivitiy;
+import com.qdoc.client.ui.BindingCardSuccessActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.view.BankCardNoClearEditText;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+@SuppressLint("ParserError")
+public class BankAccountEditFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = BankAccountEditFragment.class.getSimpleName();
+    
+    
+    public static final int BANKACCOUNTEDIT_REQUESTCODE = 112;
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    //持卡人文本框
+    private TextView tv_account;
+    //银行卡号编辑框
+    private BankCardNoClearEditText tv_banknum;
+    //确认卡号编辑框
+    private BankCardNoClearEditText check_ed_banknum;
+    //开户银行布局
+    private RelativeLayout rl_bank_list;
+    //开户银行编辑框
+    private TextView tv_bank;
+    //绑定银行卡文本按钮
+    private TextView tv_banding_bank;
+    //医生信息类
+    private DoctorModel doctorModel;
+    //传输过来的医生银行信息
+    private BankDtoDataModel global_bankDtoModel;
+    /**
+     * params
+     */
+    //private List<BankDtoModel> bankList;
+
+    
+    public static BankAccountEditFragment newInstance(Bundle bundle) {
+        final BankAccountEditFragment fragment = new BankAccountEditFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_bankaccount_edit, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initData();
+        initListener();
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfoWithRightText(R.string.aboutus_bank, R.drawable.icon_back, 0,
+                actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+
+        tv_account = (TextView) view.findViewById(R.id.ed_account);
+        tv_banknum = (BankCardNoClearEditText) view.findViewById(R.id.ed_banknum);
+        rl_bank_list = (RelativeLayout) view.findViewById(R.id.rl_bank_list);
+        tv_bank = (TextView) view.findViewById(R.id.tv_bank);
+        tv_banding_bank = (TextView) view.findViewById(R.id.banding_my_card_tv);
+        tv_banding_bank.setClickable(false);
+        tv_banding_bank.setBackgroundResource(R.drawable.add_clinic_set_corner_brown);
+        check_ed_banknum = (BankCardNoClearEditText) view.findViewById(R.id.check_ed_banknum);
+    }
+    
+    private void initData(){
+    	if(null == global_bankDtoModel){                                   
+    		//处理传输过来的global为空的情况
+    		getShowBankInfoRequest();
+    	}else{
+        	BankInfoDtoModel bankDto = global_bankDtoModel.getBankInfo();
+        	showBankInfo(bankDto);
+    	}
+    }
+
+    protected void initListener() {
+    	rl_bank_list.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				tv_bank.performClick();
+			}
+		});
+    	
+    	tv_bank.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+				if(global_bankDtoModel==null){
+					//处理一位脑残医生无法获取银行列表的问题
+					global_bankDtoModel = new BankDtoDataModel();
+					BankInfoDtoModel bankInfoDto = new BankInfoDtoModel();
+					bankInfoDto.setName(tv_account.getText().toString().trim());
+					bankInfoDto.setAccountNo("");
+					bankInfoDto.setBankName("");
+					global_bankDtoModel.setBankInfo(bankInfoDto);
+					String[] bankNames = getContext().getResources().getStringArray(R.array.bank_name);
+					ArrayList<BankDtoModel> bankDtos = new ArrayList<BankDtoModel>();
+					BankDtoModel bankDto = null;
+					for(String bankName:bankNames){
+						bankDto = new BankDtoModel();
+						bankDto.setBankName(bankName);
+						bankDtos.add(bankDto);
+					}
+					global_bankDtoModel.setBankDto(bankDtos);
+				}
+				if(global_bankDtoModel==null){
+					ToastUtils.ToastShort(getActivity(), R.string.network_error);
+					return;
+				}
+				Intent intent = new Intent(getActivity(), BankSelectActivitiy.class);
+				intent.putExtra("TAG", TAG);
+				intent.putExtra(BankSelectActivitiy.BANKACCOUNTEDITBANKDATA, global_bankDtoModel);
+				intent.putExtra(BankSelectActivitiy.HAD_SELECT_BANK, tv_bank.getText().toString());
+				startActivityForResult(intent, BANKACCOUNTEDIT_REQUESTCODE);
+			}
+		});
+    	
+    	tv_banding_bank.setOnClickListener(actionBarRightBtnListener);
+    	
+    	tv_banknum.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,int after) {}
+			
+			@Override
+			public void afterTextChanged(Editable s) {
+				int cardNOLength = tv_banknum.getText().toString().trim().replace(" ", "").length();
+				int checkCardNOLength = check_ed_banknum.getText().toString().trim().replace(" ", "").length();
+				if(cardNOLength>=15 && checkCardNOLength>=15){
+					tv_banding_bank.setClickable(true);
+					tv_banding_bank.setBackgroundResource(R.drawable.add_clinic_set_corner_red);
+				}else{
+					tv_banding_bank.setClickable(false);
+					tv_banding_bank.setBackgroundResource(R.drawable.add_clinic_set_corner_brown);
+				}
+			}
+		});
+    	check_ed_banknum.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,int after) {}
+			
+			@Override
+			public void afterTextChanged(Editable s) {
+				int cardNOLength = tv_banknum.getText().toString().trim().replace(" ", "").length();
+				int checkCardNOLength = check_ed_banknum.getText().toString().trim().replace(" ", "").length();
+				if(cardNOLength>=15 && checkCardNOLength>=15){
+					tv_banding_bank.setClickable(true);
+					tv_banding_bank.setBackgroundResource(R.drawable.add_clinic_set_corner_red);
+				}else{
+					tv_banding_bank.setClickable(false);
+					tv_banding_bank.setBackgroundResource(R.drawable.add_clinic_set_corner_brown);
+				}
+			}
+		});
+    }
+    
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    	if(resultCode==BankAccountEditActivitiy.RESULT_OK && requestCode==BANKACCOUNTEDIT_REQUESTCODE){
+    		//从银行列表返回来的开户行信息
+    		BankDtoModel selectBank = (BankDtoModel) data.getSerializableExtra(BankSelectActivitiy.BANKDATA_KEY);
+    		setBankName(selectBank);
+    	}
+    };
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            BankAccountEditActivitiy activity = (BankAccountEditActivitiy) getActivity();
+            if (activity == null) {
+                return;
+            }
+            activity.finish();
+            hideInputMethod(tv_banknum, getActivity());
+            hideInputMethod(check_ed_banknum, getActivity());
+        }
+    };
+
+    OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            if (TextUtils.isEmpty(tv_bank.getText())) {
+                ToastUtils.ToastLong(getActivity(), "开户银行不能为空");
+                return;
+            }
+            if (TextUtils.isEmpty(tv_banknum.getText())) {
+                ToastUtils.ToastLong(getActivity(), "银行卡号不能为空");
+                return;
+            }
+            if(TextUtils.isEmpty(check_ed_banknum.getText())){
+                ToastUtils.ToastLong(getActivity(), "确认卡号不能为空");
+                return;
+            }
+            int banknum_length = tv_banknum.getText().toString().trim().replaceAll(" ", "").length();
+            if(banknum_length<15 || banknum_length>20){
+            	//银行卡号有效位数是15-20位
+            	ToastUtils.ToastShort(getActivity(), "请输入正确的银行卡号");
+            	return;
+            }
+            //判断2次银行卡号是否一样
+            if(!tv_banknum.getText().toString().trim().replaceAll(" ", "").equals(check_ed_banknum.getText().toString().trim().replaceAll(" ", ""))){
+            	ToastUtils.ToastShort(getContext(), R.string.card_number_not_the_same);
+            	return;
+            }
+            //首先判断是否是信用卡
+            checkCreditCard();
+            //getSaveBankInfoRequest(tv_banknum.getText().toString().replaceAll(" ", ""), tv_bank.getText().toString());
+/*            getSaveBankInfoRequest(tv_banknum.getText().toString().replaceAll(" ", ""), tv_bank.getText().toString());
+            hideInputMethod(tv_banknum, getActivity());
+            hideInputMethod(check_ed_banknum, getActivity());*/
+        }
+    };
+    
+    /**
+     * 检查银行卡是否是信用卡
+     */
+    private void checkCreditCard(){
+    	Global.progressDialog = ProgressDialog.show(getActivity(),null,getActivity().getString(R.string.loading),true,true);
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.checkCreditCard(TAG, token, tv_banknum.getText().toString().replaceAll(" ", "")), 
+    			JsonParserFactory.parseBaseModel(ValiBankAccountModel.class),
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				if(resultCode == ServerErrorCode.STATUS_SUCCESS){
+					final ValiBankAccountModel valiBankAccountModel = (ValiBankAccountModel) resultData;
+					if(valiBankAccountModel.getState() == ServerErrorCode.INTERFACE_SUCCESS){
+						if(ValiBankAccountModel.CREDIT_CARD == valiBankAccountModel.getCredit())
+							ToastUtils.ToastLong(getContext(), valiBankAccountModel.getCreditMsg());
+						else if(ValiBankAccountModel.SAVING_CARD == valiBankAccountModel.getCredit())
+							showBindingCardInfo();
+					}else if(valiBankAccountModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getContext());
+					}else{
+						ToastUtils.ToastShort(getContext(), valiBankAccountModel.getErrorMsg());
+					}
+				}else{
+                	if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+			}
+		});
+    }
+    
+    /**
+     * 展示确认银行卡信息的对话框
+     */
+    private void showBindingCardInfo(){
+    	final AlertDialog checkBankCardDialog = new AlertDialog.Builder(getContext()).create();
+    	checkBankCardDialog.show();
+    	Window mWindow = checkBankCardDialog.getWindow();
+    	mWindow.setContentView(R.layout.bank_account_check_dialog);
+    	TextView cancle = (TextView) mWindow.findViewById(R.id.next_time);
+    	TextView bindingNow = (TextView) mWindow.findViewById(R.id.binding_card_now);
+    	ImageView close_dialog = (ImageView) mWindow.findViewById(R.id.close_dialog);
+    	
+    	ImageView bank_owener_header_image = (ImageView) mWindow.findViewById(R.id.bank_owener_header_image);
+    	ImageLoaderHelper.getInstance(getActivity()).displayImage(doctorModel.getRealHeadImage(), bank_owener_header_image,R.drawable.bank_owener_default_header);
+    	TextView bank_name_tv = (TextView) mWindow.findViewById(R.id.bank_name_tv);
+    	bank_name_tv.setText(tv_bank.getText().toString());
+    	TextView bank_owener_name = (TextView) mWindow.findViewById(R.id.bank_owener_name);
+    	bank_owener_name.setText(tv_account.getText().toString());
+    	TextView bank_account_no = (TextView) mWindow.findViewById(R.id.bank_account_no);
+    	bank_account_no.setText(tv_banknum.getText().toString());
+    	close_dialog.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				checkBankCardDialog.cancel();
+			}
+		});
+    	cancle.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				checkBankCardDialog.cancel();
+			}
+		});
+    	bindingNow.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				checkBankCardDialog.cancel();
+				//点击了立即绑定
+				getSaveBankInfoRequest(tv_banknum.getText().toString().replaceAll(" ", ""), tv_bank.getText().toString());
+				/*getContext().startActivity(new Intent(getContext(), BindingCardSuccessActivity.class));
+				getActivity().finish();*/
+			}
+		});
+    	
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+
+        HttpTaskManager.stop(TAG);
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+        }
+    }
+
+    private void getSaveBankInfoRequest(String accountNo, String bankname) {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        
+        HttpTaskManager.startStringRequest(DataRequestUtils.getSaveBankInfoRequestParam(TAG, token, accountNo, bankname), JsonParserFactory.parseBaseModel(DocBankDataModel.class),
+                new IResultReceiver() {
+
+                    @SuppressLint("ParserError")
+					@Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DocBankDataModel dataModel = (DocBankDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.set_bank_account_sucess);
+/*                              AboutmeActivity activity = (AboutmeActivity) getActivity();
+                                if (activity == null) {
+                                    return;
+                                }
+                                activity.switchToAboutMeFragment();
+                                */
+                            	BankInfoDtoModel bankInfoDto = new BankInfoDtoModel();
+                            	bankInfoDto.setAccountNo(tv_banknum.getText().toString().replaceAll(" ", ""));
+                            	global_bankDtoModel.getBankInfo().setAccountNo(tv_banknum.getText().toString().replaceAll(" ", ""));
+                            	bankInfoDto.setBankName(tv_bank.getText().toString());
+                            	global_bankDtoModel.getBankInfo().setBankName(tv_bank.getText().toString());
+                            	bankInfoDto.setName(tv_account.getText().toString());
+                            	global_bankDtoModel.getBankInfo().setName(tv_account.getText().toString());
+                            	Intent intent = new Intent(AppConstants.CHANGE_CARD_RECEIVER_ACTION);
+                            	intent.putExtra(IntentTools.EXTAR_BANKINFODATAMODEL, bankInfoDto);
+                            	getContext().sendBroadcast(intent);
+                				BindingCardSuccessActivity.startActivity(getContext(), global_bankDtoModel, doctorModel);
+                            	getActivity().finish();
+                        }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                        	ToastUtils.ToastShort(getContext()
+									.getApplicationContext(),
+									dataModel
+									.getErrorMsg());
+      					  }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+
+    public void showBankInfo(BankInfoDtoModel bankDto) {
+        tv_account.setText(TextUtils.isEmpty(bankDto.getName()) ? "" : bankDto.getName());
+        // 由于产品要求银行卡信息编辑界面进来初始状态是没有绑定银行卡信息，所以注释掉这些代码
+        //tv_banknum.setText(TextUtils.isEmpty(bankDto.getAccountNo()) ? "" : bankDto.getAccountNo().trim().replaceAll("\\d{4}(?!$)", "$0 "));
+        //check_ed_banknum.setText(TextUtils.isEmpty(bankDto.getAccountNo())?"":bankDto.getAccountNo().trim().replaceAll("\\d{4}(?!$)", "$0 "));
+        //tv_bank.setText(TextUtils.isEmpty(bankDto.getBankName()) ? "" : bankDto.getBankName());
+    }
+    
+    private void getShowBankInfoRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getShowBankInfoequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(BankDtoDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final BankDtoDataModel dataModel = (BankDtoDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	if ((dataModel != null) && (dataModel.getBankDto() != null)) {
+                            		BankInfoDtoModel bankDto = dataModel.getBankInfo();
+                            		//bankList=dataModel.getBankDto();
+                            		global_bankDtoModel = dataModel;
+                            		try {
+                            			showBankInfo(bankDto);
+                            		} catch (Exception e) {
+                            			// TODO Auto-generated catch block
+                            			LogUtils.e(TAG, "exception break out!!!", e);
+                            		}
+                            	} else {
+                            		
+                            	}
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                            	LoginActivity.startActivity(getActivity());
+          					}else{
+          						ToastUtils.ToastShort(getContext(), dataModel.getErrorMsg());
+          					}
+                        } else {
+                        	if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    public void setBankName(BankDtoModel model){
+    	tv_bank.setText(model.getBankName());
+    }
+
+	/**
+	 * @param global_bankDtoModel the global_bankDtoModel to set
+	 */
+	public void setGlobal_bankDtoModel(BankDtoDataModel global_bankDtoModel) {
+		this.global_bankDtoModel = global_bankDtoModel;
+	}
+
+	/**
+	 * @param doctorModel the doctorModel to set
+	 */
+	public void setDoctorModel(DoctorModel doctorModel) {
+		this.doctorModel = doctorModel;
+	}
+
+	/**
+     * @author antony
+     * @param view 接受软键盘输入的视图
+     * @param context 上下文对象
+     * create at 2014-11-11
+     */
+    private void hideInputMethod(View view,Context context){
+    	InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        //判断软键盘是否显示，如果显示就隐藏
+    	if(imm.isActive())
+    		imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+}

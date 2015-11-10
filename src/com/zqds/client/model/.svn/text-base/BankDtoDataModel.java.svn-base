@@ -1,0 +1,49 @@
+/*
+ * BankDtoDataModel.java
+ * classes : com.qdoc.client.model.BankDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 上午12:20:32
+ */
+package com.qdoc.client.model;
+
+import java.util.ArrayList;
+
+/**
+ * com.qdoc.client.model.BankDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-20 上午12:20:32
+ */
+public class BankDtoDataModel extends AbstractBaseModel {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1964639341029457695L;
+	private ArrayList<BankDtoModel> bankDto;
+    private BankInfoDtoModel bankInfoDto;
+    
+    
+    public BankInfoDtoModel getBankInfo() {
+		return bankInfoDto;
+	}
+
+	public void setBankInfo(BankInfoDtoModel bankInfo) {
+		this.bankInfoDto = bankInfo;
+	}
+
+	/**
+     * @return the bankDto
+     */
+    public ArrayList<BankDtoModel>  getBankDto() {
+        return bankDto;
+    }
+
+    /**
+     * @param bankDto the bankDto to set
+     */
+    public void setBankDto(ArrayList<BankDtoModel>  bankDto) {
+        this.bankDto = bankDto;
+    }
+
+}

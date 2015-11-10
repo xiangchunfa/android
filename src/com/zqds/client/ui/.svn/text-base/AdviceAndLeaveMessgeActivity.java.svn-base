@@ -1,0 +1,120 @@
+/*
+ * ConsultActivity.java
+ * classes : com.qdoc.client.ui.ConsultActivity
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-7-8 下午11:02:48
+ */
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import com.qdoc.client.R;
+import com.qdoc.client.ui.fragment.AdviceFragment;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.fragment.LeaveMessageFragment;
+import com.qdoc.client.util.IntentTools;
+
+/**
+ * FileName    : AdviceActivity.java
+ * Description : 咨询建议和留言类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-9-1 
+ **/
+public class AdviceAndLeaveMessgeActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = AdviceAndLeaveMessgeActivity.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private BaseFragment mCurFragment;
+    
+    /**
+     * params
+     */
+    /**咨询建议*/
+    public static final int ADVICE = 1;
+    /**留言*/
+    public static final int LEAVE_MESSAGE = 2;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_base);
+        parseIntent();
+        initView();
+        initListener();
+    }
+
+    public void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    private void parseIntent() {
+    
+    }
+
+    @Override
+    protected void initView() {
+        Bundle cacheBundle = getIntent().getExtras();
+        int fragmentID = cacheBundle.getInt(IntentTools.EXTRA_LAUNCHER_FRAGMENT);
+        if(fragmentID == ADVICE){
+        	mCurFragment = AdviceFragment.newInstance(cacheBundle);
+        } else if (fragmentID == LEAVE_MESSAGE) {
+        	mCurFragment = LeaveMessageFragment.newInstance(cacheBundle);
+        }
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.fragment_base, mCurFragment, AdviceFragment.TAG);
+        ft.commitAllowingStateLoss();
+    } 
+
+    @Override
+    protected void initListener() {
+        // TODO Auto-generated method stub
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+    /**
+     * 
+     * @param context
+     * @param bundle
+     * @param fragmentID 页面
+     */
+    public static void startActivity(Context context, Bundle bundle, int fragmentID) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getAdviceIntent(context, bundle, fragmentID));
+    }
+    
+    /**
+     * 
+     * @param context
+     * @param bundle
+     * @param fragmentID 页面
+     */
+    public static void startActivityForResult(Context context, Fragment frg, Bundle bundle, int fragmentID, int requestCode) {
+        if (frg == null) {
+            return;
+        }
+        frg.startActivityForResult(IntentTools.getAdviceIntent(context, bundle, fragmentID), requestCode);
+    }
+}

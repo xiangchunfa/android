@@ -1,0 +1,274 @@
+package com.qdoc.client.ui.fragment;
+
+import java.lang.ref.WeakReference;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.CommonProblemDataModel;
+import com.qdoc.client.model.CommonProblemDtoModel;
+import com.qdoc.client.model.ShowProblemDataModel;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.ServiceActivity;
+import com.qdoc.client.ui.adapter.CommonQuestionAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.InputTools;
+import com.qdoc.client.util.ToastUtils;
+
+public class CommonQuestionFragment extends BaseFragment{
+	/**
+	 * TAG
+	 */
+    public static final String TAG = CommonQuestionFragment.class.getSimpleName();
+	
+	/**
+	 * view 
+	 */
+	private TitleBar mTitleBar;
+	private PullRefreshView mListView;
+	private PullListMaskController mViewController;
+	
+	/**
+	 * params
+	 */
+	private int mPageIndex = 1;
+	private static final int PAGE_SIZE = 10;
+	private CommonQuestionAdapter commonQuestionAdapter;
+	private int pageIndex = 1;
+	private final int DELAYMILLIS = 200;
+	private InnerHandler mHandler = new InnerHandler(this);
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		return inflater.inflate(R.layout.fragment_common_question, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onViewCreated(view, savedInstanceState);
+		initView(view);
+		initParams();
+		initListener();
+	}
+	
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onActivityCreated(savedInstanceState);
+	}
+	
+	public static CommonQuestionFragment newInstance(Bundle bundle) {
+		final CommonQuestionFragment fragment = new CommonQuestionFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+	
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	private static class InnerHandler extends Handler {
+		private WeakReference<CommonQuestionFragment> fragmentReference;
+
+		public InnerHandler(CommonQuestionFragment fragment) {
+			fragmentReference = new WeakReference<CommonQuestionFragment>(fragment);
+		}
+
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			final CommonQuestionFragment fragment = fragmentReference.get();
+			if (fragment == null) {
+				return;
+			}
+			switch (msg.what) {
+			default:
+				break;
+			}
+		}
+	}
+	
+	private void initView(View view) {
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.common_question,
+				R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+				getResources().getColor(R.color.titlebar_bg));
+		mListView = (PullRefreshView) view.findViewById(R.id.listView);
+		ErrorMaskView maskView = (ErrorMaskView) view.findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(mListView, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+	     	ServiceActivity activity = (ServiceActivity) getActivity();
+            activity.removeContent(TAG);
+		}
+	};
+	
+	private void initParams() {
+		commonQuestionAdapter = new CommonQuestionAdapter(getActivity());
+		mListView.setAdapter(commonQuestionAdapter);
+		getInitQuestionList();
+	}
+	
+	private void initListener() {
+		mListView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+                CommonProblemDtoModel model = (CommonProblemDtoModel) arg0.getAdapter().getItem(arg2);
+                getShowProblem(model.getProblemName(), String.valueOf(model.getId()));
+			}
+		});
+		
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+
+			@Override
+			public void onClickFootView() {
+				// 上拉加载更多
+				getLoadMoreQuestionList();
+			}
+		});
+		
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				// 避免频繁发送请求
+				mHandler.removeCallbacks(taskRunnable);
+				mHandler.postDelayed(taskRunnable, DELAYMILLIS);
+			}
+		});
+	}
+	
+	private Runnable taskRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+			getInitQuestionList();
+		}
+	};
+	
+	/**
+	 *获取客服常见问题 
+	 */
+	private void getShowProblem(final String question, String id) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.showProblem(TAG, token, id), JsonParserFactory
+				.parseBaseModel(ShowProblemDataModel.class), new IResultReceiver() {
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final ShowProblemDataModel dataModel = (ShowProblemDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+				     	ServiceActivity activity = (ServiceActivity) getActivity();
+				     	activity.addCommonQuestion(question, dataModel.getAnswer());
+			            activity.removeContent(TAG);
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void getLoadMoreQuestionList() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.listProblems(TAG, token, ++pageIndex, PAGE_SIZE), JsonParserFactory
+				.parseBaseModel(CommonProblemDataModel.class), new IResultReceiver() {
+
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final CommonProblemDataModel dataModel = (CommonProblemDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						 mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						 commonQuestionAdapter.addMoreListData(dataModel.getPager().getElements());
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						 LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.LIST_RETRY);
+				}
+			}
+		});
+	}
+	
+    /**
+     * 获取客服常见问题列表
+     */
+    private void getInitQuestionList() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.listProblems(TAG, token, mPageIndex, PAGE_SIZE), JsonParserFactory
+				.parseBaseModel(CommonProblemDataModel.class), new IResultReceiver() {
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final CommonProblemDataModel dataModel = (CommonProblemDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						commonQuestionAdapter.addListData(dataModel.getPager().getElements());
+						if(dataModel.getPager().isHasNext()){
+							mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						}else{
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+    }
+}

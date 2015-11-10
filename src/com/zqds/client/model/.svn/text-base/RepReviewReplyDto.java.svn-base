@@ -1,0 +1,148 @@
+package com.qdoc.client.model;
+
+public class RepReviewReplyDto {
+
+	private long id;//评论ID
+	private String revContent;//评论内容
+	private String revTime;//评论时间
+	private String revIp;//评论Ip
+	private String revUserName;//评论用户的名称
+	private String revUserHeadImg;//评论用户的头像
+	private long userId;//评论用户的ID
+	private int userType;//评论用户的类型  0微信端用户   1医生
+	private int revStatus;//评论状态(0未审核，1审核不通过，2审核通过，3已删除)
+	private RepReviewDto repReviewDto;//评论对象
+	private RepReviewReplyDto replyerDto;//被回复的对象
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+	/**
+	 * @return the revContent
+	 */
+	public String getRevContent() {
+		return revContent;
+	}
+	/**
+	 * @param revContent the revContent to set
+	 */
+	public void setRevContent(String revContent) {
+		this.revContent = revContent;
+	}
+	/**
+	 * @return the revTime
+	 */
+	public String getRevTime() {
+		return revTime;
+	}
+	/**
+	 * @param revTime the revTime to set
+	 */
+	public void setRevTime(String revTime) {
+		this.revTime = revTime;
+	}
+	/**
+	 * @return the revIp
+	 */
+	public String getRevIp() {
+		return revIp;
+	}
+	/**
+	 * @param revIp the revIp to set
+	 */
+	public void setRevIp(String revIp) {
+		this.revIp = revIp;
+	}
+	/**
+	 * @return the revUserName
+	 */
+	public String getRevUserName() {
+		return revUserName;
+	}
+	/**
+	 * @param revUserName the revUserName to set
+	 */
+	public void setRevUserName(String revUserName) {
+		this.revUserName = revUserName;
+	}
+	/**
+	 * @return the revUserHeadImg
+	 */
+	public String getRevUserHeadImg() {
+		return revUserHeadImg;
+	}
+	/**
+	 * @param revUserHeadImg the revUserHeadImg to set
+	 */
+	public void setRevUserHeadImg(String revUserHeadImg) {
+		this.revUserHeadImg = revUserHeadImg;
+	}
+	/**
+	 * @return the userId
+	 */
+	public long getUserId() {
+		return userId;
+	}
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(long userId) {
+		this.userId = userId;
+	}
+	/**
+	 * @return the userType
+	 */
+	public int getUserType() {
+		return userType;
+	}
+	/**
+	 * @param userType the userType to set
+	 */
+	public void setUserType(int userType) {
+		this.userType = userType;
+	}
+	/**
+	 * @return the revStatus
+	 */
+	public int getRevStatus() {
+		return revStatus;
+	}
+	/**
+	 * @param revStatus the revStatus to set
+	 */
+	public void setRevStatus(int revStatus) {
+		this.revStatus = revStatus;
+	}
+	/**
+	 * @return the repReviewDto
+	 */
+	public RepReviewDto getRepReviewDto() {
+		return repReviewDto;
+	}
+	/**
+	 * @param repReviewDto the repReviewDto to set
+	 */
+	public void setRepReviewDto(RepReviewDto repReviewDto) {
+		this.repReviewDto = repReviewDto;
+	}
+	/**
+	 * @return the replyerDto
+	 */
+	public RepReviewReplyDto getReplyerDto() {
+		return replyerDto;
+	}
+	/**
+	 * @param replyerDto the replyerDto to set
+	 */
+	public void setReplyerDto(RepReviewReplyDto replyerDto) {
+		this.replyerDto = replyerDto;
+	}
+}

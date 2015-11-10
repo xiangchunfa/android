@@ -1,0 +1,108 @@
+package com.qdoc.client.ui.view;
+
+import java.util.List;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.RepReviewDto;
+import com.qdoc.client.model.RepReviewReplyDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.system.ItemOnclickListener;
+import com.qdoc.client.ui.view.TwoLevelCommentView.ReplyItemOnClickListener;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.TimeUtils;
+
+public class OneLevelComentView extends LinearLayout {
+	
+	private RepReviewDto oneLevelComment;
+	private Context mContext;
+	private ImageView iv_reviewer_header;
+	private TextView tv_reviewer_nickname;
+	private TextView tv_review_time;
+	private TextView tv_review_content;
+	private CheckBox cb_comment_icon;
+	private CheckBox cb_praise_review;
+	private TextView tv_item_praise_and_1;
+	private LinearLayout ll_twolevel_comment;
+	private ItemOnclickListener mItemOnClickListener;
+	private ReplyItemOnClickListener mReplyItemOnClickListener;
+
+	private View convertView;
+
+	public OneLevelComentView(Context context,RepReviewDto repReviewDto,ItemOnclickListener mItemOnClickListener,ReplyItemOnClickListener mReplyItemOnClickListener){
+		super(context);
+		this.oneLevelComment = repReviewDto;
+		this.mContext = context;
+		this.mItemOnClickListener = mItemOnClickListener;
+		this.mReplyItemOnClickListener = mReplyItemOnClickListener;
+		initView(context);
+		initData(repReviewDto);
+		initListener();
+	}
+	
+	private void initView(Context context){
+		convertView = LayoutInflater.from(context).inflate(R.layout.article_review_item, null);
+		
+		iv_reviewer_header = (ImageView) convertView.findViewById(R.id.iv_reviewer_header);
+		tv_reviewer_nickname = (TextView) convertView.findViewById(R.id.tv_reviewer_nickname);
+		tv_review_time = (TextView) convertView.findViewById(R.id.tv_review_time);
+		tv_review_content = (TextView) convertView.findViewById(R.id.tv_review_content);
+		cb_comment_icon = (CheckBox) convertView.findViewById(R.id.cb_comment_icon);
+		cb_praise_review = (CheckBox) convertView.findViewById(R.id.cb_praise_review);
+		tv_item_praise_and_1 = (TextView) convertView.findViewById(R.id.tv_item_praise_and_1);
+		ll_twolevel_comment = (LinearLayout) convertView.findViewById(R.id.ll_twolevel_comment);
+		this.addView(convertView);
+	}
+	
+	private void initData(RepReviewDto repReviewDto){
+		//加载一级评论的头像
+		ImageLoaderHelper.getInstance(mContext).displayImage(repReviewDto.getRevUserHeadImg(), iv_reviewer_header, R.drawable.bank_owener_default_header);
+		//显示评论人的昵称
+		tv_reviewer_nickname.setText(repReviewDto.getRevUserName());
+		//显示评论时间
+		tv_review_time.setText(TimeUtils.friendly_time(repReviewDto.getRevTime()));
+		//显示一级评论的内容
+		tv_review_content.setText(repReviewDto.getRevContent());
+		//二级评论条数
+		cb_comment_icon.setText(repReviewDto.getRepReviewReplys()==null?"0":String.valueOf(repReviewDto.getRepReviewReplys().size()));
+		//点赞数
+		cb_praise_review.setText(String.valueOf(repReviewDto.getPraiseCount()));
+		cb_praise_review.setEnabled(true);
+		cb_praise_review.setChecked(false);
+		cb_praise_review.setTextColor(mContext.getResources().getColor(R.color.review_parse_text_color));
+		List<RepReviewReplyDto> twoLevelCommentList = repReviewDto.getRepReviewReplys();
+		if(ListUtils.isEmpty(twoLevelCommentList))
+			return;
+		int twoLevelCommetnCount = twoLevelCommentList.size();
+		for(int i=0;i<twoLevelCommetnCount;i++){
+			TwoLevelCommentView twoLevelCommentView = new TwoLevelCommentView(mContext, ll_twolevel_comment, oneLevelComment, twoLevelCommentList.get(i),mReplyItemOnClickListener);
+			ll_twolevel_comment.addView(twoLevelCommentView);
+		}
+	}
+	
+	private void initListener(){
+		cb_praise_review.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				mItemOnClickListener.onButtonClick(oneLevelComment, cb_praise_review, tv_item_praise_and_1, 0);
+			}
+		});
+		
+		cb_comment_icon.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				mItemOnClickListener.onReplyClick(AppConstants.REVIEW_ONE, oneLevelComment,ll_twolevel_comment);
+			}
+		});
+	}
+}

@@ -1,0 +1,37 @@
+/*
+ * consultDtoDataModel.java
+ * classes : com.qdoc.client.model.consultDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-31 下午10:49:21
+ */
+package com.qdoc.client.model;
+
+import java.util.Date;
+
+import android.provider.ContactsContract.Contacts.Data;
+
+/**
+ * com.qdoc.client.model.consultDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-31 下午10:49:21
+ */
+
+public class ShowInsuranceModel extends AbstractBaseModel {
+
+    private SimpleInsuranceDtoModel simpleInsuranceDto;
+
+	public SimpleInsuranceDtoModel getSimpleInsuranceDto() {
+		return simpleInsuranceDto;
+	}
+
+	public void setSimpleInsuranceDto(SimpleInsuranceDtoModel simpleInsuranceDto) {
+		this.simpleInsuranceDto = simpleInsuranceDto;
+	}
+     
+    
+    
+    
+
+}

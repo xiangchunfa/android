@@ -1,0 +1,28 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class ImprintCardNewModel extends AbstractBaseModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4047914826852328104L;
+	
+	private String resultMsg;//加印成功后，提示的消息
+
+	/**
+	 * @return the resultMsg
+	 */
+	public String getResultMsg() {
+		return resultMsg;
+	}
+
+	/**
+	 * @param resultMsg the resultMsg to set
+	 */
+	public void setResultMsg(String resultMsg) {
+		this.resultMsg = resultMsg;
+	}
+
+}

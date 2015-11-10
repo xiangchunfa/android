@@ -1,0 +1,75 @@
+/*
+ * BankDtoDataModel.java
+ * classes : com.qdoc.client.model.BankDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 上午12:20:32
+ */
+package com.qdoc.client.model;
+
+
+/**
+ * com.qdoc.client.model.CheckStatusDataModel
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-10-15 上午15:31:32
+ */
+public class GainGiftBagStatusDataModel extends AbstractBaseModel {
+
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private int  gainStatus;
+    private Integer needNumber;
+    private GiftBagDtoModel giftBagDto;
+    private String contactPerson;
+    private String phoneNumber;
+    
+    
+    
+	public String getContactPerson() {
+		return contactPerson;
+	}
+
+	public void setContactPerson(String contactPerson) {
+		this.contactPerson = contactPerson;
+	}
+
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
+
+	public int getGainStatus() {
+		return gainStatus;
+	}
+
+	public void setGainStatus(int gainStatus) {
+		this.gainStatus = gainStatus;
+	}
+
+
+	public Integer getNeedNumber() {
+		return needNumber;
+	}
+
+	public void setNeedNumber(Integer needNumber) {
+		this.needNumber = needNumber;
+	}
+
+	public GiftBagDtoModel getGiftBagDto() {
+		return giftBagDto;
+	}
+
+	public void setGiftBagDto(GiftBagDtoModel giftBagDto) {
+		this.giftBagDto = giftBagDto;
+	}
+     
+    
+     
+
+}

@@ -1,0 +1,28 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class RepArticleModel extends AbstractBaseModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6485312121489424232L;
+	
+	private RepArticleDto article;
+
+	/**
+	 * @return the article
+	 */
+	public RepArticleDto getArticle() {
+		return article;
+	}
+
+	/**
+	 * @param article the article to set
+	 */
+	public void setArticle(RepArticleDto article) {
+		this.article = article;
+	}
+
+}

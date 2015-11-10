@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+     <!-- 基本颜色 -->
+    <color name="white">#ffffff</color>
+    <color name="topbar_bg">#000000</color>
+    <color name="bottomtab_normal">#666666</color>
+    <color name="bottomtab_press">#ff8003</color>
+    <color name="line">#e6e6e6</color>
+    <color name="black">#000000</color>
+    <color name="c_787778">#787778</color>
+    <color name="bg_base">#f0eff5</color>
+    <color name="c_535353">#535353</color>
+    <color name="bg4_default">#00dadde0</color>
+    <color name="et_hint">#cccccc</color>
+    <color name="bg_button">#ff8003</color>
+    <color name="bg_button_press">#e97300</color>
+</resources>

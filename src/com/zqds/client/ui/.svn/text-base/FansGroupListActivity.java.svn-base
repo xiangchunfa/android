@@ -1,0 +1,397 @@
+package com.qdoc.client.ui;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.DoctorFansCategoryModel;
+import com.qdoc.client.model.UserFocusDoctorCategoryDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ItemOnclickListener;
+import com.qdoc.client.ui.adapter.CategoryAdapter;
+import com.qdoc.client.ui.dialog.AddFansGroupDialog;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.OnKeyDownUtil;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * create at 2015-06-09
+ * @author Antony
+ *
+ */
+public class FansGroupListActivity extends BaseActivity {
+	
+	private static final String TAG = FansGroupListActivity.class.getSimpleName();
+	
+	private String token;
+	private TitleBar mTitlebar;
+	private TextView rightTitle;
+	private RelativeLayout rl_add_group;
+	private List<UserFocusDoctorCategoryDto> categoryList;
+	private CategoryAdapter categoryAdapter;
+	private ListView lv_fans_group_list;
+	private long categoryId;//分组编号
+	private String openId;
+	private ItemOnclickListener mListener;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_fans_group_manager);
+		
+		initView();
+		initListener();
+		initData();
+	}
+
+	@Override
+	protected void initView() {
+		categoryId = getIntent().getLongExtra(IntentTools.EXTRA_CATEGORY_ID, -1);
+		openId = getIntent().getStringExtra(IntentTools.EXTRA_OPEN_ID);
+		mTitlebar = (TitleBar) findViewById(R.id.titlebar);
+		if(categoryId==-1)
+			mTitlebar.setTitleInfoWithRightText(R.string.fans_group_manager, R.drawable.icon_back, R.string.finish, actionBarLeftBtnListener, actionBarRightBtnListener, getResources().getColor(R.color.titlebar_bg));
+		else
+			mTitlebar.setTitleInfoWithRightText(R.string.fans_group_manager, R.drawable.icon_back,R.string.edit,actionBarLeftBtnListener, actionBarRightBtnListener, getResources().getColor(R.color.titlebar_bg));
+		rightTitle = (TextView) mTitlebar.findViewById(R.id.titlebar_righttitle);
+		rl_add_group = (RelativeLayout) findViewById(R.id.rl_add_group);
+		lv_fans_group_list = (ListView) findViewById(R.id.lv_fans_group_list);
+	}
+
+	@Override
+	protected void initListener() {
+		rl_add_group.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(categoryList.size()>=10)
+					return;
+				new AddFansGroupDialog(FansGroupListActivity.this,new AddFansGroupDialog.OnSaveButtonClickListener() {
+					
+					@Override
+					public void onButtonClick(EditText editText, Dialog dialog) {
+						String groupName = editText.getText().toString().trim();
+						if(TextUtils.isEmpty(groupName)){
+							ToastUtils.ToastShort(FansGroupListActivity.this, R.string.group_name_null);
+							return;
+						}
+						addOrUpdateFansGroupName(groupName, 0, null,-1);
+						dialog.dismiss();
+					}
+				}).show();
+			}
+		});
+		
+		lv_fans_group_list.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				UserFocusDoctorCategoryDto userFocusDoctorCategoryDto = (UserFocusDoctorCategoryDto) parent.getAdapter().getItem(position);
+				long groupId = userFocusDoctorCategoryDto.getId();
+				if(categoryId==groupId)
+					return;
+				String categoryName = userFocusDoctorCategoryDto.getCategoryName();
+				moveFansToGroup(openId, groupId,categoryName);
+			}
+		});
+		
+		mListener = new ItemOnclickListener() {
+			
+			
+			@Override
+			public void onButtonClick(int type, Object obj, View view1, View view2,int position) {
+				UserFocusDoctorCategoryDto userFocusDoctorCategoryDto = (UserFocusDoctorCategoryDto) obj;
+				EditText cateGoryEditText = (EditText) view1;
+				String newCateGoryName = cateGoryEditText.getText().toString().trim();
+				//没有修改，不做处理
+				if(userFocusDoctorCategoryDto.getCategoryName().equals(newCateGoryName))
+					return;
+				addOrUpdateFansGroupName(newCateGoryName, userFocusDoctorCategoryDto.getId(), null,position);
+			}
+			
+			@Override
+			public void onButtonClick(int type, Object obj, View view1, View view2) {
+				UserFocusDoctorCategoryDto userFocusDoctorCategoryDto = (UserFocusDoctorCategoryDto) obj;
+				long groupId = userFocusDoctorCategoryDto.getId();
+				if(categoryId==groupId)
+					return;
+				String categoryName = userFocusDoctorCategoryDto.getCategoryName();
+				moveFansToGroup(openId, groupId,categoryName);
+			}
+			
+			@Override
+			public void onButtonClick(Object obj, View view1, View view2, int position) {
+				if(obj==null)
+					return;
+				if (OnKeyDownUtil.isFastDoubleClick()) {
+					return;
+				}
+				final UserFocusDoctorCategoryDto userFocusDoctorCategoryDto = (UserFocusDoctorCategoryDto) obj;
+				if(AppConstants.FANS_CATEGORY_FITER!=userFocusDoctorCategoryDto.getType())
+					return;
+				String title = getString(R.string.dialog_hint_title);
+				String message = null;
+				if(userFocusDoctorCategoryDto.getFansNubm()>0){
+					message = getString(R.string.category_fans_to_nogroup);
+				}else{
+					message = getString(R.string.sure_to_delete_category);
+				}
+        		String ok_text = getContext().getString(R.string.str_dialog_ok);
+        		String cancle_text = getContext().getString(R.string.str_dialog_cancel);
+        		new HintDlg(FansGroupListActivity.this, message, title, cancle_text, ok_text, new OnDialogclickListener() {
+					
+					@Override
+					public void onButtonClick(int type,Dialog dialog) {
+						switch (type) {
+						case AppConstants.LEFT_BUTTON:
+							//取消
+							dialog.dismiss();
+							break;
+						case AppConstants.RIGHT_BUTTON:
+							//删除分组
+							deleteFansCateGory(userFocusDoctorCategoryDto);
+							dialog.dismiss();
+							break;
+						}
+					}
+				},R.layout.print_card_dialog).show();
+			}
+
+			@Override
+			public void onReplyClick(int type, Object obj,View view) {}
+		};
+	}
+	
+	private void initData(){
+		categoryList = new ArrayList<UserFocusDoctorCategoryDto>();
+		categoryAdapter = new CategoryAdapter(this, categoryList,categoryId,mListener);
+		lv_fans_group_list.setAdapter(categoryAdapter);
+		getFansGroupList();
+	}
+
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			finish();
+		}
+	};
+	
+	OnClickListener actionBarRightBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			if(getString(R.string.edit).equals(rightTitle.getText())){
+				//目前按钮文案是“编辑”
+				rightTitle.setText(R.string.save);
+				//显示每个Item的删除图标
+				for(int i=0;i<categoryList.size();i++){
+					categoryList.get(i).setDeleteable(true);
+				}
+				categoryAdapter.changeData(categoryList);
+			}else if(getString(R.string.save).equals(rightTitle.getText())){
+				//目前按钮文案是"保存"
+				rightTitle.setText(R.string.edit);
+				for(int i=0;i<categoryList.size();i++){
+					categoryList.get(i).setDeleteable(false);
+				}
+				categoryAdapter.changeData(categoryList);
+			}else if(getString(R.string.finish).equals(rightTitle.getText())){
+				finish();
+			}
+		}
+	};
+	
+	private void getFansGroupList(){
+		if(TextUtils.isEmpty(token))
+			token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		Global.progressDialog = ProgressDialog.show(FansGroupListActivity.this, null, getString(R.string.loading), true, true);
+		HttpTaskManager.startStringRequest(DataRequestUtils.findDoctorFansCategory(TAG, token), 
+				JsonParserFactory.parseBaseModel(DoctorFansCategoryModel.class),
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					DoctorFansCategoryModel doctorFansCategoryModel = (DoctorFansCategoryModel) resultData;
+					if(null!=doctorFansCategoryModel&&ServerErrorCode.INTERFACE_SUCCESS==doctorFansCategoryModel.getState()){
+						categoryList = doctorFansCategoryModel.getCategoryList();
+						if(categoryId==-1){
+							for(int i=0;i<categoryList.size();i++){
+								categoryList.get(i).setDeleteable(true);
+							}
+						}
+						categoryAdapter.changeData(categoryList);
+					}else if(null!=doctorFansCategoryModel&&ServerErrorCode.TOKEN_INVALID==doctorFansCategoryModel.getState()){
+						LoginActivity.startActivity(FansGroupListActivity.this);
+					}else{
+						ToastUtils.ToastShort(FansGroupListActivity.this, (String) resultData);
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(FansGroupListActivity.this, R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(FansGroupListActivity.this, (String) resultData);
+                    }
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+	
+	/**
+	 * 添加或者修改粉丝分组名称
+	 * @param groupName
+	 * @param id
+	 * @param description
+	 */
+	private void addOrUpdateFansGroupName(final String groupName,final long id,String description,final int position){
+		if(TextUtils.isEmpty(token))
+			token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.addOrUpdateFansGroup(TAG, token, groupName, id, description), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					BaseModel baseModel = (BaseModel) resultData;
+					if(null!=baseModel&&baseModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						if(id==0){
+							//添加分组成功
+							getFansGroupList();
+							if(categoryId!=-1){
+								if(getString(R.string.save).equals(rightTitle.getText()))
+									rightTitle.setText(R.string.edit);
+							}
+						}else{
+							//修改分组成功
+							UserFocusDoctorCategoryDto userFocusDoctorCateGoryDto = categoryList.get(position);
+							userFocusDoctorCateGoryDto.setCategoryName(groupName);
+							categoryList.remove(position);
+							categoryList.add(position, userFocusDoctorCateGoryDto);
+							categoryAdapter.changeData(categoryList);
+						}
+					}else if(null!=baseModel&&baseModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						//token过期
+						LoginActivity.startActivity(FansGroupListActivity.this);
+					}else if(null!=baseModel){
+						//失败
+						ToastUtils.ToastShort(FansGroupListActivity.this, baseModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(FansGroupListActivity.this, R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(FansGroupListActivity.this, (String) resultData);
+                    }
+				}
+			}
+		});
+	}
+	
+	/**
+	 * 移动粉丝到分组
+	 * @param openId
+	 * @param groupId
+	 */
+	private void moveFansToGroup(String openId,final long groupId,final String categoryName){
+		if(TextUtils.isEmpty(token))
+			token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.moveFansToGroup(TAG, token, openId, groupId), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					BaseModel baseModel = (BaseModel) resultData;
+					if(baseModel!=null&&baseModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						//移动粉丝到分组成功
+						ToastUtils.ToastShort(FansGroupListActivity.this, R.string.split_category);
+						//发送广播，请求刷新粉丝详情界面
+						Intent brocastIntent = new Intent(AppConstants.REFRESH_FANS_INFO_DETAIL);
+						brocastIntent.putExtra(IntentTools.EXTRA_CATEGORY_ID, groupId);
+						brocastIntent.putExtra(IntentTools.EXTRA_CATEGORY_NAME, categoryName);
+						LocalBroadcastManager.getInstance(getContext()).sendBroadcast(brocastIntent);
+						//关闭被界面
+						finish();
+					}else if(baseModel!=null&&baseModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(FansGroupListActivity.this);
+					}else if(baseModel!=null){
+						ToastUtils.ToastShort(FansGroupListActivity.this, baseModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(FansGroupListActivity.this, R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(FansGroupListActivity.this, (String) resultData);
+                    }
+				}
+			}
+		});
+	}
+	
+	private void deleteFansCateGory(final UserFocusDoctorCategoryDto categoryDto){
+		if(TextUtils.isEmpty(token))
+			token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.deleteFansGroup(TAG, token, categoryDto.getId()), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					BaseModel baseModel = (BaseModel) resultData;
+					if(baseModel!=null&&baseModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						//删除分组成功
+						categoryList.remove(categoryDto);
+						categoryAdapter.changeData(categoryList);
+					}else if(baseModel!=null&&baseModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(FansGroupListActivity.this);
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(FansGroupListActivity.this, R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(FansGroupListActivity.this, (String) resultData);
+                    }
+				}
+			}
+		});
+	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+}

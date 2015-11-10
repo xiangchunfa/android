@@ -1,0 +1,98 @@
+package com.qdoc.client.ui;
+
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.Window;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.ImageButton;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.ui.widget.TitleBar;
+
+public class AdDetailActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    public static final String TAG = AdDetailActivity.class.getSimpleName();
+
+	/**
+     * view
+     */
+	private TextView tvTitle;
+	private ImageButton btnBack;
+	private WebView ad_webview;
+    private TitleBar mTitleBar;
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(R.layout.activity_browser);
+
+		initViews();
+		initDatas();
+		initListeners();
+
+	}
+
+	public void initViews() {
+	      mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+			String title = getIntent().getExtras().getString("title");
+	        mTitleBar.setTitleInfo(title, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+	                getResources().getColor(R.color.titlebar_bg));
+		  ad_webview = (WebView) findViewById(R.id.ad_webview);
+	}
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            finish();
+        }
+    };
+	
+	public void initDatas() {
+		String imglink = getIntent().getExtras().getString("imglink");
+		ad_webview.loadUrl(imglink);
+		// 如果页面中链接，如果希望点击链接继续在当前browser中响应，
+		// 而不是新开Android的系统browser中响应该链接，必须覆盖webview的WebViewClient对象
+		ad_webview.setWebViewClient(new WebViewClient() {
+			// 重写此方法表明点击网页里面的链接还是在当前的webview里跳转，不跳到浏览器那边
+			@Override
+			public boolean shouldOverrideUrlLoading(WebView view, String url) { 
+				view.loadUrl(url);
+				return true;
+			}
+		});
+	}
+
+	public void initListeners() {
+
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+	}
+
+	@Override
+	protected void initView() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+		
+	}
+}

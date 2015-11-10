@@ -1,0 +1,144 @@
+/*
+ * ShareDialogFragment.java
+ * classes : com.qdoc.client.ui.fragment.ShareDialogFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-18 上午2:31:20
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.io.File;
+
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.v4.app.DialogFragment;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
+
+import com.qdoc.client.R;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.MyMobileClinicActivity;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ShareDialogFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-18 上午2:31:20
+ */
+@SuppressLint("ValidFragment")
+public class ChooseImageDialogFragment extends DialogFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = ChooseImageDialogFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private Button btnCamera;
+    private Button btnLocal;
+    private Button btnCancel;
+
+    /**
+     * params
+     */
+    private long consultId;
+    public static final int TYPE_CAMERA = 0x00;
+    public static final int TYPE_LOCAL = 0x01;
+    private String brocastAction;
+    private static final int REQUEST_CAMERA = 30;// 拍照
+    private static final int REQUEST_GALLERY = 31;// 相册
+    private static final int REQUEST_RESIZE = 32;
+	private static final String IMAGE_FILE_NAME = "clinic_backgroud.jpg";
+	private static final String IMAGE_UNSPECIFIED = "image/*";
+    private OnDialogclickListener listener;
+    
+
+    @SuppressLint("ValidFragment")
+	public static ChooseImageDialogFragment newInstance(Bundle bundle,OnDialogclickListener listener) {
+        final ChooseImageDialogFragment fragment = new ChooseImageDialogFragment(listener);
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    public ChooseImageDialogFragment(OnDialogclickListener listener){
+	    this.listener = listener;
+    }
+    
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setStyle(DialogFragment.STYLE_NO_TITLE, 0);
+    }
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_dialog_choose, container, false);
+        WindowManager.LayoutParams wmlp = getDialog().getWindow().getAttributes();
+        wmlp.gravity = Gravity.BOTTOM;
+        return v;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initParams();
+        initView(view);
+        initListener();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+        if (getArguments() != null) {
+            consultId = getArguments().getInt(IntentTools.EXTRA_CONSULT_ID);
+            LogUtils.d(TAG, "consultId=============== " + consultId);
+        }
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        btnCamera = (Button) view.findViewById(R.id.btn_camera);
+        btnLocal = (Button) view.findViewById(R.id.btn_local);
+        btnCancel = (Button) view.findViewById(R.id.btn_cancel);
+    }
+
+    protected void initListener() {
+        btnCamera.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+            	listener.onButtonClick(AppConstants.CAMERA,ChooseImageDialogFragment.this);	
+            }
+        });
+        btnLocal.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+            	listener.onButtonClick(AppConstants.PHOTO_ALBUM,ChooseImageDialogFragment.this);		
+            }
+        });
+        btnCancel.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                dismiss();
+            }
+        });
+        
+       
+    }
+    
+    public interface OnDialogclickListener {
+        public void onButtonClick(int type, DialogFragment dialog);
+    }
+}

@@ -1,0 +1,344 @@
+/*
+ * BaseActivity.java
+ * classes : com.ledu.ledubuyer.ui.BaseActivity
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-5-28 下午7:46:05
+ */
+package com.qdoc.client.ui;
+
+import java.util.List;
+import java.util.Stack;
+
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningTaskInfo;
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Toast;
+
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.tencent.android.tpush.XGPushClickedResult;
+import com.tencent.android.tpush.XGPushConfig;
+import com.tencent.android.tpush.XGPushManager;
+import com.umeng.analytics.MobclickAgent;
+
+/**
+ * com.ledu.ledubuyer.ui.BaseActivity
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-5-28 下午7:46:05
+ */
+public abstract class BaseActivity extends FragmentActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = BaseActivity.class.getSimpleName();
+    private static Stack<BaseActivity> sActivities = new Stack<BaseActivity>();
+    private boolean mActivityPaused;
+    private static Context mContext;
+    private static boolean isRunning = false;//是否正在调用app日志接口
+	private InputMethodManager manager = null;
+	
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        addActivity(this);
+        manager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);  
+        super.onCreate(savedInstanceState);
+    }
+
+    protected abstract void initView();
+    protected abstract void initListener();
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        MobclickAgent.onResume(this); //统计时长（友盟）
+        mActivityPaused = false;
+        LogUtils.d(TAG, "onResume" + XGPushConfig.getToken(this));
+        XGPushClickedResult click = XGPushManager.onActivityStarted(this);
+        Log.d("TPush", "onResumeXGPushClickedResult:" + click);
+        if (click != null) { // 判断是否来自信鸽的打开方式
+            Toast.makeText(this, "通知被点击:" + click.toString(), Toast.LENGTH_SHORT).show();
+        }
+        loginStatistics();
+    }
+
+    
+    @Override
+    protected void onPause() {
+        super.onPause();
+        MobclickAgent.onPause(this);
+        mActivityPaused = true;
+        LogUtils.d(TAG, "onPause");
+        XGPushManager.onActivityStoped(this);
+    }
+
+    /**
+     * 判断Activity是否Paused
+     * 
+     * @return
+     */
+    public boolean isActivityPaused() {
+        return mActivityPaused;
+    }
+
+    @Override
+    protected void onDestroy() {
+        removeActivity(this);
+        super.onDestroy();
+    }
+
+    /**
+     * 界面Activity入栈
+     * 
+     * @param activity
+     */
+    private static void addActivity(BaseActivity activity) {
+        if (activity == null) {
+            return;
+        }
+        sActivities.push(activity);
+    }
+
+    /**
+     * 获取acitivty栈
+     */
+    public static Stack<BaseActivity> getActivityStack() {
+        return sActivities;
+    }
+
+    /**
+     * 获取栈顶界面Activity
+     * 
+     * @param activity
+     */
+    public static BaseActivity getTopActivity() {
+        if (sActivities.empty()) {
+            return null;
+        } else {
+            return sActivities.peek();
+        }
+    }
+
+    /**
+    * 检测某Activity是否在当前Task的栈顶
+    */
+    public static boolean isTopActivy(String cmdName,Context context){
+        ActivityManager manager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+        List<RunningTaskInfo> runningTaskInfos = manager.getRunningTasks(1);
+        String cmpNameTemp = null;
+        if(null != runningTaskInfos){
+            cmpNameTemp=runningTaskInfos.get(0).topActivity.getClass().getSimpleName();
+        }
+        if(null == cmpNameTemp)
+        	return false;
+        return cmpNameTemp.equals(cmdName);
+    }
+    
+    private static void removeActivity(BaseActivity activity) {
+        if (activity == null) {
+            return;
+        }
+
+        if (sActivities.contains(activity)) {
+            sActivities.remove(activity);
+        }
+    }
+
+	public static void closeApplication() {
+        if (!sActivities.empty()) {
+            for (BaseActivity activity : sActivities) {
+                if (activity != null && !activity.isFinishing())
+                    activity.finish();
+            }
+            sActivities.clear();
+        }
+    }
+    
+    public static void exitApplication(Context context){
+    	//退出应用
+    	closeApplication(); 
+    	MobclickAgent.onKillProcess(context);
+    	android.os.Process.killProcess(android.os.Process.myPid());
+    }
+
+    public static void refreshTopActivity(BaseActivity activity) {
+        removeActivity(activity);
+        addActivity(activity);
+    }
+
+    /**
+     * 获取当前Activity的Context
+     * 
+     * @return
+     */
+    public Context getContext() {
+        return BaseActivity.this;
+    }
+    
+    /**
+     * 添加Fragment
+     * @param viewId:视图ID
+     * @param fragment:碎片化管理器
+     * @param tag:fragment标志
+     * @param isAddToBackStack:是否返回到回退栈
+     */
+   public void addContent(int viewId,Fragment fragment,String tag,Boolean isAddToBackStack){
+	    FragmentTransaction  fragTran = getSupportFragmentManager().beginTransaction();
+        fragTran.add(viewId,fragment,tag);
+        fragTran.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        if(isAddToBackStack)
+          fragTran.addToBackStack(null);
+        fragTran.commit();
+   }
+   
+   /**
+    * 添加Fragment
+    * @param viewId:视图ID
+    * @param fragment:碎片化管理器
+    * @param tag:fragment标签
+    */
+   public void addContent(int viewId,Fragment fragment,String tag){
+	    addContent(viewId,fragment, tag, false);
+  }
+   
+    /**
+     * 替换当前Fragment
+     * @param viewId:视图ID
+     * @param fragment:碎片化管理器
+     * @param tag:fragment标签
+     */
+   public void replaceContent(int viewId,Fragment fragment,String tag){
+	    FragmentTransaction  fragTran = getSupportFragmentManager().beginTransaction();
+        fragTran.replace(viewId,fragment,tag);
+        fragTran.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        fragTran.addToBackStack(null);
+        fragTran.commitAllowingStateLoss();
+   }
+   
+   /**
+    * 替换当前Fragment
+    * @param viewId:视图ID
+    * @param fragment:碎片化管理器
+    * @param tag:fragment标签
+    * @param isAddtoBackStatck:是否返回到回退栈
+    */
+  public void replaceContent(int viewId,Fragment fragment,String tag,boolean isAddtoBackStatck){
+	  FragmentTransaction  fragTran = getSupportFragmentManager().beginTransaction();
+	  fragTran.replace(viewId,fragment,tag);
+	  fragTran.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+	  if(isAddtoBackStatck)
+		  fragTran.addToBackStack(null);
+	  fragTran.commitAllowingStateLoss();
+  }
+   
+   /**
+    * 移除Fragment
+    * @param:isAddtoBackStatck:是否返回到回退栈
+    * @param:tags:fragment标签集合
+    */
+   public void removeContent(boolean isAddtoBackStatck, String...tags){
+      FragmentManager fragMgr = getSupportFragmentManager();
+      FragmentTransaction fragTran = fragMgr.beginTransaction();
+      for(String tag:tags){
+         Fragment fragment = (Fragment)fragMgr.findFragmentByTag(tag);
+         fragTran.remove(fragment);
+      }   
+      fragTran.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+      if(isAddtoBackStatck)
+         fragTran.addToBackStack(null);
+      fragTran.commit();
+   }
+   
+   /**
+    * 移除Fragment
+    * @param:tags:fragment标签集合
+    */
+   public void removeContent(String...tags){
+	     removeContent(false, tags);
+   }
+   
+   /**
+    * 打开app日志
+    * @param loginName   :登录名	
+    * @param appVersion  :app的登录版本
+    * @param deviceToken :设备唯一标识
+    * @param deviceType  :设备类型  0 IOS  1 android
+    * @param osVersion   :操作系统版本号
+    * @param phoneModel  :手机型号
+    * @return
+    */
+  public void openAppLog(String token,String loginName,String appVersion,String deviceToken,int deviceType,String osVersion,String phoneModel){
+	   RequestParams params = DataRequestUtils.openAppLog(TAG, token, loginName, appVersion, deviceToken, deviceType, osVersion, phoneModel);
+	   HttpTaskManager.startStringRequest(params, JsonParserFactory.parseBaseModel(BaseModel.class), new IResultReceiver() {
+		
+		@Override
+		public void onReceiveResult(int resultCode, Object resultData) {
+			
+			if (resultCode == ServerErrorCode.STATUS_SUCCESS){
+				BaseModel model = (BaseModel) resultData;
+				if(model.getState() == ServerErrorCode.INTERFACE_SUCCESS){
+					PersonalConfig.putString(PersonalConfigKey.EXTAR_CURRENT_DAY, DateUtil.getDate("yyyy-MM-dd"));
+					PersonalConfig.asyncCommit();
+					isRunning = false;	
+				}
+				else if (model.getState() == ServerErrorCode.TOKEN_INVALID) {
+					LoginActivity.startActivity(BaseActivity.this);
+				}
+			}
+		}
+	});
+  }
+  
+  /**
+   * 统计用户登陆情况，每天调用一次
+   */
+  public void loginStatistics(){
+      boolean isCall = PersonalConfig.getString(PersonalConfigKey.EXTAR_CURRENT_DAY).equals(DateUtil.getDate("yyyy-MM-dd"));//当天是否调用过app日志接口
+      if(PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_LOGIN_STATUS)&&!isCall&&!isRunning){
+      	isRunning = true;
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+      	String loginName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+      	if(StringUtils.isBlank(Global.APP_VERSION_NAME))
+      	    Global.APP_VERSION_NAME = Global.getVerName(BaseActivity.this);
+      	String deviceToken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+       	if(StringUtils.isBlank(Global.OS_VERSION))
+      		Global.OS_VERSION = Global.getOSVersion();
+      	if(StringUtils.isBlank(Global.PHONE_MODEL))
+      	    Global.PHONE_MODEL = Global.getPhoneModel();
+      	openAppLog(token, loginName, Global.APP_VERSION_NAME, deviceToken, AppConstants.ANDROID, Global.OS_VERSION, Global.PHONE_MODEL);
+      } 
+  }
+  
+  @Override
+  public boolean onTouchEvent(MotionEvent event) {
+	  // TODO Auto-generated method stub
+	  if (event.getAction() == MotionEvent.ACTION_DOWN) {
+	     if (getCurrentFocus() != null && getCurrentFocus().getWindowToken() != null) {
+	          manager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+	     }  
+	  }
+     return super.onTouchEvent(event);
+  }
+  
+}

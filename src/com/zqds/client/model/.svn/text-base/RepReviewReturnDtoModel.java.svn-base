@@ -1,0 +1,29 @@
+package com.qdoc.client.model;
+
+public class RepReviewReturnDtoModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7263925844630467745L;
+	
+
+	private RepReviewReturnDto repReviewReturnDto;
+
+
+	/**
+	 * @return the repReviewReturnDto
+	 */
+	public RepReviewReturnDto getRepReviewReturnDto() {
+		return repReviewReturnDto;
+	}
+
+
+	/**
+	 * @param repReviewReturnDto the repReviewReturnDto to set
+	 */
+	public void setRepReviewReturnDto(RepReviewReturnDto repReviewReturnDto) {
+		this.repReviewReturnDto = repReviewReturnDto;
+	}
+	
+}

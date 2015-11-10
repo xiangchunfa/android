@@ -1,0 +1,185 @@
+
+
+ 
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ListView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.model.BankDtoModel;
+import com.qdoc.client.ui.BankSelectActivitiy;
+import com.qdoc.client.ui.adapter.SelectAdapter;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class BankSelectFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = BankSelectFragment.class.getSimpleName();
+    
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private ListView lvBank;
+
+    /**
+     * params
+     */
+    //private BankDtoModel mBankDtoModel;
+    private SelectAdapter adapter;
+    private String requestTAG;
+    private String selectedName;
+    private ArrayList<BankDtoModel> bankList;
+    
+    public static BankSelectFragment newInstance(Bundle bundle) {
+        final BankSelectFragment fragment = new BankSelectFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_bank_select, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initParams();
+        initListener();
+        setBankList();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+    	adapter=new SelectAdapter(getActivity());
+    	LogUtils.d(TAG, "BankSelectFragment initParams adapter-->"+adapter);
+    	lvBank.setAdapter(adapter);
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+    	InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);//获取键盘管理器
+    	imm.hideSoftInputFromWindow(view.getWindowToken(), 0);//隐藏键盘
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfoWithRightText(R.string.aboutus_bank, R.drawable.icon_back, 0,
+                actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        lvBank=(ListView) view.findViewById(R.id.lv_bank);
+    }
+
+    protected void initListener() {
+      lvBank.setOnItemClickListener(new OnItemClickListener() {
+
+		@SuppressLint("ParserError")
+		@Override  
+		public void onItemClick(AdapterView<?> parent, View view,
+				int position, long id) {
+			// TODO Auto-generated method stub
+			BankDtoModel model = (BankDtoModel) parent.getAdapter().getItem(position); 
+			Intent intent = null;
+			//AboutmeActivity act=(AboutmeActivity) getActivity();
+    		if(BankAccountEditFragment.TAG.equals(requestTAG)){
+    			//act.switchToBankAccountEditFragment(model);
+    			intent = new Intent(getActivity(), BankAccountEditFragment.class);
+    		}else if(MyBenefitDetailFragment.TAG.equals(requestTAG)){
+    			//act.switchToMyBenefitDetailFragment(model);
+    			intent = new Intent(getActivity(), MyBenefitDetailFragment.class);
+    		}
+    		if(intent==null)
+    			return;
+			intent.putExtra(BankSelectActivitiy.BANKDATA_KEY, model);
+			getActivity().setResult(BankSelectActivitiy.RESULT_OK, intent);
+			getActivity().finish();
+		}
+      }); 
+    }
+
+
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+/*    		AboutmeActivity act=(AboutmeActivity) getActivity();
+    		if(BankAccountEditFragment.TAG.equals(requestTAG)){
+    			act.switchToBankAccountEditFragment();
+    		}else if(MyBenefitDetailFragment.TAG.equals(requestTAG)){
+    			act.switchToMyBenefitDetailFragment();
+    		}*/
+        	getActivity().finish();
+        }
+    };
+
+   
+
+    /**
+	 * @param selectedName the selectedName to set
+	 */
+	public void setSelectedName(String selectedName) {
+		this.selectedName = selectedName;
+	}
+
+	/**
+	 * @param bankList the bankList to set
+	 */
+	public void setBankList(ArrayList<BankDtoModel> bankList) {
+		this.bankList = bankList;
+	}
+
+	public void setBankList(){
+    	LogUtils.d(TAG, "BankSelectFragment adapter-->"+ adapter);
+    	adapter.setBankList(bankList,selectedName);
+    }
+    
+    public void onDestroy() {
+        super.onDestroy();
+
+        HttpTaskManager.stop(TAG);
+    }
+
+    @Override
+    public void onClick(View view) {
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+    
+    public void setRequestTAG(String requestTAG){
+    	this.requestTAG = requestTAG;
+    }
+}

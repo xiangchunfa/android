@@ -1,0 +1,283 @@
+/*
+ * MyConsultDetailListAdapter.java
+ * classes : com.qdoc.client.ui.adapter.MyConsultDetailListAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午1:56:20
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.text.SpannableString;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ConsultDtoModel;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.widget.SteadyGridView;
+import com.qdoc.client.util.FaceConversionUtil;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.ViewUtils;
+
+/**
+ * com.qdoc.client.ui.adapter.MyConsultDetailListAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午1:56:20
+ */
+public class MyConsultDetailListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = MyConsultDetailListAdapter.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private static final int TYPE_MAX_COUNT = 3;
+    public static final int LAYOUT_DETAIL = 0x01;
+    public static final int LAYOUT_LIST = 0x00;
+    public static final int BUTTON_VOL = 0x04;
+    private final LayoutInflater mInflater;
+    private ArrayList<ElementsModel> mElementsList;
+    private SteadyGridViewAdapter mGridViewAdapter;
+    private Context mContext;
+    private String docName;
+    private String docHeadImg;
+    private String patientName;
+    private String patientHeadImg;
+    private DetailItemOnclickListener mListener;
+
+    public MyConsultDetailListAdapter(Context context, DetailItemOnclickListener detailItemOnclickListener) {
+    	mContext = context;
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mListener = detailItemOnclickListener;
+        mElementsList = new ArrayList<ElementsModel>();
+    }
+
+    public void addListData(ArrayList<ElementsModel> elementsList, String docname, String docheadimg,
+            String patientname, String patientheadimg) {
+        docName = docname;
+        docHeadImg = docheadimg;
+        patientName = patientname;
+        patientHeadImg = patientheadimg;
+        mElementsList.clear();
+        mElementsList.addAll(elementsList);
+        notifyDataSetChanged();
+    }
+
+    public void addMoreListData(ArrayList<ElementsModel> elementsList) {
+        mElementsList.addAll(elementsList);
+        notifyDataSetChanged();
+    }
+
+    public void clearListData() {
+        mElementsList.clear();
+        mElementsList = null;
+    }
+
+    @Override
+    public int getCount() {
+        // TODO Auto-generated method stub
+        return ListUtils.isEmpty(mElementsList) ? 0 : mElementsList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        // TODO Auto-generated method stub
+        if (!ListUtils.isEmpty(mElementsList)) {
+            int size = mElementsList.size();
+            return mElementsList.get(position % size);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public long getItemId(int position) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public int getViewTypeCount() {
+        return TYPE_MAX_COUNT;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (!ListUtils.isEmpty(mElementsList)) {
+            if (LAYOUT_DETAIL == mElementsList.get(position).getElementModelViewType()) {
+                return LAYOUT_DETAIL;
+            } else {
+                return LAYOUT_LIST;
+            }
+        }
+        return LAYOUT_LIST;
+    }
+
+    @Override
+    public View getView(final int position, View convertView, ViewGroup parent) {
+        // TODO Auto-generated method stub
+        int type = getItemViewType(position);
+
+        ViewHolder holder = null;
+        if (convertView == null) {
+            if (type == LAYOUT_DETAIL) {
+                holder = new ViewHolder();
+                convertView = mInflater.inflate(R.layout.listitem_consult_single, null);
+                holder.icon_userheadurl = (ImageView) convertView.findViewById(R.id.icon_userheadurl);
+                holder.nickname = (TextView) convertView.findViewById(R.id.nickname);
+                holder.consult_time = (TextView) convertView.findViewById(R.id.consult_time);
+                holder.consult_type = (TextView) convertView.findViewById(R.id.consult_type);
+                holder.user_detail = (TextView) convertView.findViewById(R.id.user_detail);
+                holder.description = (TextView) convertView.findViewById(R.id.description);
+                holder.gridview = (SteadyGridView) convertView.findViewById(R.id.gridview);
+
+                mGridViewAdapter = new SteadyGridViewAdapter(mContext);
+                holder.gridview.setAdapter(mGridViewAdapter);
+
+                convertView.setTag(holder);
+            } else {
+                holder = new ViewHolder();
+                convertView = mInflater.inflate(R.layout.listitem_consultdetail_list, null);
+                holder.icon_userheadurl = (ImageView) convertView.findViewById(R.id.icon_userheadurl);
+                holder.nickname = (TextView) convertView.findViewById(R.id.nickname);
+                holder.user_detail = (TextView) convertView.findViewById(R.id.user_detail);
+//                holder.msgTime = (TextView) convertView.findViewById(R.id.msgtime);
+                holder.description = (TextView) convertView.findViewById(R.id.description);
+                holder.consult_vol = (ImageView) convertView.findViewById(R.id.consult_vol);
+                holder.volLayout = (LinearLayout) convertView.findViewById(R.id.vol_layout);
+                holder.vol_animview = (ImageView) convertView.findViewById(R.id.vol_animview);
+
+                convertView.setTag(holder);
+            }
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        if (getCount() > position) {
+            final ElementsModel model = mElementsList.get(position);
+            final ViewHolder tempholder = holder;
+            if (model != null) {
+                if (type == LAYOUT_DETAIL) {
+                    ConsultDtoModel dToModel = model.getConsultDto();
+                    if (dToModel != null) {
+                        // 头像/名字
+                        if (dToModel.getwUserDto() != null) {
+                            ImageLoaderHelper.getInstance(mContext).displayImage(dToModel.getwUserDto().getHeadimgurl(),
+                                    holder.icon_userheadurl, R.drawable.bank_owener_default_header);
+                            if (!TextUtils.isEmpty(dToModel.getwUserDto().getNicknameStr())) {
+                                holder.nickname.setText(dToModel.getwUserDto().getNicknameStr());
+                            } else {
+                                holder.nickname.setText("");
+                            }
+                        }
+
+                        // 名字/性别/年龄
+                        if (dToModel.getConsultCaseDto() != null) {
+                            String age = TextUtils.isEmpty(dToModel.getConsultCaseDto().getAge()) ? "" : dToModel
+                                    .getConsultCaseDto().getAge();
+                            holder.user_detail.setText(mContext.getResources().getString(
+                                    R.string.consult_patientname,
+                                    dToModel.getConsultCaseDto().getName() + " "
+                                            + (dToModel.getConsultCaseDto().getSexDes()) + " " + age));
+                        }
+
+                        // 咨询时间
+                        holder.consult_time.setText(TextUtils.isEmpty(dToModel.getAcceptTime()) ? "" : dToModel
+                                .getAcceptTime());
+
+                        // 咨询方式
+                        if (dToModel.getConsultType() == 0) {
+                            ViewUtils.setVisibility(holder.consult_type, View.INVISIBLE);
+                        } else {
+                            holder.consult_type.setText("抢单");
+                            ViewUtils.setVisibility(holder.consult_type, View.VISIBLE);
+                        }
+
+                        // 内容描述
+                        if (dToModel.getConsultCaseDto() != null) {
+                            holder.description.setText(dToModel.getConsultCaseDto().getDescription());
+                        }
+
+                        // 图片
+                        if (!ListUtils.isEmpty(dToModel.getImageDto())) {
+                            mGridViewAdapter.addListData(dToModel.getImageDto());
+                            ViewUtils.setVisibility(holder.gridview, View.VISIBLE);
+                        } else {
+                            ViewUtils.setVisibility(holder.gridview, View.GONE);
+                        }
+                    }
+                } else {
+                    // 头像/名字
+                    if (model.getType() == 0) {// 患者
+                        holder.nickname.setText(TextUtils.isEmpty(patientName) ? "" : patientName);
+                        ImageLoaderHelper.getInstance(mContext).displayImage(patientHeadImg, holder.icon_userheadurl, R.drawable.bank_owener_default_header);
+                    } else {// 医生
+                        holder.nickname.setText(TextUtils.isEmpty(docName) ? "" : docName);
+                        ImageLoaderHelper.getInstance(mContext).displayImage(docHeadImg, holder.icon_userheadurl);
+                    }
+
+                    // 咨询内容
+                    if (!TextUtils.isEmpty(model.getRealUrl())) {
+                        ViewUtils.setVisibility(holder.volLayout, View.VISIBLE);
+                        ViewUtils.setVisibility(holder.description, View.GONE);
+                        holder.volLayout.setOnClickListener(new OnClickListener() {
+
+                            @Override
+                            public void onClick(View v) {
+                                // TODO Auto-generated method stub
+                                if (mListener != null) {
+                                    mListener.onButtonClick(BUTTON_VOL, model.getRealUrl(), tempholder.consult_vol,
+                                            tempholder.vol_animview);
+                                }
+                            }
+                        });
+                    } else if (!TextUtils.isEmpty(model.getContent())) {
+                    	SpannableString spannableString = FaceConversionUtil.getInstace(mContext).getExpressionString(mContext, model.getContent());
+                        holder.description.setText(spannableString);
+                        ViewUtils.setVisibility(holder.volLayout, View.GONE);
+                        ViewUtils.setVisibility(holder.description, View.VISIBLE);
+                        
+                    } else {
+                        ViewUtils.setVisibility(holder.volLayout, View.GONE);
+                        ViewUtils.setVisibility(holder.description, View.GONE);
+                    }
+                    // 咨询时间
+                    holder.msgTime.setText(model.getMsgTime());
+                }
+            }
+        }
+        return convertView;
+    }
+
+    public interface DetailItemOnclickListener {
+        public void onButtonClick(int type, String url, View view1, View view2);
+    }
+
+    private static class ViewHolder {
+        private ImageView icon_userheadurl;
+        private TextView nickname;
+        private TextView consult_time;
+        private TextView user_detail;
+        private TextView consult_type;
+        private ImageView consult_vol;
+        private TextView description;
+        private SteadyGridView gridview;
+        private LinearLayout volLayout;
+        private ImageView vol_animview;
+        private TextView msgTime;
+    }
+}

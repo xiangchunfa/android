@@ -1,0 +1,51 @@
+/*
+ * GainDtoDataModel.java
+ * classes : com.qdoc.client.model.GainDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-21 下午10:55:04
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.GainDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-21 下午10:55:04
+ */
+public class GainDtoDataModel extends AbstractBaseModel {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -1497886955756883361L;
+	
+	private GainDtoModel gainDto;
+	private int doctorWithDrawCount;//提现流水记录数，大于0表示有提现记录
+
+    /**
+     * @return the gainDto
+     */
+    public GainDtoModel getGainDto() {
+        return gainDto;
+    }
+
+    /**
+     * @param gainDto the gainDto to set
+     */
+    public void setGainDto(GainDtoModel gainDto) {
+        this.gainDto = gainDto;
+    }
+	/**
+	 * @return the doctorWithDrawCount
+	 */
+	public int getDoctorWithDrawCount() {
+		return doctorWithDrawCount;
+	}
+
+	/**
+	 * @param doctorWithDrawCount the doctorWithDrawCount to set
+	 */
+	public void setDoctorWithDrawCount(int doctorWithDrawCount) {
+		this.doctorWithDrawCount = doctorWithDrawCount;
+	}
+}

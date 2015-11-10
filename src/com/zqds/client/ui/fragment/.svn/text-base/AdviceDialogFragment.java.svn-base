@@ -1,0 +1,202 @@
+/*
+ * ShareDialogFragment.java
+ * classes : com.qdoc.client.ui.fragment.ShareDialogFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-18 上午2:31:20
+ 
+package com.qdoc.client.ui.fragment;
+
+import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ConsultTreatmentModel;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.TreateModel;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+*//**
+ * com.qdoc.client.ui.fragment.ShareDialogFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-18 上午2:31:20
+ *//*
+public class AdviceDialogFragment extends DialogFragment {
+    *//**
+     * TAG
+     *//*
+    public static final String TAG = AdviceDialogFragment.class.getSimpleName();
+
+    *//**
+     * view
+     *//*
+    private TitleBar mTitleBar;
+    private TextView username;
+    private TextView sex;
+    private TextView age;
+    private EditText et_des;
+    private EditText et_result;
+    private EditText et_advice;
+
+    *//**
+     * params
+     *//*
+    private int consultId;
+    private ElementsModel mElementModel;
+
+    public static AdviceDialogFragment newInstance(Bundle bundle) {
+        final AdviceDialogFragment fragment = new AdviceDialogFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setStyle(DialogFragment.STYLE_NO_TITLE, 0);
+    }
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_dialog_advice, container, false);
+        WindowManager.LayoutParams wmlp = getDialog().getWindow().getAttributes();
+        wmlp.gravity = Gravity.BOTTOM;
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initParams();
+        initView(view);
+        initListener();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+        consultId = getArguments().getInt(IntentTools.EXTRA_CONSULT_ID);
+        mElementModel = (ElementsModel) getArguments().getSerializable(IntentTools.EXTRA_ELEMENT_MODEL);
+
+        startShowHttpReuqest();
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setDialogTitleInfo(R.string.consult_advice, R.drawable.close, R.drawable.yes,
+                actionBarLeftBtnListener, actionBarRightBtnListener, getResources().getColor(R.color.white2));
+
+        username = (TextView) view.findViewById(R.id.tvusername);
+        sex = (TextView) view.findViewById(R.id.tvsex);
+        age = (TextView) view.findViewById(R.id.tvage);
+
+        et_des = (EditText) view.findViewById(R.id.et_des);
+        et_result = (EditText) view.findViewById(R.id.et_result);
+        et_advice = (EditText) view.findViewById(R.id.et_advice);
+
+        if (mElementModel != null && mElementModel.getConsultCaseDto() != null) {
+            username.setText(mElementModel.getConsultCaseDto().getName());
+            sex.setText(mElementModel.getConsultCaseDto().getSexDes());
+            age.setText(String.valueOf(mElementModel.getConsultCaseDto().getAge()));
+        }
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            dismiss();
+        }
+    };
+
+    OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            startSaveHttpReuqest();
+        }
+    };
+
+    private void startShowHttpReuqest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+
+        HttpTaskManager.startStringRequest(DataRequestUtils.getTreatmentRequestParam(TAG, token, consultId),
+                JsonParserFactory.parseBaseModel(ConsultTreatmentModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final ConsultTreatmentModel dataModel = (ConsultTreatmentModel) resultData;
+                            if (dataModel != null) {
+                                if (dataModel.getConsultCaseDto() != null) {
+                                    et_des.setText(dataModel.getConsultCaseDto().getDescription());
+                                }
+                            } else {
+                            }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+
+    private void startSaveHttpReuqest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+
+        HttpTaskManager.startStringRequest(DataRequestUtils.saveTreatmentRequestParam(TAG, token, consultId, 1,
+                et_advice.getText().toString(), et_des.getText().toString(), et_result.getText().toString()),
+                JsonParserFactory.parseBaseModel(TreateModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final TreateModel dataModel = (TreateModel) resultData;
+                            if (dataModel != null) {
+                                ToastUtils.ToastShort(getActivity().getApplicationContext(), "发送成功");
+                            } else {
+                            }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+
+                        dismiss();
+                    }
+                });
+    }
+
+    protected void initListener() {
+    }
+}
+*/

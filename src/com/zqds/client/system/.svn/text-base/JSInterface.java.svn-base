@@ -1,0 +1,65 @@
+package com.qdoc.client.system;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
+import com.qdoc.client.helper.ShareService;
+import com.qdoc.client.ui.LoginActivity;
+
+import android.app.Activity;
+import android.util.Log;
+import android.webkit.JavascriptInterface;
+
+/**
+ * WebView 与 JavaScript交互的接口类
+ * @author antony
+ *
+ */
+public class JSInterface {
+	
+	private boolean isUmengShow = false;//为了解决个别机型重复调用umengShare接口
+	
+	@JavascriptInterface
+	public String toString() { return "jsinterface"; }
+
+	private Activity mActivity;
+	
+	public JSInterface(Activity mActivity){
+		this.mActivity = mActivity;
+	}
+	
+	/**
+	 * 友盟分享接口
+	 * @param headerImgUrl 头像地址
+	 * @param shareTitle 分享标题
+	 * @param shareContent 分享内容
+	 * @param connectUrl 分享链接地址
+	 */
+	@JavascriptInterface
+	public void umengShare(String headerImgUrl,String shareTitle,String shareContent,String connectUrl){
+		Log.i("JSInterface", "umengShare()");
+		if(isUmengShow)
+			return;
+		isUmengShow = true;
+		ShareService share = new ShareService(mActivity);
+		share.configUMShare(mActivity,shareContent, shareTitle,headerImgUrl,connectUrl);
+		share.openShareBoard();
+		//使用1秒延时，避免重复调用友盟分享控件
+		new Timer().schedule(new TimerTask() {
+			
+			@Override
+			public void run() {
+				isUmengShow = false;
+			}
+		}, 1000);
+	}
+	
+	/**
+	 * 设备变更，需要重新登录
+	 */
+	@JavascriptInterface
+	public void loginAgain(){
+		LoginActivity.startActivity(mActivity);
+		mActivity.finish();
+	}
+}

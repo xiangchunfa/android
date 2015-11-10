@@ -1,0 +1,104 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import com.qdoc.client.R;
+import com.qdoc.client.model.DoctorWithdrawDto;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.TextView;
+
+/**
+ * create at 2015-03-23 
+ *提现列表的适配器
+ * @author antony
+ *
+ */
+public class WithDrawListAdapter extends BaseAdapter {
+	
+	//兑换记录列表
+	private ArrayList<DoctorWithdrawDto> withDrawList;
+	//加载item资源工具
+	private LayoutInflater inflater;
+	//上下文对象
+	private Context context;
+	
+	/**
+	 * @param exchangeContentList the exchangeContentList to set
+	 */
+	public void setExchangeContentList(ArrayList<DoctorWithdrawDto> withDrawList) {
+		if(withDrawList==null)
+			this.withDrawList = new ArrayList<DoctorWithdrawDto>();
+		else
+			this.withDrawList = withDrawList;
+	}
+	
+	public WithDrawListAdapter(Context context,ArrayList<DoctorWithdrawDto> exchangeContentList){
+		inflater = LayoutInflater.from(context);
+		setExchangeContentList(exchangeContentList);
+		this.context = context;
+	}
+	
+	public void changeData(ArrayList<DoctorWithdrawDto> exchangeContextList){
+		setExchangeContentList(exchangeContextList);
+		notifyDataSetChanged();
+	}
+
+	@Override
+	public int getCount() {
+		return withDrawList.size();
+	}
+
+	@Override
+	public Object getItem(int position) {
+		return withDrawList.get(position);
+	}
+
+	@Override
+	public long getItemId(int position) {
+		return position;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			holder = new ViewHolder();
+			convertView = inflater.inflate(R.layout.withdraw_list_item, null);
+			holder.withdraw_list_item_state = (TextView) convertView.findViewById(R.id.withdraw_item_state);
+			holder.withdraw_list_item_time = (TextView) convertView.findViewById(R.id.withdraw_item_time);
+			holder.withdraw_list_score = (TextView) convertView.findViewById(R.id.withdraw_item_money);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		DoctorWithdrawDto exchangeContent = withDrawList.get(position);
+		//根据返回来的状态码，判断提现的状态
+		int status = exchangeContent.getStatus();
+		if(DoctorWithdrawDto.WITHDRAW_STATUS_UNTREATED==status || DoctorWithdrawDto.WITHDRAW_STATUS_APPROVED==status || DoctorWithdrawDto.WITHDRAW_STATUS_SUBMITS==status){
+			//处理中
+			setStateTextAndScoreColor(holder.withdraw_list_item_state, holder.withdraw_list_score, R.string.withdraw_status_ing, context.getResources().getColor(R.color.right_values_text_color));
+		}else if(DoctorWithdrawDto.WITHDRAW_STATUS_PAID==status){
+			//提现成功
+			setStateTextAndScoreColor(holder.withdraw_list_item_state, holder.withdraw_list_score, R.string.withdraw_status_paid, context.getResources().getColor(R.color.top_tips_color_e73d43));
+		}else if(DoctorWithdrawDto.WITHDRAW_STATUS_FAIL==status){
+			//提现失败
+			setStateTextAndScoreColor(holder.withdraw_list_item_state, holder.withdraw_list_score, R.string.withdraw_status_fail, context.getResources().getColor(R.color.right_values_text_color));
+		}
+		holder.withdraw_list_item_time.setText(exchangeContent.getCreatDate());
+		holder.withdraw_list_score.setText(exchangeContent.getWithdMoney());
+		return convertView;
+	}
+	
+	private void setStateTextAndScoreColor(TextView stateTextview,TextView scoreTextView,int stringRes,int colorRes){
+		stateTextview.setText(stringRes);
+		scoreTextView.setTextColor(colorRes);
+	}
+	
+	class ViewHolder{
+		TextView withdraw_list_item_state,withdraw_list_item_time,withdraw_list_score;
+	}
+
+}

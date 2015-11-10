@@ -1,0 +1,17 @@
+package com.qdoc.client.model;
+
+import java.util.List;
+
+public class FindActivitiesStatusDataMOdel  extends AbstractBaseModel{
+
+	private static final long serialVersionUID = 1L;
+	private List<AdvanceActivitiesDtoModel> activitiesDtos;
+
+	public List<AdvanceActivitiesDtoModel> getActivitiesDtos() {
+		return activitiesDtos;
+	}
+
+	public void setActivitiesDtos(List<AdvanceActivitiesDtoModel> activitiesDtos) {
+		this.activitiesDtos = activitiesDtos;
+	}
+}

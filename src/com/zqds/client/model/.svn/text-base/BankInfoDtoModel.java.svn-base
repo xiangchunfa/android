@@ -1,0 +1,68 @@
+/*
+ * ConsultListModel.java
+ * classes : com.qdoc.client.model.ConsultListModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:02:07
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * com.qdoc.client.model.ConsultListModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:02:07
+ */
+public class BankInfoDtoModel implements Serializable{
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 6589609580013607938L;
+	
+	private String accountNo;
+    private String bankName;
+    private int doctorId;	
+    private int id;
+    private String	name;
+    private int uuid;
+	public String getAccountNo() {
+		return accountNo;
+	}
+	public void setAccountNo(String accountNo) {
+		this.accountNo = accountNo;
+	}
+	public String getBankName() {
+		return bankName;
+	}
+	public void setBankName(String bankName) {
+		this.bankName = bankName;
+	}
+	public int getDoctorId() {
+		return doctorId;
+	}
+	public void setDoctorId(int doctorId) {
+		this.doctorId = doctorId;
+	}
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public int getUuid() {
+		return uuid;
+	}
+	public void setUuid(int uuid) {
+		this.uuid = uuid;
+	}
+  
+    
+}

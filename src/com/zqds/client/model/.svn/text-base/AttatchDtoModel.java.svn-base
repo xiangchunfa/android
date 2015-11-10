@@ -1,0 +1,104 @@
+/*
+ * ConsultCaseDtoModel.java
+ * classes : com.qdoc.client.model.ConsultCaseDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:04:33
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * com.qdoc.client.model.ConsultCaseDtoModel
+ * 
+ * @author XiangChunFa <br/>
+ *         create at 2014-11-11 上午11:24:00
+ */
+public class AttatchDtoModel implements Serializable, Cloneable {
+    private static final String TAG = "AttatchDtoModel";
+    private static final long serialVersionUID = -2806814082277654591L;
+
+    private String description;//活动说明描述
+    private int id;//说明ID	
+    private String title; //活动说明标题
+    private String uuid;
+    private int orderNo;//活动说明顺序
+    private int deviceType;//设备类型
+
+	/**
+	 * @return the orderNo
+	 */
+	public int getOrderNo() {
+		return orderNo;
+	}
+	/**
+	 * @param orderNo the orderNo to set
+	 */
+	public void setOrderNo(int orderNo) {
+		this.orderNo = orderNo;
+	}
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+   
+	/**
+	 * @return the id
+	 */
+	public int getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(int id) {
+		this.id = id;
+	}
+	/**
+	 * @return the title
+	 */
+	public String getTitle() {
+		return title;
+	}
+	/**
+	 * @param title the title to set
+	 */
+	public void setTitle(String title) {
+		this.title = title;
+	}
+	/**
+	 * @return the uuid
+	 */
+	public String getUuid() {
+		return uuid;
+	}
+	/**
+	 * @param uuid the uuid to set
+	 */
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
+	/**
+	 * @return the deviceType
+	 */
+	public int getDeviceType() {
+		return deviceType;
+	}
+	/**
+	 * @param deviceType the deviceType to set
+	 */
+	public void setDeviceType(int deviceType) {
+		this.deviceType = deviceType;
+	}
+    
+    
+}

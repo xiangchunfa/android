@@ -1,0 +1,33 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 满意度列表接口对象
+ * @author Administrator
+ *
+ */
+public class ListSatisfactionModel extends AbstractBaseModel implements
+		Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -700419896087895653L;
+
+	private Pagination<SatisfactionSurveyListDto> pager;
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<SatisfactionSurveyListDto> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<SatisfactionSurveyListDto> pager) {
+		this.pager = pager;
+	}
+}

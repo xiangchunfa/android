@@ -1,0 +1,129 @@
+package com.qdoc.client.ui;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.AdvanceActivitiesDtoModel;
+import com.qdoc.client.system.JSInterface;
+import com.qdoc.client.system.WebViewClientWrapper;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.os.Bundle;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.webkit.URLUtil;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Toast;
+
+/**
+ * 发现中活动的详细内容页
+ * @author antony
+ *
+ */
+public class AdvanceDetailActivity extends BaseActivity {
+	
+	public static final String TAG = AdvanceDetailActivity.class.getSimpleName();
+	
+	private TitleBar mTitleBar;
+	private WebView activity_content;//加载活动内容的界面
+	private AdvanceActivitiesDtoModel advanceDetail;//传输过来的活动对象
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_webview);
+		//获取传递过来的活动对象
+		advanceDetail = (AdvanceActivitiesDtoModel) getIntent().getExtras().getSerializable(IntentTools.EXTRA_ACTIVITY_URL);
+		initView();
+		initWebViewSetting();
+		initListener();
+	}
+
+	@Override
+	protected void initView() {
+		mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(advanceDetail.getTitle(), R.drawable.webview_close_icon, 0, leftButtonOnClick, null, getResources().getColor(R.color.titlebar_bg));
+		activity_content = (WebView) findViewById(R.id.activity_activity_wv);
+	}
+	
+	/**
+	 * 对WebView控件进行设置
+	 */
+	private void initWebViewSetting(){
+		activity_content.setWebViewClient(activitiesWebViewClient);//设置页面跳转在WebView内部处理
+		activity_content.setWebChromeClient(activitiesWebChromeClient);//设置加载进度处理
+		WebSettings webSetting = activity_content.getSettings();
+		webSetting.setJavaScriptEnabled(true);//支持JavaScript
+		webSetting.setJavaScriptCanOpenWindowsAutomatically(true);
+		webSetting.setAppCacheEnabled(true);//支持缓存
+		webSetting.setAllowFileAccess(true);
+		webSetting.setDomStorageEnabled(true);
+		webSetting.setBuiltInZoomControls(false);//不允许WebView缩放
+		
+		JSInterface jsInterface = new JSInterface(this);//自定义JS事件处理类
+		activity_content.addJavascriptInterface(jsInterface, "jsinterface");
+		loadURL(this, advanceDetail.getActivityUrl());
+		//loadURL(this, "http://192.168.24.99:8080/www/home.html");
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+
+	}
+	
+	OnClickListener leftButtonOnClick = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			finish();
+		}
+	};
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if((keyCode==KeyEvent.KEYCODE_BACK)&&activity_content.canGoBack()){
+			activity_content.goBack();
+			return true;
+		}
+		return super.onKeyDown(keyCode, event);
+	}
+	
+	private void loadURL(Context context,String url){
+		ProgressDialog myDialog = ProgressDialog.show(this, null, getString(R.string.loading), true);
+		activity_content.setWebViewClient(new WebViewClientWrapper(myDialog));
+		//new JudgeURLThread(context, url, activity_content).start();
+		if(URLUtil.isAssetUrl(url)){
+			activity_content.loadUrl(url);
+		}else if(URLUtil.isNetworkUrl(url)){
+			activity_content.loadUrl(url);
+		}else{
+			myDialog.dismiss();
+			Toast.makeText(context, R.string.invalid_url, Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+	private WebViewClient activitiesWebViewClient = new WebViewClient(){
+		public boolean shouldOverrideUrlLoading(WebView view, String url) {
+			view.loadUrl(url);
+			return false;
+		};
+	};
+	
+	private WebChromeClient activitiesWebChromeClient = new WebChromeClient(){
+		public void onProgressChanged(WebView view, int newProgress) {
+			setProgress(newProgress*100);
+		};
+	};
+	
+	public static void startActivity(Context context,AdvanceActivitiesDtoModel advanceDetail){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startAdvanceDetailActivity(context,advanceDetail));
+	}
+
+}

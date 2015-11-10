@@ -1,0 +1,167 @@
+/*
+ * HomeDtoModel.java
+ * classes : com.qdoc.client.model.HomeDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-17 下午3:44:20
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.HomeDtoModel
+ * 
+ * @author xiangyutian <br/>
+ */
+public class HomeDtoModel {
+    private int allUser;
+    private int blacklist;
+    private int consult;
+    private int doctorComplaint;
+    private int favorites;
+    private int newUser;
+    private String revenue;
+    private int share;
+    private int userComplaint;
+    private String satisfaction;
+
+    /**
+     * @return the allUser
+     */
+    public int getAllUser() {
+        return allUser;
+    }
+
+    /**
+     * @param allUser the allUser to set
+     */
+    public void setAllUser(int allUser) {
+        this.allUser = allUser;
+    }
+
+    /**
+     * @return the blacklist
+     */
+    public int getBlacklist() {
+        return blacklist;
+    }
+
+    /**
+     * @param blacklist the blacklist to set
+     */
+    public void setBlacklist(int blacklist) {
+        this.blacklist = blacklist;
+    }
+
+    /**
+     * @return the consult
+     */
+    public int getConsult() {
+        return consult;
+    }
+
+    /**
+     * @param consult the consult to set
+     */
+    public void setConsult(int consult) {
+        this.consult = consult;
+    }
+
+    /**
+     * @return the doctorComplaint
+     */
+    public int getDoctorComplaint() {
+        return doctorComplaint;
+    }
+
+    /**
+     * @param doctorComplaint the doctorComplaint to set
+     */
+    public void setDoctorComplaint(int doctorComplaint) {
+        this.doctorComplaint = doctorComplaint;
+    }
+
+    /**
+     * @return the favorites
+     */
+    public int getFavorites() {
+        return favorites;
+    }
+
+    /**
+     * @param favorites the favorites to set
+     */
+    public void setFavorites(int favorites) {
+        this.favorites = favorites;
+    }
+
+    /**
+     * @return the newUser
+     */
+    public int getNewUser() {
+        return newUser;
+    }
+
+    /**
+     * @param newUser the newUser to set
+     */
+    public void setNewUser(int newUser) {
+        this.newUser = newUser;
+    }
+
+    /**
+     * @return the revenue
+     */
+    public String getRevenue() {
+        return revenue;
+    }
+
+    /**
+     * @param revenue the revenue to set
+     */
+    public void setRevenue(String revenue) {
+        this.revenue = revenue;
+    }
+
+    /**
+     * @return the share
+     */
+    public int getShare() {
+        return share;
+    }
+
+    /**
+     * @param share the share to set
+     */
+    public void setShare(int share) {
+        this.share = share;
+    }
+
+    /**
+     * @return the userComplaint
+     */
+    public int getUserComplaint() {
+        return userComplaint;
+    }
+
+    /**
+     * @param userComplaint the userComplaint to set
+     */
+    public void setUserComplaint(int userComplaint) {
+        this.userComplaint = userComplaint;
+    }
+
+	/**
+	 * @return the satisfaction
+	 */
+	public String getSatisfaction() {
+		return satisfaction;
+	}
+
+	/**
+	 * @param satisfaction the satisfaction to set
+	 */
+	public void setSatisfaction(String satisfaction) {
+		this.satisfaction = satisfaction;
+	}
+
+}

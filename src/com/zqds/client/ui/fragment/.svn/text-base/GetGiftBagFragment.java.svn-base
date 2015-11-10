@@ -1,0 +1,248 @@
+/*
+ * ConsultListFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultListFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:03
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.GainGiftBagStatusDataModel;
+import com.qdoc.client.model.GiftbagSaveApplyDataModel;
+import com.qdoc.client.ui.GiftBagActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.view.ClearEditText;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.InputTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.InsuranceDetailzFragment
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-29 上午2:00:03
+ */
+public class GetGiftBagFragment extends BaseFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = GetGiftBagFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private ClearEditText etReceiver;
+    private ClearEditText etTel;
+    private ClearEditText etAddress;
+	private TextView tvGet;
+	//花旗参活动TextView
+	private TextView send_card_content;
+	
+    /**
+     * PARAMS
+     */
+    private String receiver;
+    private String tel;
+    private String address;
+    
+	public static GetGiftBagFragment newInstance(Bundle bundle) {
+		final GetGiftBagFragment fragment = new GetGiftBagFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+    
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_get_gift_bag, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+ 	   SpannableString spanText = new SpannableString(send_card_content.getText().toString());
+ 	   spanText.setSpan(new ForegroundColorSpan(Color.parseColor("#fb3941")), 7, 10,Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+ 	   spanText.setSpan(new ForegroundColorSpan(Color.parseColor("#fb3941")), 14,19,Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+ 	   send_card_content.setText(spanText);
+    }
+
+    private void initView(View view) {
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.loveliness_doctor, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+                getResources().getColor(R.color.titlebar_bg));
+        etReceiver =(ClearEditText) view.findViewById(R.id.et_receiver);
+        etReceiver.setOpenVerify(false);
+        etTel = (ClearEditText) view.findViewById(R.id.et_tel);
+        etTel.setOpenVerify(false);
+        etAddress = (ClearEditText) view.findViewById(R.id.et_address);
+        etAddress.setOpenVerify(false);
+        tvGet=(TextView) view.findViewById(R.id.tv_get);
+        send_card_content = (TextView) view.findViewById(R.id.tv_send_card_content);
+    }
+
+    protected void initListener() {
+    	tvGet.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+		
+		        receiver=etReceiver.getText().toString();
+		        tel=etTel.getText().toString();
+		        address=etAddress.getText().toString();
+		       
+		        if(StringUtils.isEmpty(receiver)){
+		        	ToastUtils.ToastShort(getActivity(),R.string.receiver_not_null);
+		        	return;
+		        }
+		        if(StringUtils.isEmpty(tel)){
+		        	ToastUtils.ToastShort(getActivity(),R.string.tel_not_null);
+		        	return;
+		        }
+		        if(StringUtils.isEmpty(address)){
+		        	ToastUtils.ToastShort(getActivity(),R.string.address_not_null);
+		        	return;
+		        }
+				startGainGiftBagStatusRequest();
+			}
+		});
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            final GiftBagActivity activity = (GiftBagActivity) getActivity();
+            if (activity == null) {
+                LogUtils.d(TAG, "msgActivity == null!!!!");
+                return;
+            }
+            activity.finish();
+        }
+    };
+   
+    /**
+     * 健康礼包领取接口
+     * @param context
+     * @param giftBagId
+     */
+    private  void startGainGiftBagSaveApplyRequest(Context context,String giftBagId) {
+	 	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.getGainGiftBagSaveApplyRequestParam(TAG, token,giftBagId,tel,receiver,address),
+                JsonParserFactory.parseBaseModel(GiftbagSaveApplyDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                        	GiftbagSaveApplyDataModel dataModel = (GiftbagSaveApplyDataModel) resultData;
+                            if (dataModel != null&&dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                                 GiftBagActivity activity=(GiftBagActivity) getActivity();
+                                 activity.switchToGetGiftBagSuccessFragment(dataModel);
+                                 InputTools.HideKeyboard(etReceiver);
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                 LoginActivity.startActivity(getActivity());
+          					}else{
+          						ToastUtils.ToastShort(getContext().getApplicationContext(),dataModel.getErrorMsg());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity(), (String) resultData);
+                            }
+                        }
+                    }
+                });
+    }
+
+    /**
+     * 健康礼包资格查询
+     */
+    public void startGainGiftBagStatusRequest() {
+        Global.progressDialog = ProgressDialog.show(getActivity(), null,
+        		getActivity().getString(R.string.discovery_giftbag_get), true,
+					true);
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        LogUtils.d(TAG, "token  =================== " + token);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.getGainGiftBagStatusRequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(GainGiftBagStatusDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            GainGiftBagStatusDataModel  giftModel = (GainGiftBagStatusDataModel) resultData;
+                            if (giftModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	if(giftModel.getGiftBagDto()!=null&&giftModel.getGiftBagDto().getId()!=null){
+                            	    startGainGiftBagSaveApplyRequest(getActivity(), giftModel.getGiftBagDto().getId());
+                            	}else{
+                            		Global.progressDialog.dismiss();
+                            	}
+                            }else if(giftModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                            	 Global.progressDialog.dismiss();
+                                 LoginActivity.startActivity(getActivity());
+          					}else{
+          						Global.progressDialog.dismiss();
+          						ToastUtils.ToastShort(getContext().getApplicationContext(),giftModel.getErrorMsg());
+          					}
+                        } else {
+                        	Global.progressDialog.dismiss();
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity(), (String) resultData);
+                            }
+                        }
+                    }
+                });
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        HttpTaskManager.stop(TAG);
+    }
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+  
+
+}

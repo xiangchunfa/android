@@ -1,0 +1,78 @@
+package com.qdoc.client.ui.view;
+
+import android.content.Context;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import com.qdoc.client.R;
+
+/**
+ * FileName    : MyEditText.java
+ * Description : 自定义EditText
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-8-28 
+ **/
+public class MyEditText extends LinearLayout {
+
+	private EditText et_input;
+	private ImageView iv_brush;
+	
+	public EditText getEt_input() {
+		return et_input;
+	}
+
+	public ImageView getIv_brush() {
+		return iv_brush;
+	}
+
+	public MyEditText(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		init();
+		initListener();
+	}
+
+	public MyEditText(Context context) {
+		super(context);
+		init();
+		initListener();
+	}
+	
+	public void init() {
+		LayoutInflater	mInflater = LayoutInflater.from(getContext());
+		View view = mInflater.inflate(R.layout.my_edittext, this, false);
+		et_input = (EditText) view.findViewById(R.id.et_input);
+		iv_brush = (ImageView) view.findViewById(R.id.iv_brush);
+		addView(view);
+	}
+	
+	public void initListener () {
+		et_input.addTextChangedListener(new TextWatcher() {
+				
+				@Override
+				public void onTextChanged(CharSequence s, int start, int before, int count) {
+					if (s.length() == 0) {
+						iv_brush.setVisibility(View.VISIBLE);
+					} else {
+						iv_brush.setVisibility(View.GONE);
+					}
+				}
+				
+				@Override
+				public void beforeTextChanged(CharSequence s, int start, int count,
+						int after) {
+				}
+				
+				@Override
+				public void afterTextChanged(Editable s) {
+				}
+			});
+	}
+}

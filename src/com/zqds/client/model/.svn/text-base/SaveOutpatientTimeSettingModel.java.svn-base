@@ -1,0 +1,30 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 保存门诊时间设置的返回数据类
+ */
+public class SaveOutpatientTimeSettingModel extends AbstractBaseModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1029714831821093103L;
+
+	private OutpatientTimeSettingDto outpatSetting;//保存成功的门诊时间设置
+
+	/**
+	 * @return the outpatSetting
+	 */
+	public OutpatientTimeSettingDto getOutpatSetting() {
+		return outpatSetting;
+	}
+
+	/**
+	 * @param outpatSetting the outpatSetting to set
+	 */
+	public void setOutpatSetting(OutpatientTimeSettingDto outpatSetting) {
+		this.outpatSetting = outpatSetting;
+	}
+}

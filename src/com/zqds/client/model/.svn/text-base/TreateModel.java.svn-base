@@ -1,0 +1,29 @@
+/*
+ * TreateModel.java
+ * classes : com.qdoc.client.model.TreateModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-23 上午1:11:05
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.TreateModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-23 上午1:11:05
+ */
+public class TreateModel extends AbstractBaseModel {
+	
+	private static final long serialVersionUID = 1L;
+	/**咨询建议创建时间*/
+	private String createTime;
+
+	public String getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(String createTime) {
+		this.createTime = createTime;
+	}
+}

@@ -1,0 +1,702 @@
+
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.app.Dialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.db.bean.CustomContent;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.AdvanceActivitiesDtoModel;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.MyConsultDtoModel;
+import com.qdoc.client.model.MyConsultsDataModel;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.AdvanceDetailActivity;
+import com.qdoc.client.ui.ConsultDetailActivity;
+import com.qdoc.client.ui.FansDetailInfoActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.adapter.MyConsultListAdapter;
+import com.qdoc.client.ui.adapter.MyConsultListAdapter.ItemOnclickListener;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.HistoryConsultListGuideView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.MyConsultFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午5:36:19
+ */
+public class MyConsultListFragment extends BaseFragment {
+	/**
+	 * TAG
+	 */
+	public static final String TAG = MyConsultListFragment.class
+			.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private PullRefreshView mListView;
+	private PullListMaskController mViewController;
+	private Spinner screening_conditions;
+	private EditText consult_search_keyword;
+	private TitleBar mTitleBar;
+	private ImageButton ibtSearch;
+	private LinearLayout top_layout;
+	private HistoryConsultListGuideView first_guide_view;
+
+	/**
+	 * params
+	 */
+	private ArrayList<MyConsultDtoModel> elementsList = new ArrayList<MyConsultDtoModel>();
+	private MyConsultListAdapter mAdapter;
+	private int pageIndex = 1;
+	private static final int PAGE_SIZE = 10;
+	private String[] order_type;
+	private String currentOrderType = AppConstants.ALL_ORDER;// 当前订单类型
+	public static MyConsultListFragment instance;
+    public static boolean isRefresh = false;//是否需要刷新界面
+    private String clinicUrl;//微信端移动诊所URL
+
+	
+	public EditText getConsult_search_keyword() {
+		return consult_search_keyword;
+	}
+
+	public void setConsult_search_keyword(EditText consult_search_keyword) {
+		this.consult_search_keyword = consult_search_keyword;
+	}
+
+	public String getCurrentOrderType() {
+		return currentOrderType;
+	}
+
+	public void setCurrentOrderType(String currentOrderType) {
+		this.currentOrderType = currentOrderType;
+	}
+
+	public static MyConsultListFragment newInstance(Bundle bundle) {
+		final MyConsultListFragment fragment = new MyConsultListFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_msg_myconsult, container, false);
+	}
+	
+	public ImageButton getIbtSearch() {
+		return ibtSearch;
+	}
+
+	public void setIbtSearch(ImageButton ibtSearch) {
+		this.ibtSearch = ibtSearch;
+	}
+
+	public LinearLayout getTop_layout() {
+		return top_layout;
+	}
+
+	public void setTop_layout(LinearLayout top_layout) {
+		this.top_layout = top_layout;
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		initView(view);
+		initListener();
+		initParams();
+	}
+
+	private void initParams() {
+		mAdapter = new MyConsultListAdapter(getContext(),
+				new ItemOnclickListener() {
+					@Override
+					public void onButtonClick(int type, Object obj, View view1,
+							View view2) {
+						final MyConsultDtoModel model = (MyConsultDtoModel) obj;
+						switch (type) {
+						case AppConstants.BUTTON_USER_INFO:
+							if (model.getOpenid() != null && !model.isAnonymity())
+								FansDetailInfoActivity.startActivity(getActivity(), model.getOpenid());// 跳转到用户信息页面
+							break;
+						}
+					}
+
+					@Override
+					public void onButtonClick(int type, Object obj, View view1, View view2, int position) {
+						final int index = position;
+						final MyConsultDtoModel model = (MyConsultDtoModel) obj;
+						AppConstants.clickItemPosition = position;
+						switch (type) {
+						case AppConstants.CONSULT_CANCEL_SHARE:
+							String title1 = getActivity().getString(R.string.dialog_hint_title);
+							String content1 = getActivity().getString(R.string.str_cancel_share_hint);
+							String confirm1 = getActivity().getString(R.string.confirm);
+							String cancel1 = getActivity().getString(R.string.str_cancel);
+							new HintDlg(getActivity(), content1, title1, cancel1,
+									confirm1, new OnDialogclickListener() {
+										@Override
+										public void onButtonClick(int type, Dialog dialog) {
+											switch (type) {
+											case AppConstants.RIGHT_BUTTON:
+												getCancelShareConsult(model.getId(), AppConstants.SHARE_MOBILE_CLINIC, index);
+												dialog.dismiss();
+												break;
+											case AppConstants.LEFT_BUTTON:
+												dialog.dismiss();
+												break;
+											}
+										}
+									}, R.layout.dialog_hint).show();
+							break;
+							
+						case AppConstants.CONSULT_SHARE:
+							String title2 = getActivity().getString(R.string.dialog_hint_title);
+							String content2 = getActivity().getString(R.string.str_share_hint);
+							String confirm2 = getActivity().getString(R.string.confirm);
+							String cancel2 = getActivity().getString(R.string.str_cancel);
+							new HintDlg(getActivity(), content2, title2, cancel2,
+									confirm2, new OnDialogclickListener() {
+										@Override
+										public void onButtonClick(int type, Dialog dialog) {
+											switch (type) {
+											case AppConstants.RIGHT_BUTTON:
+												getShareConsult(model.getId(), AppConstants.SHARE_MOBILE_CLINIC, index);
+												dialog.dismiss();
+												break;
+											case AppConstants.LEFT_BUTTON:
+												dialog.dismiss();
+												break;
+											}
+										}
+									}, R.layout.dialog_hint).show();
+							break;
+							
+						case AppConstants.CONSULT_EXAMINE:
+							AdvanceActivitiesDtoModel dataModel = new AdvanceActivitiesDtoModel();
+				            dataModel.setTitle(getActivity().getResources().getString(R.string.str_mobile_clinics));
+				            dataModel.setActivityUrl(clinicUrl);
+				            AdvanceDetailActivity.startActivity(getActivity(), dataModel);
+							break;
+						}
+					}
+				});
+		mListView.setAdapter(mAdapter);
+		registerConsultUpdateReceiver();
+	}
+
+	private void initView(View view) {
+		instance = this;
+		String from = getArguments().getString(IntentTools.EXTRA_FROM);
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		ibtSearch = (ImageButton) view.findViewById(R.id.ibt_search);
+		top_layout = (LinearLayout) view.findViewById(R.id.top_layout);
+		if (AboutmeFragment.TAG.equals(from)) {
+			 mTitleBar.setTitleInfo(R.string.msg_myconsult, R.drawable.icon_back, 0,actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+			 ibtSearch.setVisibility(View.GONE);
+			 top_layout.setVisibility(View.VISIBLE);
+		} else if (ConsultListFragment.TAG.equals(from)) {
+			 mTitleBar.setVisibility(View.GONE);
+             ibtSearch.setVisibility(View.VISIBLE);
+             top_layout.setVisibility(View.GONE);
+             getConsultListByTypeAndSearchInit(currentOrderType,"");
+		}
+		screening_conditions = (Spinner) view.findViewById(R.id.screening_conditions);
+		consult_search_keyword = (EditText) view.findViewById(R.id.fans_search_keyword) ;
+		order_type = getResources().getStringArray(R.array.order_screening_type);
+		ArrayAdapter<String> screening_conditions_adapter = new ArrayAdapter<String>(
+				getContext(), R.layout.screen_frame_item);
+		for (int i = 0; i < order_type.length; i++) {
+			screening_conditions_adapter.add(order_type[i]);
+		}
+		screening_conditions_adapter.setDropDownViewResource(R.layout.screen_spinner_dropdown_item);
+		screening_conditions.setAdapter(screening_conditions_adapter);
+		mListView = (PullRefreshView) view.findViewById(R.id.listView);
+		// 自定义emptyview
+		ErrorMaskView maskView = (ErrorMaskView) view.findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(mListView, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+		first_guide_view = (HistoryConsultListGuideView) view.findViewById(R.id.first_guide_view);
+		if (!PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_HISTORY_CONSULT_LIST_GUIDE)) {//引导是否显示
+			first_guide_view.setView(R.drawable.history_consult_guide);
+		}
+	}
+
+	protected void initListener() {
+		consult_search_keyword.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				if (StringUtils.isEmpty(s)) {
+					getConsultListByTypeAndSearchInit(currentOrderType, "");	
+				}
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
+			}
+			
+			@Override
+			public void afterTextChanged(Editable s) {
+			}
+		});
+		
+		// 下拉选项卡选择监听器
+		screening_conditions.setOnItemSelectedListener(new OnItemSelectedListener() {
+					@Override
+					public void onItemSelected(AdapterView<?> parent,
+							View item, int position, long arg3) {
+						String search_keyWord = consult_search_keyword
+								.getText().toString().trim();
+						switch (position) {
+						case 0:
+							// 选择查找类型为“全部订单”
+							currentOrderType = AppConstants.ALL_ORDER;
+							getConsultListByTypeAndSearchInit(currentOrderType, search_keyWord);
+							break;
+						case 1:
+							// 选择查找类型为“已完成订单”
+							currentOrderType = AppConstants.COMPLETE;
+							getConsultListByTypeAndSearchInit(currentOrderType, search_keyWord);
+							break;
+						case 2:
+							// 选择查找类型“粉丝订单”
+							currentOrderType = AppConstants.FANS;
+							getConsultListByTypeAndSearchInit(currentOrderType, search_keyWord);
+							break;
+						case 3:
+							// 选择查找类型“收益订单”
+							currentOrderType = AppConstants.GAIN;
+							getConsultListByTypeAndSearchInit(currentOrderType, search_keyWord);
+						}
+					}
+
+					@Override
+					public void onNothingSelected(AdapterView<?> arg0) {
+					}
+				});
+
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				// 点击重试
+				String searchKeyWord = consult_search_keyword.getText()
+						.toString().trim();
+				getConsultListByTypeAndSearchInit(currentOrderType,
+						searchKeyWord);
+			}
+		});
+		
+		mViewController.setOnRefreshListener(new OnRefreshListener() {
+
+			@Override
+			public void onRefresh() {
+				// 下拉刷新
+				String searchKeyWord = consult_search_keyword.getText()
+						.toString().trim();
+				getConsultListByTypeAndSearchRefresh(currentOrderType,
+						searchKeyWord);
+			}
+		});
+		
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+
+			@Override
+			public void onClickFootView() {
+				// 加载更多
+				String searchKeyWord = consult_search_keyword.getText().toString().trim();
+				getConsultListByTypeAndSearchMore(currentOrderType,searchKeyWord);
+			}
+		});
+		
+		mListView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				if (ListUtils.isEmpty(elementsList)) {
+					return;
+				}
+				AppConstants.clickItemPosition = position;
+				MyConsultDtoModel myConsultModel = (MyConsultDtoModel) parent.getAdapter().getItem(position);
+				ElementsModel elementsModel = new ElementsModel();
+				elementsModel.setId(myConsultModel.getId());
+				elementsModel.setConsultState(Integer.valueOf(myConsultModel.getConsultState()));
+				ConsultDetailActivity.startActivity(getActivity(),String.valueOf(elementsModel.getId()), AppConstants.FROM_DETAIL, elementsModel.getConsultState());
+			}
+		});
+
+		// 搜索编辑框的搜索监听器
+		consult_search_keyword.setOnEditorActionListener(new OnEditorActionListener() {
+
+					@Override
+					public boolean onEditorAction(TextView v, int actionId,
+							KeyEvent event) {
+						if (actionId == EditorInfo.IME_ACTION_SEARCH || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH)) {
+							// 点击了键盘的搜索按钮
+							String searchWord = consult_search_keyword.getText().toString().trim();
+							// 搜索内容不为空时请求服务器
+							if (!TextUtils.isEmpty(searchWord)) {
+								// 搜索联动下拉筛选
+								getConsultListByTypeAndSearchInit(currentOrderType, searchWord);
+							}
+							return true;
+						}
+						return false;
+					}
+		 });
+		
+		ibtSearch.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				top_layout.setVisibility(View.VISIBLE);
+				ibtSearch.setVisibility(View.GONE);
+			}
+		});
+		
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		if (isRefresh) {
+			getConsultListByTypeAndSearchInit(currentOrderType, consult_search_keyword.getText().toString());
+			isRefresh = false;
+		}
+	}
+	
+	public void getConsultListByTypeAndSearchInit(String searchType, String searchWord) {
+		pageIndex = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getListMyConsultsParam(TAG, token, searchType, searchWord, pageIndex, PAGE_SIZE), JsonParserFactory
+				.parseBaseModel(MyConsultsDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final MyConsultsDataModel dataModel = (MyConsultsDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+							
+								PersonalConfig.asyncCommit();
+								Pagination<MyConsultDtoModel> pager = dataModel.getPager();
+								elementsList = pager.getElements();
+								clinicUrl = dataModel.getClinicUrl();
+								if (ListUtils.isEmpty(elementsList)) {
+									mViewController.showViewStatus(ListViewState.EMPTY_BLANK,"暂无咨询记录，请点击刷新");
+								} else if (pager.isHasNext()) {
+									getGuideFlag();
+									mAdapter.addListData(elementsList);
+									mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+								} else {
+									getGuideFlag();
+									mAdapter.addListData(elementsList);
+									mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+							mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+						}
+					}
+				});
+	}
+
+	private void getConsultListByTypeAndSearchRefresh(String searchType, String searchWord) {
+		pageIndex = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getListMyConsultsParam(TAG, token, searchType, searchWord,
+						pageIndex, PAGE_SIZE), JsonParserFactory
+				.parseBaseModel(MyConsultsDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final MyConsultsDataModel dataModel = (MyConsultsDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								Pagination<MyConsultDtoModel> pager = dataModel.getPager();
+								elementsList = pager.getElements();
+								if (ListUtils.isEmpty(elementsList)) {
+									mViewController.showViewStatus(ListViewState.EMPTY_BLANK, "暂无咨询记录，请点击刷新");
+								} else if (pager.isHasNext()) {
+									getGuideFlag();
+									mAdapter.addListData(elementsList);
+									mViewController.showViewStatus(ListViewState.LIST_REFRESH_COMPLETE);
+								} else {
+									getGuideFlag();
+									mAdapter.addListData(elementsList);
+									mViewController.showViewStatus(ListViewState.PULL_DOWN_LIST_NO_MORE);
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+							mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+						}
+					}
+				});
+	}
+
+	private void getConsultListByTypeAndSearchMore(String searchType,String searchWord) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getListMyConsultsParam(TAG, token, searchType, searchWord,
+						++pageIndex, PAGE_SIZE), JsonParserFactory
+				.parseBaseModel(MyConsultsDataModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final MyConsultsDataModel dataModel = (MyConsultsDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								Pagination<MyConsultDtoModel> pager = dataModel.getPager();
+								elementsList = pager.getElements();
+								if (ListUtils.isEmpty(pager.getElements())) {
+									mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+								} else if (pager.isHasNext()) {
+									mAdapter.addMoreListData(elementsList);
+									mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+								} else {
+									mAdapter.addMoreListData(elementsList);
+									mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										(String) resultData);
+							}
+							mViewController.showViewStatus(ListViewState.LIST_RETRY);
+						}
+					}
+				});
+	}
+
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			// TODO Auto-generated method stub
+			getActivity().finish();
+		}
+	};
+
+	OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+		}
+	};
+
+	public void onDestroy() {
+		super.onDestroy();
+		// reset
+		HttpTaskManager.stop(TAG);
+		unRegisterConsultUpdateReceiver();
+	}
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+    @Override
+    public void onStop() {
+	    super.onStop();
+    }
+   
+    @Override
+    public void onPause() {
+	    super.onPause();
+	    ibtSearch.setVisibility(View.VISIBLE);
+        top_layout.setVisibility(View.GONE);
+    }
+   
+    public void registerConsultUpdateReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.REFRESH_CONSULT_LIST_ACTION);
+		myIntentFilter.addAction(AppConstants.REFRESH_HISTORY_CONSULT_LIST_ACTION);
+		myIntentFilter.addAction(AppConstants.SHARE_MOBILE_CLINIC_STATUS_ACTION);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(mConsultUpdateReceiver, myIntentFilter);
+	}
+
+	public void unRegisterConsultUpdateReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(mConsultUpdateReceiver);
+	} 
+
+	private BroadcastReceiver mConsultUpdateReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			try {
+				String action = intent.getAction();
+				if (AppConstants.REFRESH_CONSULT_LIST_ACTION.equals(action)||AppConstants.REFRESH_HISTORY_CONSULT_LIST_ACTION.equals(action)) {
+					getConsultListByTypeAndSearchInit(currentOrderType, consult_search_keyword.getText().toString());
+				} else if (AppConstants.SHARE_MOBILE_CLINIC_STATUS_ACTION.equals(action)) {
+					int shareStatus = intent.getIntExtra(IntentTools.EXTRA_SHARE_STATUS, -1);
+					mAdapter.notifyListData(AppConstants.clickItemPosition, shareStatus);
+				} 
+			} catch (Exception e) {
+				LogUtils.d(TAG, "BroadcastReceiver>>" + e.toString());
+			}
+		}
+	};
+	
+	/**
+	 * 取消分享咨询
+	 */
+	public void getCancelShareConsult(long consultId, int type, final int position) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.deleteConsultShare(TAG, token, consultId, type),
+				JsonParserFactory.parseBaseModel(BaseModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final BaseModel dataModel = (BaseModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								Intent intent = new Intent(AppConstants.SHARE_MOBILE_CLINIC_STATUS_ACTION);
+								intent.putExtra(IntentTools.EXTRA_SHARE_STATUS, AppConstants.MAY_SHARE);
+								LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+								ToastUtils.ToastShort(getActivity(), getActivity().getString(R.string.str_already_cancel));
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+
+						}
+					}
+				});
+	}
+	
+	/**
+	 * 分享咨询
+	 */	
+	public void getShareConsult(long consultId, int type, final int position) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.saveConsultShare(TAG, token, consultId, type),
+				JsonParserFactory.parseBaseModel(BaseModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode, Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final BaseModel dataModel = (BaseModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								ToastUtils.ToastShort(getActivity(), getActivity().getString(R.string.str_share_success));
+								Intent intent = new Intent(AppConstants.SHARE_MOBILE_CLINIC_STATUS_ACTION);
+								intent.putExtra(IntentTools.EXTRA_SHARE_STATUS, AppConstants.ALREADY_SHARE);
+								LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+					}
+				});
+	}
+	
+	/**
+	 * 获取引导标志
+	 */
+    public void getGuideFlag() {
+    	if (!PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_HISTORY_CONSULT_LIST_GUIDE)) {
+			first_guide_view.setVisibility(View.VISIBLE);
+			PersonalConfig.putBoolean(PersonalConfigKey.EXTAR_HISTORY_CONSULT_LIST_GUIDE, true);
+			PersonalConfig.asyncCommit();
+		}
+    }
+}

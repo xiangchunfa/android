@@ -1,0 +1,107 @@
+/*
+ * ConsultFavoritesDtoModel.java
+ * classes : com.qdoc.client.model.ConsultFavoritesDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午4:05:26
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.ConsultFavoritesDtoModel
+ * 
+ * @author xiangyutian <br/>
+ */
+public class ConsultFavoritesDtoModel {
+    private int consultId;
+    private String createTime;
+    private int doctorId;
+    private String id;
+    private String status;
+    private String uuid;
+
+    /**
+     * @return the consultId
+     */
+    public int getConsultId() {
+        return consultId;
+    }
+
+    /**
+     * @param consultId the consultId to set
+     */
+    public void setConsultId(int consultId) {
+        this.consultId = consultId;
+    }
+
+    /**
+     * @return the createTime
+     */
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    /**
+     * @param createTime the createTime to set
+     */
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    /**
+     * @return the doctorId
+     */
+    public int getDoctorId() {
+        return doctorId;
+    }
+
+    /**
+     * @param doctorId the doctorId to set
+     */
+    public void setDoctorId(int doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    /**
+     * @return the id
+     */
+    public String getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the status
+     */
+    public String getStatus() {
+        return status;
+    }
+
+    /**
+     * @param status the status to set
+     */
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+}

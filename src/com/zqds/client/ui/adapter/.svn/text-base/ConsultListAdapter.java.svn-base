@@ -1,0 +1,381 @@
+/*
+ * ConsultAdapter.java
+ * classes : com.qdoc.client.ui.adapter.ConsultAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午1:56:20
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import android.content.Context;
+import android.graphics.Color;
+import android.os.CountDownTimer;
+import android.os.Handler;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.db.DatabaseService;
+import com.qdoc.client.db.bean.CustomContent;
+import com.qdoc.client.db.bean.Draft;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.fragment.ConsultListFragment;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.FaceConversionUtil;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ViewUtils;
+
+/**
+ * com.qdoc.client.ui.adapter.ConsultAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午1:56:20
+ */
+public class ConsultListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = ConsultListAdapter.class.getSimpleName();
+    private final LayoutInflater mInflater;
+    private ArrayList<ElementsModel> mElements;
+    private ItemOnclickListener mListener;
+    private Context mContext; 
+    private DatabaseService service;
+    private ConsultListFragment mConsultListFrg;
+    
+    /**
+     * params
+     */
+    public FaceConversionUtil faceConversion;
+    /**第一个Item高度*/
+    private int firstItemHight;
+ 
+    public int getFirstItemHight() {
+		return firstItemHight;
+	}
+
+	public void setFirstItemHight(int firstItemHight) {
+		this.firstItemHight = firstItemHight;
+	}
+
+	public ConsultListAdapter(Context context, ItemOnclickListener listener, ConsultListFragment consultListfrg) {
+		mConsultListFrg = consultListfrg;
+    	service = new DatabaseService(context);
+        mContext = context;
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mListener = listener;
+        mElements = new ArrayList<ElementsModel>();
+        faceConversion = FaceConversionUtil.getInstace(context);
+    }
+
+	public void addListData(ArrayList<ElementsModel> elementsList) {
+        mElements.clear();
+        mElements.addAll(matchingDraft(elementsList));
+        notifyDataSetChanged();
+    }
+	
+	public void addListData(ArrayList<ElementsModel> elementsList, CustomContent content) {
+        mElements.clear();
+        for (int i = 0; i < elementsList.size(); i++) {
+        	ElementsModel model = elementsList.get(i);
+        	if (model.getId().longValue() == content.getConsultId().longValue()) {
+        		elementsList.remove(i);
+        		elementsList.add(0, model);
+        		break;
+        	}
+        }
+        mElements.addAll(matchingDraft(elementsList));
+        notifyDataSetChanged();
+    }
+
+    public void addMoreListData(ArrayList<ElementsModel> elementsList) {
+        mElements.addAll(matchingDraft(elementsList));
+        notifyDataSetChanged();
+    }
+    
+    /**
+     * 匹配草稿
+     */
+    public List<ElementsModel> matchingDraft(List<ElementsModel> elementsList) {
+    	List<Draft> drafts = service.queryDraft();
+        for (ElementsModel model:elementsList) {
+        	for (Draft draft:drafts) {
+        		if(model.getId().longValue() == Long.valueOf(draft.getConsult_id()).longValue()) {
+        			model.setDraft(draft.getDraft_text());
+        		} 
+        	}
+        }
+        return elementsList;
+    }
+    
+    /**
+     * 查找咨询ID在咨询服务列表（mElements）中的位置
+     * @param consultID:咨询服务ID
+     */
+    public int findPositionModelByElements(long consultID) {
+        for(int position=0;position<=mElements.size();position++){
+        	ElementsModel model=mElements.get(position);
+        	if(consultID == model.getId()){
+        		return position;
+        	}
+        }
+        return -1;
+    }
+    
+    /**
+     * 清除list中所有数据
+     */
+    public void clearListData() {
+        mElements.clear();
+        mElements = null;
+    }
+     /**
+      * 清除list中的某一条数据
+      */
+    public List<ElementsModel> removeListData(int position) {
+    	mElements.remove(position);
+    	notifyDataSetChanged();
+    	return mElements;
+    }
+    
+    public void notifyEmptyData() {
+        mElements.clear();
+        notifyDataSetChanged();
+    }
+    
+    @Override
+    public int getCount() {
+        // TODO Auto-generated method stub
+        return ListUtils.isEmpty(mElements) ? 0 : mElements.size();
+    }
+    
+    @Override
+    public Object getItem(int position) {
+        // TODO Auto-generated method stub
+        if (!ListUtils.isEmpty(mElements)) {
+            int size = mElements.size();
+            return mElements.get(position % size);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public long getItemId(int position) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public View getView(final int position,  View convertView, ViewGroup parent) {
+        ViewHolder holder = new ViewHolder();
+		convertView = mInflater.inflate(R.layout.listitem_consultlist, null);
+		holder.icon_UserHeadUrl = (ImageView) convertView.findViewById(R.id.icon_userheadurl);
+		holder.nicknameStr = (TextView) convertView.findViewById(R.id.nickname);
+		holder.consult_time = (TextView) convertView.findViewById(R.id.tv_consult_time);
+		holder.consult_money_zero = (TextView) convertView.findViewById(R.id.consult_money_zero);
+		holder.consult_money_not_zero = (TextView) convertView.findViewById(R.id.consult_money_not_zero);
+		holder.consult_msg = (TextView) convertView.findViewById(R.id.consult_msg);
+		holder.iv_consult_vol = (ImageView) convertView.findViewById(R.id.iv_consult_vol);
+		holder.iv_vol_animview = (ImageView) convertView.findViewById(R.id.iv_vol_animview);
+		holder.volLayout = (LinearLayout) convertView.findViewById(R.id.vol_layout);
+		holder.tv_red_dot = (TextView) convertView.findViewById(R.id.tv_red_dot);
+		holder.tv_count_down = (TextView) convertView.findViewById(R.id.tv_count_down);
+		holder.tv_duration = (TextView) convertView.findViewById(R.id.tv_duration);
+		convertView.setTag(holder);
+		
+        int size = mElements.size();
+        final ElementsModel model = mElements.get(position % size);
+        final ViewHolder tempholder = holder;
+        if (model != null) {//显示倒计时
+			if (!StringUtils.isEmpty(model.getTreatmentTime()) && model.getOpenNumber() != null) {
+				holder.tv_count_down.setVisibility(View.VISIBLE);
+				holder.consult_time.setVisibility(View.GONE);
+				String endConsultTime = DateUtil.addDate(model.getTreatmentTime(), Calendar.HOUR_OF_DAY, model.getOpenNumber());
+				String now = DateUtil.getDate(DateUtil.timeFormat1);
+				long differTime = DateUtil.dateDiff(now, endConsultTime);
+				TimeCount time = new TimeCount(differTime, 1000, holder.tv_count_down);// 构造CountDownTimer对象
+				time.start();// 开始计时
+			} else {
+				holder.tv_count_down.setVisibility(View.GONE);
+				holder.consult_time.setVisibility(View.VISIBLE);
+			}
+            // 头像/名字
+            if (model.getwUserDto() != null) {
+                ImageLoaderHelper.getInstance(mContext).displayImage(model.getwUserDto().getHeadimgurl(),
+                        holder.icon_UserHeadUrl, R.drawable.bank_owener_default_header);
+                if (!StringUtils.isEmpty(model.getwUserDto().getNicknameStr())) {
+                    holder.nicknameStr.setText(model.getwUserDto().getNicknameStr());
+                } else {
+                    holder.nicknameStr.setText("暂无数据");
+                }
+            }
+           
+            //是否有咨询费
+            if (model.getConsultFee() > 0) {
+    			holder.consult_money_not_zero.setVisibility(View.VISIBLE);
+    			holder.consult_money_zero.setVisibility(View.GONE);
+    			holder.consult_money_not_zero.setText(model.getConsultFeeStr());
+            } else {
+    			holder.consult_money_not_zero.setVisibility(View.GONE);
+    			holder.consult_money_zero.setVisibility(View.VISIBLE);
+    			holder.consult_money_zero.setText(model.getConsultFeeStr());
+            }
+            
+			if (StringUtils.isNotEmpty(model.getDraft())) {// 显示草稿
+				String draft = mContext.getString(R.string.str_draft, model.getDraft());
+				SpannableString spanStr = faceConversion.getExpressionString(mContext, faceConversion.WeChatConvertQDOC(draft));
+				spanStr.setSpan(new ForegroundColorSpan(Color.RED), 0, 4, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+				holder.consult_msg.setText(spanStr);
+				ViewUtils.setVisibility(holder.consult_msg, View.VISIBLE);
+				ViewUtils.setVisibility(holder.volLayout, View.GONE);
+//				holder.consult_time.setText(model.getConsultMsgDto().getMsgTime());
+			} else if (model.getConsultMsgDto() != null && !StringUtils.isEmpty(model.getConsultMsgDto().getRealUrl())) {// 显示咨询语音
+				ViewUtils.setVisibility(holder.volLayout, View.VISIBLE);
+				ViewUtils.setVisibility(holder.consult_msg, View.GONE);
+				holder.tv_duration.setText(model.getConsultMsgDto().getMediaDura() + "\"");
+				holder.iv_consult_vol.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						if (mListener != null) {
+							mListener.onButtonClick(AppConstants.BUTTON_VOL, model, tempholder.iv_consult_vol, tempholder.iv_vol_animview);
+						}
+					}
+				});
+				holder.consult_time.setText(model.getConsultMsgDto().getMsgTime());
+			} else if (model.getConsultMsgDto() != null && !StringUtils.isEmpty(model.getConsultMsgDto().getContent())) {// 显示咨询消息
+				SpannableString spannableString = FaceConversionUtil.getInstace(mContext).getExpressionString(mContext, model.getConsultMsgDto().getContent());
+				holder.consult_msg.setText(spannableString);
+				ViewUtils.setVisibility(holder.consult_msg, View.VISIBLE);
+				ViewUtils.setVisibility(holder.volLayout, View.GONE);
+			    holder.consult_time.setText(model.getConsultMsgDto().getMsgTime());
+			} else {// 显示咨询单
+	            if (model.getConsultCaseDto() != null) {
+					SpannableString spanStr = FaceConversionUtil.getInstace(mContext).getExpressionString(mContext, model.getConsultCaseDto().getDescription());
+					holder.consult_msg.setText(spanStr);
+	            } else {
+	            	holder.consult_msg.setText("");
+	            }
+	            // 咨询时间
+	            holder.consult_time.setText(model.getAcceptTime());
+				ViewUtils.setVisibility(holder.consult_msg, View.VISIBLE);
+				ViewUtils.setVisibility(holder.volLayout, View.GONE);
+			}
+			
+            if (model.getConsultMsgDto() != null&&model.getConsultMsgDto().getConsultId()!=null && Global.countMap.containsKey(model.getConsultMsgDto().getConsultId())) {
+            	holder.tv_red_dot.setVisibility(View.VISIBLE);
+            	int count = Global.countMap.get(model.getConsultMsgDto().getConsultId());
+            	String strCount = String.valueOf(count);
+            	if(count > 9)
+            		strCount = "9+";
+            	holder.tv_red_dot.setText(strCount);
+            } else {
+            	holder.tv_red_dot.setVisibility(View.GONE);
+            }
+
+            convertView.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View arg0) {
+					 mListener.onButtonClick(AppConstants.LAYOUT_ITEM, model, null, null,position);
+				}
+			});
+
+//            holder.volLayout.setOnClickListener(new OnClickListener() {
+//
+//                @Override
+//                public void onClick(View v) {
+//                    // TODO Auto-generated method stub
+//                    mListener.onButtonClick(AppConstants.BUTTON_VOL, model, tempholder.iv_consult_vol, tempholder.iv_vol_animview);
+//                }
+//            });
+            holder.icon_UserHeadUrl.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View arg0) {
+					mListener.onButtonClick(AppConstants.BUTTON_USER_INFO, model, null, null);
+				}
+			});
+            holder.nicknameStr.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View arg0) {
+					 mListener.onButtonClick(AppConstants.BUTTON_USER_INFO, model, null, null);
+				}
+			});
+        }
+        
+        if (!Global.consultGuide) {
+        	 final View tempConverView = convertView;
+             new Handler().post(new Runnable() {
+     			
+     			@Override
+     			public void run() {
+     				firstItemHight = tempConverView.getHeight();
+     			    mConsultListFrg.showConsultGuide(firstItemHight);
+     			}
+     		});
+        }
+        return convertView;
+    }
+
+    private class ViewHolder {
+        private ImageView icon_UserHeadUrl;
+        private TextView nicknameStr;
+        private TextView consult_time;
+        private TextView consult_money_zero;
+        private TextView consult_money_not_zero;
+        private TextView consult_msg;
+        private ImageView iv_consult_vol;
+        private LinearLayout volLayout;
+        private ImageView iv_vol_animview;
+        private TextView tv_red_dot;
+        private TextView tv_count_down;
+        private TextView tv_duration;
+    }
+    
+	/* 定义一个倒计时的内部类 */
+	class TimeCount extends CountDownTimer {
+		private TextView tv_count_down;
+		
+		public TimeCount(long millisInFuture, long countDownInterval, TextView tv_count_down) {
+			super(millisInFuture, countDownInterval);// 参数依次为总时长,和计时的时间间隔
+			this.tv_count_down = tv_count_down;
+		}
+
+		@Override
+		public void onFinish() {// 计时完毕时触发
+			tv_count_down.setVisibility(View.GONE);
+		}
+
+		@Override
+		public void onTick(long millisUntilFinished) {// 计时过程显示
+			tv_count_down.setText(mContext.getResources().getString(R.string.str_auto_close, 
+					DateUtil.formatTime(millisUntilFinished)));
+		}
+	}
+
+    public interface ItemOnclickListener {
+        public void onButtonClick(int type, Object obj, View view1, View view2);
+        public void onButtonClick(int type, Object obj, View view1, View view2,int position);
+    }
+    
+    
+}

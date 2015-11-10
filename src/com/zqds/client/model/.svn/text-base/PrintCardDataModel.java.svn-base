@@ -1,0 +1,31 @@
+package com.qdoc.client.model;
+
+/**
+ * create at 2014-11-28 
+ * @author antony
+ * 打印名片操作返回的数据类
+ */
+public class PrintCardDataModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6207880076937869033L;
+	
+	private String resultMsg;
+
+	/**
+	 * @return the resultMsg
+	 */
+	public String getResultMsg() {
+		return resultMsg;
+	}
+
+	/**
+	 * @param resultMsg the resultMsg to set
+	 */
+	public void setResultMsg(String resultMsg) {
+		this.resultMsg = resultMsg;
+	}
+
+}

@@ -1,0 +1,590 @@
+/*
+ * MyBenefitBalanceFragment.java
+ * classes : com.qdoc.client.ui.fragment.MyBenefitBalanceFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 下午8:57:57
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BankDtoDataModel;
+import com.qdoc.client.model.BankInfoDtoModel;
+import com.qdoc.client.model.DocBankDataModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.DoctorWithdrawShowDto;
+import com.qdoc.client.model.GetMoneyDataModel;
+import com.qdoc.client.model.ShowWithdrawalDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.BankAccountEditActivitiy;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MyBenefitDetailActivity;
+import com.qdoc.client.ui.ShareAfterBenefitActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.MyBenefitDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-10 下午8:57:57
+ *         
+ * update at 2014-11-6 14:43 by antony
+ */
+public class MyBenefitDetailFragment extends BaseFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = MyBenefitDetailFragment.class.getSimpleName();
+    
+    //private EditText benefit_cardholder;//持卡人
+    //private TextView benefit_open_bank;//开户行
+    //private LinearLayout open_bank_layout;//开户行Layout
+    //private EditText benefit_bank_card_account;//银行卡号
+    //private TextView confirmpickmoney;
+    //private EditText etGetmoney;
+    //private TextView totalmoney;
+    //private List<BankDtoModel> bankList;//银行列表
+    //记录后台是否已经保存银行账号信息
+    //private boolean hasSaveBankAccount = false;
+    //为了传输银行列表，要把整个个人银行信息传输过去
+    //private ShowWithdrawalDataModel global_showWithdrawDataModel;
+    //public static final int MYBENEFITDETAIL_CHANGECARD_REQUESTCODE = 1113;
+    //public static String mMaxMoney;
+    //public static final int MYBENEFITDETAIL_REQUESTCODE = 1111;
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+
+    private EditText benefit_money;//金额编辑框
+    private TextView benefit_payment_time;//预计到账时间文本框
+    private Button benefit_sure_exchange;//确认兑换按钮
+    private TextView benefit_tips_textview;//金额兑换的温馨提示
+    //提现的手续费,扣除的手续费多少是从服务器端获得（默认值是1）
+    private String fees = "1";
+    //医生银行信息对象
+    private DoctorWithdrawShowDto global_doctorWithdrawShowDto;
+    //提现show对象
+    private ShowWithdrawalDataModel showWithdrawalDataModel;
+    //医生信息对象
+    private DoctorModel doctorModel;
+    //银行信息框里面的信息控件
+    //头像控件
+    private ImageView bank_owener_header_image;
+    //更换文本按钮
+    private TextView bank_card_layout_change_card;
+    //开户行文本
+    private TextView bank_name_tv;
+    //姓名文本
+    private TextView bank_owener_name;
+    //卡号文本
+    private TextView bank_account_no;
+    
+    private String maxMoney;//最大的兑换金额
+    private String totalBenefit;//累积收益
+    /**
+     * params
+     */
+    private StringBuffer strBuffer = new StringBuffer();
+    /**
+     * 更换银行卡的广播接收器
+     */
+    private ChangeCardReceiver changeCardReceiver;
+
+    public static MyBenefitDetailFragment newInstance(Bundle bundle) {
+        final MyBenefitDetailFragment fragment = new MyBenefitDetailFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+        LogUtils.d(TAG, TAG+"------MyBenefitDetailFragment onCreate--------"+savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_benefit_detail, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        
+        initView(view);
+        initParams();
+        initListener();
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    }
+
+    private void initParams() {
+    	startHttpRequest(maxMoney);
+    }
+
+	private void initView(View view) {
+        //benefit_cardholder = (EditText) view.findViewById(R.id.benefit_cardholder);
+        //benefit_open_bank = (TextView) view.findViewById(R.id.benefit_open_bank);
+        //open_bank_layout = (LinearLayout) view.findViewById(R.id.open_bank_layout);
+        //benefit_bank_card_account = (EditText) view.findViewById(R.id.benefit_bank_card_account);
+		/*        confirmpickmoney = (TextView) view.findViewById(R.id.confirmpickmoney);
+        etGetmoney = (EditText) view.findViewById(R.id.et_getmoney);
+        totalmoney = (TextView) view.findViewById(R.id.totalmoney);*/
+		
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.aboutus_benefit_balance, R.drawable.icon_back, 0, actionBarLeftBtnListener,
+                null, getResources().getColor(R.color.titlebar_bg));
+        //初始化银行卡信息控件
+        bank_owener_header_image = (ImageView) view.findViewById(R.id.bank_owener_header_image);
+        bank_card_layout_change_card = (TextView) view.findViewById(R.id.bank_card_layout_change_card);
+        bank_card_layout_change_card.setVisibility(View.VISIBLE);
+        bank_name_tv = (TextView) view.findViewById(R.id.bank_name_tv);
+        bank_owener_name = (TextView) view.findViewById(R.id.bank_owener_name);
+        bank_account_no = (TextView) view.findViewById(R.id.bank_account_no);
+        
+        benefit_money = (EditText) view.findViewById(R.id.benefit_qdoc_score);
+        benefit_payment_time = (TextView) view.findViewById(R.id.benefit_payment_time);
+        benefit_sure_exchange = (Button) view.findViewById(R.id.benefit_sure_exchange);
+        benefit_tips_textview = (TextView) view.findViewById(R.id.benefit_tips_textview);
+        
+
+    }
+
+    protected void initListener() {
+    	benefit_sure_exchange.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+/*            	if(TextUtils.isEmpty(benefit_open_bank.getText().toString())){
+            		ToastUtils.ToastShort(getContext(), "开户行不能为空");
+            		return;
+            	}
+            	if(TextUtils.isEmpty(benefit_bank_card_account.getText().toString())){
+            		ToastUtils.ToastShort(getContext(), "银行卡号不能为空");
+            		return;
+            	}*/
+            	if(TextUtils.isEmpty(benefit_money.getText().toString().trim())){
+            		ToastUtils.ToastShort(getActivity(), "金额不能为空");
+            		return;
+            	}
+            	if(!TextUtils.isDigitsOnly(benefit_money.getText().toString().trim())){
+            		ToastUtils.ToastShort(getActivity(), "金额必须是数字");
+            		return;
+            	}
+                double qdoc_score = Double.parseDouble(benefit_money.getText().toString().trim());
+                 if(qdoc_score>Double.valueOf(maxMoney)){
+                	 ToastUtils.ToastShort(getActivity(), "超出本次可提现金额");
+                	 return;
+                 }
+                 if (qdoc_score <= Double.parseDouble(fees)) {
+                     ToastUtils.ToastShort(getActivity(),"提现金额太低");
+                     return;
+                  }
+                 //int banknum_length = benefit_bank_card_account.getText().toString().trim().replaceAll(" ", "").length();
+/*                 if(banknum_length<15 || banknum_length>20){
+                 	//银行卡号有效位数是15-20位
+                 	ToastUtils.ToastShort(getActivity(), "请输入正确的银行卡号");
+                 	return;
+                 }*/
+                 getGetMoneyRequest(qdoc_score);
+/*                 if(hasSaveBankAccount)
+                	 getGetMoneyRequest(qdoc_score);
+                 else
+                	 getSaveBankInfoRequest(benefit_bank_card_account.getText().toString().replaceAll(" ", ""), benefit_open_bank.getText().toString());*/
+            }
+        });
+    	
+    	bank_card_layout_change_card.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				//注册广播接收器
+				registerMessageReceiver();
+				//初始化银行信息对象
+				BankDtoDataModel bankDtoDataModel = new BankDtoDataModel();
+				bankDtoDataModel.setBankDto(showWithdrawalDataModel.getBankDto());
+				DoctorWithdrawShowDto doctorWithdrawShowDto = showWithdrawalDataModel.getDoctorWithdraw();
+				BankInfoDtoModel bankInfoDtoModel = new BankInfoDtoModel();
+				bankInfoDtoModel.setAccountNo(doctorWithdrawShowDto.getAccountNo());
+				bankInfoDtoModel.setBankName(doctorWithdrawShowDto.getBankName());
+				bankInfoDtoModel.setName(doctorWithdrawShowDto.getDoctorName());
+				bankDtoDataModel.setBankInfo(bankInfoDtoModel);
+				//跳转到绑定银行卡界面
+				BankAccountEditActivitiy.startActivity(getContext(), bankDtoDataModel, doctorModel);
+			}
+		});
+    	
+/*    	open_bank_layout.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(global_showWithdrawDataModel==null){
+					//获取流水提现银行信息失败时，点击开户行布局，不跳转银行列表界面
+					ToastUtils.ToastShort(getActivity(), R.string.network_error);
+					return;
+				}
+				MyBenefitDetailActivity mactivity = (MyBenefitDetailActivity) getActivity();
+				Intent intent = new Intent(mactivity, BankSelectActivitiy.class);
+				intent.putExtra("TAG", TAG);
+				intent.putExtra(BankSelectActivitiy.WITHDRAWBANKDATA, global_showWithdrawDataModel);
+				intent.putExtra(BankSelectActivitiy.HAD_SELECT_BANK, benefit_open_bank.getText().toString());
+				startActivityForResult(intent, MYBENEFITDETAIL_REQUESTCODE);
+			}
+		});
+    	
+    	benefit_open_bank.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				open_bank_layout.performClick();
+			}
+		});
+    	
+    	benefit_bank_card_account.addTextChangedListener(new MyTextWatcher(benefit_bank_card_account));*/
+    }
+    
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {}
+
+    public void onDestroy() {
+        super.onDestroy();
+        //停止该界面中还在运行的工作线程
+        HttpTaskManager.stop(TAG);
+        //取消注册广播接收器
+		if(changeCardReceiver != null)
+			getContext().unregisterReceiver(changeCardReceiver);
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+        	MyBenefitDetailActivity activity = (MyBenefitDetailActivity) getActivity();
+            if (activity == null) {
+                return;
+            }
+            activity.finish();
+            hideInputMethod(benefit_money, activity);
+        }
+    };
+    
+
+    
+    /**
+     * 如果医生没有保存到银行账号信息，提现前先保存银行账号信息
+     * @param accountNo
+     * @param bankname
+     */
+    private void getSaveBankInfoRequest(String accountNo, String bankname) {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(getActivity(), null,
+        		getActivity().getString(R.string.save_bank_info), true,
+					true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getSaveBankInfoRequestParam(TAG, token, accountNo, bankname), JsonParserFactory.parseBaseModel(DocBankDataModel.class),
+                new IResultReceiver() {
+
+                    @SuppressLint("ParserError")
+					@Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DocBankDataModel dataModel = (DocBankDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                                //医生银行账号信息保存成功，下一步就是执行提现申请
+                            	getGetMoneyRequest(Double.parseDouble(benefit_money.getText().toString().trim()));
+                        }else if(dataModel.getState() == ServerErrorCode.INTERFACE_FAIL){
+                        	ToastUtils.ToastShort(getContext()
+									.getApplicationContext(),
+									dataModel
+									.getErrorMsg());
+      					  }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+      						LoginActivity.startActivity(getActivity());
+      					  }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+
+    /**
+     * 提现操作
+     * @param money
+     */
+    private void getGetMoneyRequest(final double money) {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(getActivity(),null,getActivity().getString(R.string.aboutus_extract),true,true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getGetMoneyRequestParam(TAG, token, money),
+                JsonParserFactory.parseBaseModel(GetMoneyDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final GetMoneyDataModel dataModel = (GetMoneyDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	//2015-2-11取消弹出浮层
+                                //ToastUtils.ToastLong(getContext().getApplicationContext(), R.string.aboutus_extract_success);
+                                MyBenefitDetailActivity activity = (MyBenefitDetailActivity) getActivity();
+                                //提现成功后，跳转到新的分享界面
+                                ShareAfterBenefitActivity.startActivity(activity, money,String.valueOf(Double.valueOf(totalBenefit)-Double.valueOf(maxMoney)),global_doctorWithdrawShowDto.getToAccount());
+                                //关闭当前界面
+                                activity.finish();
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                               LoginActivity.startActivity(getActivity());
+      					    }else{
+      							ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel
+      									.getErrorMsg());
+      						}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+        hideInputMethod(benefit_money, getActivity());
+    }
+    
+/*    public void setBankName(BankDtoModel model){
+    	benefit_open_bank.setText(model.getBankName());
+    }*/
+    
+    private void startHttpRequest(String maxMoney){
+    	//getDoctorWithdrawInfo(maxMoney);
+    	ImageLoaderHelper.getInstance(getActivity()).displayImage(doctorModel.getRealHeadImage(),bank_owener_header_image, R.drawable.bank_owener_default_header);
+        bank_name_tv.setText(global_doctorWithdrawShowDto.getBankName());
+        bank_owener_name.setText(global_doctorWithdrawShowDto.getDoctorName());
+        bank_account_no.setText(global_doctorWithdrawShowDto.getAccountNo().replaceAll("\\d{4}(?!$)", "$0 "));
+        //金额
+        benefit_money.setHint("本次最多可提现"+maxMoney+"元");
+        //获取手续费的值
+		fees = global_doctorWithdrawShowDto.getFeeNum();
+		if(null!=global_doctorWithdrawShowDto.getRemind()){
+		    if(global_doctorWithdrawShowDto.getRemind().contains("\\n")){
+		    	benefit_tips_textview.setText(global_doctorWithdrawShowDto.getRemind().replace("\\n", "\n"));
+		    }else{
+		    	benefit_tips_textview.setText(global_doctorWithdrawShowDto.getRemind());
+		    }
+		}
+		strBuffer.append(getContext().getResources().getString(R.string.to_account_time));
+		strBuffer.append(global_doctorWithdrawShowDto.getToAccount());
+		strBuffer.append(getContext().getResources().getString(R.string.to_accout_time_right));
+        benefit_payment_time.setText(strBuffer.toString());
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+    
+    @Override
+    public void onPause() {
+    	// TODO Auto-generated method stub
+    	super.onPause();
+    	LogUtils.d(TAG, "-----MyBenefitDetailFragment onPause()---------");
+    }
+    
+    /**
+     * @author antony
+     * @param view 接受软键盘输入的视图
+     * @param context 上下文对象
+     * create at 2014-11-11
+     */
+    private void hideInputMethod(View view,Context context){
+    	InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        //判断软键盘是否显示，如果显示就隐藏
+    	if(imm.isActive())
+    		imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+	/**
+	 * @param maxMoney the maxMoney to set
+	 */
+	public void setMaxMoneyAndTotalBenefit(String maxMoney,String totalMoney,ShowWithdrawalDataModel showWithdrawalDataModel,DoctorModel doctorModel) {
+		this.maxMoney = maxMoney;
+		this.totalBenefit = totalMoney;
+		this.showWithdrawalDataModel = showWithdrawalDataModel;
+		this.global_doctorWithdrawShowDto = this.showWithdrawalDataModel.getDoctorWithdraw();
+		this.doctorModel = doctorModel;
+	}
+	
+	/**
+	 * 注册广播接收器
+	 */
+	private void registerMessageReceiver() {
+		changeCardReceiver = new ChangeCardReceiver();
+		IntentFilter filter = new IntentFilter();
+		filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+		filter.addAction(AppConstants.CHANGE_CARD_RECEIVER_ACTION);
+		getContext().registerReceiver(changeCardReceiver, filter);
+	}
+	
+	/**
+	 * 更换银行卡的广播接收器
+	 * @author Administrator
+	 *
+	 */
+	public class ChangeCardReceiver extends BroadcastReceiver{
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if(AppConstants.CHANGE_CARD_RECEIVER_ACTION.equals(intent.getAction())){
+				//根据更换后的银行卡信息，修改showWithdrawalDataModel对象的值
+				BankInfoDtoModel bankInfoDtoModel = (BankInfoDtoModel) intent.getSerializableExtra(IntentTools.EXTAR_BANKINFODATAMODEL);
+				showWithdrawalDataModel.getDoctorWithdraw().setAccountNo(bankInfoDtoModel.getAccountNo());
+				showWithdrawalDataModel.getDoctorWithdraw().setBankName(bankInfoDtoModel.getBankName());
+				showWithdrawalDataModel.getDoctorWithdraw().setDoctorName(bankInfoDtoModel.getName());
+				//修改开户银行
+	    	    bank_name_tv.setText(bankInfoDtoModel.getBankName());
+	    	    //修改姓名文本
+	    	    bank_owener_name.setText(bankInfoDtoModel.getName());
+	    	    //修改卡号文本
+	    	    bank_account_no.setText(bankInfoDtoModel.getAccountNo().replaceAll("\\d{4}(?!$)", "$0 "));
+			}
+		}
+	}
+	
+    /**
+     * create at 2014-11-6 19:35
+     * @author antony
+     * 获取医生提现相关的银行信息
+     */
+/*    private void getDoctorWithdrawInfo(String maxMoney){
+    	benefit_money.setText("");
+    	mMaxMoney = maxMoney;
+    	LogUtils.d(TAG, "-------getDoctorWithdrawInfo----------maxMoney="+maxMoney);
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(getActivity(), null,
+        		getActivity().getString(R.string.aboutus_extract), true,
+					true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getDoctorWithdrawInfoParam(TAG, token,AppConstants.DEVICE_TYPE), 
+        		JsonParserFactory.parseBaseModel(ShowWithdrawalDataModel.class), new IResultReceiver() {
+					
+					@Override
+					public void onReceiveResult(int resultCode, Object resultData) {
+						Global.progressDialog.dismiss();
+						if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+							final ShowWithdrawalDataModel showWithdrawalDataModel = (ShowWithdrawalDataModel) resultData;
+							if(showWithdrawalDataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS){
+								//获取银行列表
+								//bankList = showWithdrawalDataModel.getBankDto();
+								global_showWithdrawDataModel = showWithdrawalDataModel;
+								//获取医生提现的银行卡信息成功
+								DoctorWithdrawShowDto doctorWithdrawShowDto = showWithdrawalDataModel.getDoctorWithdraw();
+								benefit_cardholder.setText(doctorWithdrawShowDto.getDoctorName());//持卡人
+								benefit_cardholder.setEnabled(false);
+								benefit_money.setHint("本次最多可提现"+mMaxMoney+"元");//金额--------------------------------------------
+								fees = doctorWithdrawShowDto.getFeeNum();//获取手续费的值
+								if(!StringUtils.isEmpty(doctorWithdrawShowDto.getBankName())){
+									benefit_open_bank.setText(doctorWithdrawShowDto.getBankName());
+									benefit_open_bank.setEnabled(false);
+									benefit_open_bank.setClickable(false);
+									open_bank_layout.setClickable(false);
+								}else{
+									benefit_open_bank.setEnabled(true);
+									benefit_open_bank.setClickable(true);
+									open_bank_layout.setClickable(true);
+									benefit_open_bank.setText("");
+								}
+								if(!StringUtils.isEmpty(doctorWithdrawShowDto.getAccountNo())){
+									String bank_account = doctorWithdrawShowDto.getAccountNo().trim();//先消除空格
+									//再每4位添加一个空格
+									bank_account = bank_account.replaceAll("\\d{4}(?!$)", "$0 ");
+									benefit_bank_card_account.setText(bank_account);
+									benefit_bank_card_account.setEnabled(false);
+								}else{
+									benefit_bank_card_account.setEnabled(true);
+									benefit_bank_card_account.setText("");
+								}
+								
+								if(!StringUtils.isEmpty(doctorWithdrawShowDto.getAccountNo())&&!StringUtils.isEmpty(doctorWithdrawShowDto.getBankName()))
+									hasSaveBankAccount = true;
+							
+								if(null!=doctorWithdrawShowDto.getRemind()){
+								    if(doctorWithdrawShowDto.getRemind().contains("\\n")){
+								    	benefit_tips_textview.setText(doctorWithdrawShowDto.getRemind().replace("\\n", "\n"));
+								    }else{
+								    	benefit_tips_textview.setText(doctorWithdrawShowDto.getRemind());
+								    }
+								}
+								benefit_payment_time.setText(getContext().getString(R.string.to_account_time));//预计到账时间
+							}else if(showWithdrawalDataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+								//token失效，需要从新登陆
+								LoginActivity.startActivity(getActivity());
+							}else{
+								ToastUtils.ToastShort(getContext(), showWithdrawalDataModel.getErrorMsg());
+							}
+						}else{
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+						}
+						LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+					}
+				});
+    }*/
+	
+/*	public void updateBalance(String text) {
+		etGetmoney.setText(text);
+		 totalmoney.setText(text);
+	}*/
+	
+	/**
+	 * @param maxQdocScore the maxQdocScore to set
+	 */
+/*	public void setMaxQdocScore(String maxQdocScore) {
+		maxQdocScore = maxQdocScore;
+	}*/
+}

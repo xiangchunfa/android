@@ -1,0 +1,81 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.BankDtoModel;
+
+public class SelectAdapter extends BaseAdapter {
+
+	private Context context;
+	private List<BankDtoModel> mBankList;
+	private final LayoutInflater mInflater;
+    private String mSelectedName;
+	public SelectAdapter(Context context) {
+		mInflater = (LayoutInflater) context
+				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		mBankList = new ArrayList<BankDtoModel>();
+		this.context = context;
+	}
+
+	public void setBankList(List<BankDtoModel> bankList,String selectedName) {
+		mSelectedName=selectedName;
+		if(bankList!=null){
+		   mBankList = bankList;
+		   this.notifyDataSetChanged();
+		}
+	}
+
+	public int getCount() {
+		return mBankList.size();
+	}
+
+	public Object getItem(int position) {
+		return mBankList.get(position);
+	}
+
+	public long getItemId(int position) {
+		return position;
+	}
+
+	public View getView(int position, View convertView, ViewGroup parent) {
+		
+		ViewHolder holder = null;
+		if (convertView == null) {
+			holder = new ViewHolder();
+			convertView = mInflater.inflate(R.layout.listitem_select_bank,
+					null);
+
+			holder.ivStatus = (ImageView) convertView
+					.findViewById(R.id.icon_status);
+			holder.tvBankName = (TextView) convertView
+					.findViewById(R.id.bank_name);
+			convertView.setTag(holder);
+		} else {
+			holder = (ViewHolder) convertView.getTag();
+		}
+		BankDtoModel model = mBankList.get(position);
+		if(mSelectedName.equals(model.getBankName())){
+			holder.ivStatus.setVisibility(View.VISIBLE);
+		}else{
+			holder.ivStatus.setVisibility(View.GONE);
+		}
+		holder.tvBankName.setText(model.getBankName());
+		return convertView;
+	}
+
+	private static class ViewHolder {
+		private ImageView ivStatus;
+		private TextView tvBankName;
+	}
+}
+

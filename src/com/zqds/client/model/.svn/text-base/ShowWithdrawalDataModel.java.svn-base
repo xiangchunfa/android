@@ -1,0 +1,47 @@
+package com.qdoc.client.model;
+
+import java.util.ArrayList;
+
+/**
+ * create at 2014-11-06 18:07
+ * @author antony
+ *提现申请show返回类
+ */
+public class ShowWithdrawalDataModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1581818911816211203L;
+
+	private ArrayList<BankDtoModel> bankDto;
+	private DoctorWithdrawShowDto doctorWithdrawShowDto;
+
+	/**
+	 * @return the bankDto
+	 */
+	public ArrayList<BankDtoModel> getBankDto() {
+		return bankDto;
+	}
+
+	/**
+	 * @param bankDto the bankDto to set
+	 */
+	public void setBankDto(ArrayList<BankDtoModel> bankDto) {
+		this.bankDto = bankDto;
+	}
+
+	/**
+	 * @return the doctorWithdraw
+	 */
+	public DoctorWithdrawShowDto getDoctorWithdraw() {
+		return doctorWithdrawShowDto;
+	}
+
+	/**
+	 * @param doctorWithdraw the doctorWithdraw to set
+	 */
+	public void setDoctorWithdraw(DoctorWithdrawShowDto doctorWithdraw) {
+		this.doctorWithdrawShowDto = doctorWithdraw;
+	}
+}

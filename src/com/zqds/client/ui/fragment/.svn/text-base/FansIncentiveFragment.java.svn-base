@@ -1,0 +1,286 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.AttatchDtoModel;
+import com.qdoc.client.model.FansActiveDetailsDataModel;
+import com.qdoc.client.model.ImprintCardDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.FansIncentiveActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MyCardActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.FansIncentiveFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class FansIncentiveFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = FansIncentiveFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private LinearLayout llyAddVisitCard; 
+    private TextView tv_today_new_fans;
+    private TextView tv_today_benefit;
+    private TextView tv_total_new_fans;
+    private TextView tv_total_benefit;
+    private TextView tv_activity_content_title;
+    private TextView tv_activity_content_detail;
+    private TextView tv_activity_time_title;
+    private TextView tv_activity_time_detail;
+    private TextView tv_add_card;
+    private TextView  tv_activity_rule;
+    
+    /**
+     * params 
+     */
+    private FansActiveDetailsDataModel dataModel;
+     
+    public static FansIncentiveFragment newInstance(Bundle bundle) {
+        final FansIncentiveFragment fragment = new FansIncentiveFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_fans_incentive, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+    	getShowfansActiveDetailsRequest();
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.loveliness_doctor, R.drawable.icon_back,0,
+                actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        llyAddVisitCard=(LinearLayout) view.findViewById(R.id.lly_add_visit_card);
+        tv_today_new_fans=(TextView) view.findViewById(R.id.tv_today_new_fans);
+        tv_today_benefit=(TextView) view.findViewById(R.id.tv_today_benefit);
+        tv_total_new_fans=(TextView) view.findViewById(R.id.tv_total_new_fans);
+        tv_total_benefit=(TextView) view.findViewById(R.id.tv_total_benefit);
+        tv_activity_content_title=(TextView) view.findViewById(R.id.tv_activity_content_title);
+        tv_activity_content_detail=(TextView) view.findViewById(R.id.tv_activity_content_detail);
+        tv_activity_time_title=(TextView) view.findViewById(R.id.tv_activity_time_title);
+        tv_activity_time_detail=(TextView) view.findViewById(R.id.tv_activity_time_detail);
+        tv_add_card=(TextView) view.findViewById(R.id.tv_add_card);
+        tv_activity_rule = (TextView) view.findViewById(R.id.tv_activity_rule);
+    }
+
+    protected void initListener() {
+    	llyAddVisitCard.setOnClickListener(this);
+    	tv_activity_rule.setOnClickListener(this);
+    }
+
+
+    public void onDestroy() {
+        super.onDestroy();
+
+        HttpTaskManager.stop(TAG);
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+        	FansIncentiveActivity activity = (FansIncentiveActivity) getActivity();
+            if (activity == null) {
+                return;
+            }
+            activity.finish();
+        }
+    };
+
+
+    @Override
+    public void onClick(View view) {
+        // save to sharepreference
+        switch (view.getId()) {
+            case R.id.lly_add_visit_card: 
+            	MyCardActivity.startActivity(getActivity());//跳转到我的名片
+                break;
+            case R.id.tv_activity_rule:
+            	if(dataModel == null)
+            		 return;
+            	FansIncentiveActivity activity = (FansIncentiveActivity) getActivity();
+            	Bundle bundle=new Bundle();
+            	bundle.putSerializable(IntentTools.EXTRA_FANS_INCENTIVE, dataModel);
+                activity.switchToActivityRuleFragment(bundle, FansActivityRuleFragment.TAG);              	
+                break;
+            }
+    }
+
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+    
+    /**
+     * 加印个人名片
+     */
+    private void getPrintMyCardRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+
+        HttpTaskManager.startStringRequest(DataRequestUtils.getPrintMyCradRequestParam(TAG, token ,AppConstants.ACTIVITY_APPLY),
+                JsonParserFactory.parseBaseModel(ImprintCardDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final ImprintCardDataModel dataModel = (ImprintCardDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	 ToastUtils.ToastLong(getContext().getApplicationContext(), dataModel.getResultMsg());
+                            	 setEnable(false,getActivity().getString(R.string.add_printing_success));
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}else{
+          						 ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    /**
+     * 显示粉丝激励详情
+     */
+    private void getShowfansActiveDetailsRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(getActivity(), null,
+        		getActivity().getString(R.string.load_data), true,
+					true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getFansActiveDetailsRequestParam(TAG, token,AppConstants.DEVICE_TYPE),
+                JsonParserFactory.parseBaseModel(FansActiveDetailsDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            dataModel = (FansActiveDetailsDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	 showActivityDetail(dataModel);
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}else{
+          						 ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                    }
+                });
+    }
+    
+    /**
+     * 显示活动详情
+     */
+    @SuppressLint("ResourceAsColor")
+	public void showActivityDetail(FansActiveDetailsDataModel dataModel){
+        tv_today_new_fans.setText(String.valueOf(dataModel.getFansCurrent()));
+        tv_today_benefit.setText(String.valueOf(dataModel.getCurrentIncome()));
+        tv_total_new_fans.setText(String.valueOf(dataModel.getFansSum()));
+        tv_total_benefit.setText(String.valueOf(dataModel.getSumIncome()));
+        for(int i=0;i<dataModel.getAttatchDtos().size();i++){
+        	AttatchDtoModel model=dataModel.getAttatchDtos().get(i);
+           if(model.getOrderNo()==AppConstants.ACTIVITY_CONTENT){
+               tv_activity_content_title.setText(model.getTitle());
+               tv_activity_content_detail.setText(model.getDescription());
+           }
+           if(model.getOrderNo()==AppConstants.ACTIVITY_TITLE){
+        	   tv_activity_time_title.setText(model.getTitle());
+               tv_activity_time_detail.setText(model.getDescription());
+           }
+        }
+    }
+    
+    /**
+     * 设置加印按钮不可点击
+     */
+    @SuppressLint("ResourceAsColor")
+	public void setEnable(boolean isEnable,String text){
+     	llyAddVisitCard.setVisibility(View.VISIBLE);
+     	llyAddVisitCard.setEnabled(isEnable);
+    	llyAddVisitCard.setBackgroundColor(R.color.bg_no_enable);
+    	tv_add_card.setText(text);
+    	tv_add_card.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0,0);
+    }
+    
+    /**
+     * 是否可以加印名片
+     */
+    public boolean isAddPrint(int status){
+        if(status==AppConstants.CARD_CAN_PRINT){
+    		return true;
+    	}
+    	return false;
+    }
+    
+}

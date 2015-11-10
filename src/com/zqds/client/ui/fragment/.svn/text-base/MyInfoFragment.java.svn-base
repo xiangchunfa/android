@@ -1,0 +1,805 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Calendar;
+import org.json.JSONException;
+
+import android.app.Activity;
+import android.app.DatePickerDialog;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.DatePicker;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.RequestParams;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.http.client.HttpRequest;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.DoctorDataModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.DoctorSingleDataModel;
+import com.qdoc.client.model.UploadDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.DoctorCertificationActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.MyInfoEditActivity;
+import com.qdoc.client.ui.fragment.ChooseImageDialogFragment.OnDialogclickListener;
+import com.qdoc.client.ui.view.CircularImage;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class MyInfoFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = MyInfoFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private RelativeLayout sex_layout;
+    private RelativeLayout birth_layout;
+    private RelativeLayout professional_layout;
+    private RelativeLayout myinfos_layout;
+    
+    private CircularImage headIcon;//医生头像
+    private TextView username_tv;
+    private TextView sex_tv;
+    private TextView birth_tv;
+    private TextView hospital_tv;
+    private TextView department_tv;
+    private TextView level_tv;
+    private RelativeLayout physician_certification_layout;
+    private TextView certification_status_tv;
+    private TextView professional_tv;
+    private TextView myinfos_tv;
+    private TextView tvProfessionalContent;
+    private TextView tvMyInfosContent;
+    private ImageView professional_red_rod,myinfo_red_rod;
+	private DatePickerDialog picker;
+	private ImageView ivLine;
+	 
+    /**
+     * params
+     */
+    private static final int REQUEST_CAMERA = 30;// 拍照
+    private static final int REQUEST_GALLERY = 31;
+    private static final int REQUEST_RESIZE = 32;
+    private static final String IMAGE_FILE_NAME = "ava_header.jpg";
+    private static final int PHOTO_MAX = 10 * 1024 * 1024;
+    private static final String IMAGE_UNSPECIFIED = "image/*";
+    private int launcherFrom;
+	private int mYear=1900,mMonth=1,mDay=1;
+	private String birthday;
+	private DoctorModel doctorDto;//医生对象
+	
+	private int doctor_certification_state = -2;//医生的认证状态
+	private boolean isNeedRefresh = false;
+	
+    public static MyInfoFragment newInstance(Bundle bundle) {
+        final MyInfoFragment fragment = new MyInfoFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+        registerUpdateReceiver();
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_myinfo, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    @Override
+    public void onResume() {
+    	super.onResume();
+    	LogUtils.i(TAG, "MyInfoFragment onResume()");
+    	if(isNeedRefresh)
+    		initParams();
+    }
+    
+    private void initParams() {
+    	doctorDto = new DoctorModel();
+    	startHttpRequest(launcherFrom);
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.aboutus_myinfo_title, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+                getResources().getColor(R.color.titlebar_bg));
+
+        sex_layout = (RelativeLayout) view.findViewById(R.id.sex_layout);
+        birth_layout = (RelativeLayout) view.findViewById(R.id.birth_layout);
+        professional_layout = (RelativeLayout) view.findViewById(R.id.professional_layout);
+        myinfos_layout = (RelativeLayout) view.findViewById(R.id.myinfos_layout);
+        //consignee_address_layout = (RelativeLayout) view.findViewById(R.id.consignee_address_layout);
+
+        headIcon = (CircularImage) view.findViewById(R.id.icon_head);
+        username_tv = (TextView) view.findViewById(R.id.tv_username);
+        sex_tv = (TextView) view.findViewById(R.id.tv_sex);
+        birth_tv = (TextView) view.findViewById(R.id.tv_birth);
+        hospital_tv = (TextView) view.findViewById(R.id.tv_hospital);
+        department_tv = (TextView) view.findViewById(R.id.tv_department);
+        level_tv = (TextView) view.findViewById(R.id.tv_level);
+        professional_tv = (TextView) view.findViewById(R.id.tv_professional);
+        myinfos_tv = (TextView) view.findViewById(R.id.tv_myinfos);
+        certification_status_tv = (TextView) view.findViewById(R.id.certification_status);
+        physician_certification_layout = (RelativeLayout) view.findViewById(R.id.physician_certification_layout);
+        
+        professional_red_rod = (ImageView) view.findViewById(R.id.iv_professional_red_rod);
+        myinfo_red_rod = (ImageView) view.findViewById(R.id.iv_myinfos_red_rod);
+        tvProfessionalContent = (TextView) view.findViewById(R.id.tv_professional_content);
+        tvMyInfosContent = (TextView) view.findViewById(R.id.tv_myinfos_content);
+        ivLine = (ImageView) view.findViewById(R.id.iv_line);
+    }
+
+    protected void initListener() {
+    	headIcon.setOnClickListener(this);
+        sex_layout.setOnClickListener(this);
+        birth_layout.setOnClickListener(this);
+        professional_layout.setOnClickListener(this);
+        myinfos_layout.setOnClickListener(this);
+        //consignee_address_layout.setOnClickListener(this);
+
+        username_tv.setOnClickListener(this);
+        sex_tv.setOnClickListener(this);
+        birth_tv.setOnClickListener(this);
+        hospital_tv.setOnClickListener(this);
+        department_tv.setOnClickListener(this);
+        professional_tv.setOnClickListener(this);
+        myinfos_tv.setOnClickListener(this);
+        physician_certification_layout.setOnClickListener(this);
+    }
+
+    public void startHttpRequest(int from) {
+        launcherFrom = from;
+        getDoctorInfoRequest();
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	//选中我的界面
+        	MainActivity.startActivity(getContext(),MainActivity.TAB_INDEX_TAB5_ACTIVITY);
+            // 激活
+            if (launcherFrom != 0) {
+                MainActivity.startActivityFromActive(getActivity(), MainActivity.TAB_INDEX_TAB5_ACTIVITY);
+/*                AboutmeActivity activity = (AboutmeActivity) getActivity();
+                if (activity == null) {
+                    return;
+                }
+                activity.finish();*/
+                getActivity().finish();
+            } else {
+/*                AboutmeActivity activity = (AboutmeActivity) getActivity();
+                if (activity == null) {
+                    return;
+                }
+                activity.switchToAboutMeFragment();*/
+            	getActivity().finish();
+            }
+        }
+    };
+
+    public void onDestroy() {
+        super.onDestroy();
+        unRegisterUpdateReceiver();
+        HttpTaskManager.stop(TAG);
+    }
+
+    private void getDoctorInfoRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+
+        HttpTaskManager.startStringRequest(DataRequestUtils.getDocInfoRequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(DoctorDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                        	final DoctorDataModel dataModel = (DoctorDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) { 
+                            	if ((dataModel != null) && (dataModel.getDoctorDto() != null)) {
+                            		doctorDto = dataModel.getDoctorDto();
+                            		if(!StringUtils.isEmpty(doctorDto.getDoctorName()))
+                            			username_tv.setText(doctorDto.getDoctorName());
+                            		if(doctorDto.getSex()!=null)
+                            			sex_tv.setText(doctorDto.getSex() == 1 ? "男" : "女");
+                            		if(!StringUtils.isEmpty(doctorDto.getBirthday()))
+                            			birth_tv.setText(doctorDto.getBirthday());
+                            		/*if(!StringUtils.isEmpty(doctorDto.getCity()))
+                            			city_tv.setText(doctorDto.getCity());*/
+                            		if(!StringUtils.isEmpty(String.valueOf(doctorDto.getHospitalName())))
+                            			hospital_tv.setText(String.valueOf(doctorDto.getHospitalName()));
+                            		if(!StringUtils.isEmpty(doctorDto.getDepartName())){
+                            			department_tv.setText(doctorDto.getDepartName());
+                            		    ivLine.setVisibility(View.VISIBLE);
+                            	    }if(!StringUtils.isEmpty(doctorDto.getDictinoaryName())){
+                            			level_tv.setText(doctorDto.getDictinoaryName());
+                            	    }if(StringUtils.isEmpty(doctorDto.getProfessional())){
+                            			professional_red_rod.setVisibility(View.VISIBLE);
+                            			tvProfessionalContent.setVisibility(View.GONE);
+                            		}else{
+                            			professional_red_rod.setVisibility(View.GONE);
+                            			tvProfessionalContent.setVisibility(View.VISIBLE);
+                            			tvProfessionalContent.setText(doctorDto.getProfessional());
+                            		}
+                            		if(StringUtils.isEmpty(doctorDto.getIntroduction())){
+                            			myinfo_red_rod.setVisibility(View.VISIBLE);
+                            			tvMyInfosContent.setVisibility(View.GONE);
+                            		}else{
+                            			myinfo_red_rod.setVisibility(View.GONE);
+                            			tvMyInfosContent.setVisibility(View.VISIBLE);
+                            			tvMyInfosContent.setText(doctorDto.getIntroduction());
+                            		}
+                            		doctor_certification_state = doctorDto.getDoctorCertificationStatus();
+                            		if(doctor_certification_state==AppConstants.doctor_certification_static_fail){
+                            			//认证不通过
+                            			certification_status_tv.setText(R.string.certification_fail);
+                            		}else if(doctor_certification_state==AppConstants.doctor_certification_static_uncertification){
+                            			//未认证
+                            			certification_status_tv.setText(R.string.uncertification);
+                            		}else if(doctor_certification_state==AppConstants.doctor_certification_status_ing){
+                            			//认证中
+                            			certification_status_tv.setText(R.string.certification_ing);
+                            		}else if(doctor_certification_state==AppConstants.doctor_certification_status_success){
+                            			//认证通过
+                            			certification_status_tv.setText(R.string.certification_success);
+                            		}
+                            		ImageLoaderHelper.getInstance(getActivity()).displayImage(doctorDto.getRealHeadImage(), headIcon,R.drawable.myinfo_head_default);
+                            	}else{
+                            		
+                            	}
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                            	LoginActivity.startActivity(getActivity());
+                            }
+                       }else{
+                    	   ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+                       }
+                       LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+
+    @Override
+    public void onClick(View view) {
+        String value = "";
+        String type = "";
+        String title = "";
+        int style = 0;
+        switch (view.getId()) {
+            case R.id.icon_head:
+            	if(doctor_certification_state==AppConstants.doctor_certification_status_success){
+            		//认证已经通过，需要更换头像请联系管理员
+            		ToastUtils.ToastLong(getContext(), R.string.update_head_image_need_contact_server);
+            		return;
+            	}
+                ChooseImageDialogFragment chooseDialog = new ChooseImageDialogFragment(new OnDialogclickListener() {
+					
+					@Override
+					public void onButtonClick(int type, DialogFragment dialog) {
+						switch (type) {
+						case AppConstants.CAMERA:
+							chooseCamera();
+							dialog.dismiss();
+							break;
+
+						case AppConstants.PHOTO_ALBUM:
+							chooseLocalImage();
+							dialog.dismiss();
+							break;
+						}
+					}
+				});
+                FragmentManager fm = getFragmentManager();
+                chooseDialog.show(fm, ChooseImageDialogFragment.TAG);
+                break;
+            case R.id.tv_username:
+                value = username_tv.getText().toString();
+                style = 1;
+                title = "姓名";
+                break;
+            case R.id.sex_layout:
+            case R.id.tv_sex:
+                value = sex_tv.getText().toString();
+                type = "sex";
+                style = 2;
+                title = "性别";
+                break;
+            case R.id.birth_layout:
+            case R.id.tv_birth:
+                 if(!StringUtils.isEmpty(birth_tv.getText().toString())){
+             		mYear=DateUtil.parseDate(birth_tv.getText().toString(), Calendar.YEAR);
+             		mMonth=DateUtil.parseDate(birth_tv.getText().toString(), Calendar.MONTH)-1;
+             		mDay=DateUtil.parseDate(birth_tv.getText().toString(), Calendar.DATE);
+                 }
+            	 picker = new DatePickerDialog(getActivity(), dateSetListener , mYear, mMonth, mDay);
+            	 picker.setCancelable(false);        
+            	 picker.setCanceledOnTouchOutside(false);
+            	 picker.show();
+                break;
+/*            case R.id.city_layout:
+            case R.id.tv_city:
+                value = city_tv.getText().toString();
+                style = 4;
+                title = "城市";
+                break;
+            case R.id.hospital_layout:
+            case R.id.tv_hospital:
+                value = hospital_tv.getText().toString();
+                style = 5;
+                title = "医院";
+                break;
+            case R.id.department_layout:
+            case R.id.tv_department:
+                value = department_tv.getText().toString();
+                style = 6;
+                title = "科室";
+                break;*/
+            case R.id.professional_layout:
+            	if(null!=doctorDto)
+            		value=StringUtils.isEmpty(doctorDto.getProfessional())?"":doctorDto.getProfessional();
+                type = "professional";
+                style = 7;
+                title = "专业领域";
+                break;
+            case R.id.myinfos_layout:
+            	if(null!=doctorDto)
+            		value=StringUtils.isEmpty(doctorDto.getIntroduction())?"":doctorDto.getIntroduction();
+                type = "introduction";
+                style = 9;
+                title = "个人简介";
+                break;
+            case R.id.physician_certification_layout:
+            	isNeedRefresh = true;
+            	DoctorCertificationActivity.startActivity(getActivity(), doctor_certification_state,TAG);
+            	style = 10;
+            	break;
+        }
+        LogUtils.d(TAG, "content =================  " + value);
+        if (style == 2 || style == 3 || style == 7 || style == 9) {
+            MyInfoEditActivity.startActivity(getActivity(), title, type, value, style);
+        }
+    }
+    /**
+     * 修改生日 
+     */
+    private void getSaveSingleMyInfoRequest(String type,String content,final int year,final int monthOfYear,final int dayOfMonth) {
+		Global.progressDialog = ProgressDialog.show(getActivity(), null,getActivity().getString(R.string.wait_submit), true, true);
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getUpdateMyInfoequestParam(TAG, token, type, content),
+                JsonParserFactory.parseBaseModel(DoctorSingleDataModel.class), new IResultReceiver() {
+
+                    @SuppressWarnings("unused")
+					@Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DoctorSingleDataModel dataModel = (DoctorSingleDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            if (dataModel != null) {
+                 	           	mYear=year;mMonth=monthOfYear;mDay=dayOfMonth;
+                                Intent intent = new Intent(AppConstants.MYINFO_UPDATE_INTENT_ACTION);
+                                int style=3;
+                                intent.putExtra(IntentTools.EXTRA_INPUT_STYLE, style);
+                                intent.putExtra(IntentTools.EXTRA_INPUT_CONTENT, birthday);
+                                LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(intent);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+                            }
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    private void chooseLocalImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK, null);
+        intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, IMAGE_UNSPECIFIED);
+        startActivityForResult(intent, REQUEST_GALLERY);
+    }
+
+    private void chooseCamera() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), IMAGE_FILE_NAME)));
+        startActivityForResult(intent, REQUEST_CAMERA);
+
+    }
+    
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_CAMERA:
+                // 拍照,设置文件保存路径
+            	if (resultCode != Activity.RESULT_OK) {
+        			return;
+        		}
+                File picture = new File(Environment.getExternalStorageDirectory() + File.separator + IMAGE_FILE_NAME);
+                resizeImage(Uri.fromFile(picture));
+                break;
+            case REQUEST_GALLERY:
+                if (data == null) {
+                    return;
+                }
+            	if (resultCode != Activity.RESULT_OK) {
+        			return;
+        		}
+                resizeImage(data.getData());
+                break;
+            case REQUEST_RESIZE:
+                showResizeImage(data);
+                break;
+            default:
+                break;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+    
+    private void resizeImage(Uri uri) {
+        try {
+            Intent intent = new Intent("com.android.camera.action.CROP");
+            intent.setDataAndType(uri, IMAGE_UNSPECIFIED);
+            fillIntent(intent, uri);
+            startActivityForResult(intent, REQUEST_RESIZE);
+        } catch (Exception e) {
+            LogUtils.e(TAG, "", e);
+        }
+
+        LogUtils.d(TAG, "REQUEST_CAMERA ======================= 222");
+    }
+    
+    private void fillIntent(Intent intent, Uri uri) {
+        try {
+            intent.putExtra("crop", "true");
+            intent.putExtra("aspectX", 1);
+            intent.putExtra("aspectY", 1);
+            intent.putExtra("outputX", 320);
+            intent.putExtra("outputY", 320);
+            intent.putExtra("scale", true);
+            intent.putExtra("return-data", true);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+            intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
+            intent.putExtra("noFaceDetection", true); // no face detection
+        } catch (Exception e) {
+            LogUtils.e(TAG, "", e);
+        }
+    }
+    
+    private void showResizeImage(Intent data) {
+        try {
+            if (data != null) {
+                Bundle extras = data.getExtras();
+                if (extras != null) {
+                    Bitmap photo = extras.getParcelable("data");
+                    if (photo == null) {
+                        return;
+                    }
+                    FileOutputStream stream = getActivity().openFileOutput(IMAGE_FILE_NAME, Context.MODE_PRIVATE);
+                    photo.compress(Bitmap.CompressFormat.JPEG, 100, stream);// (0-100)压缩文件
+                    if (photo != null) {
+                        headIcon.setImageBitmap(photo);
+                    }
+                    saveHeaderBitmap(photo);
+                }
+            }
+        } catch (IOException e) {
+            LogUtils.e(TAG, "", e);
+        } catch (Exception e) {
+            LogUtils.e(TAG, "", e);
+        }
+    }
+    
+    private void saveHeaderBitmap(Bitmap bm) throws IOException {
+        FileOutputStream outStream = null;
+        try {
+            outStream = getActivity().openFileOutput(IMAGE_FILE_NAME, Context.MODE_PRIVATE);
+            if (outStream != null) {
+                bm.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
+            }
+        } catch (FileNotFoundException e) {
+            LogUtils.e(TAG, "", e);
+        } catch (Exception e) {
+            LogUtils.e(TAG, "", e);
+        } finally {
+            if (outStream != null) {
+                try {
+                    outStream.close();
+                    outStream = null;
+                } catch (Exception e) {
+                    LogUtils.e(TAG, "", e);
+                }
+            }
+        }
+        LogUtils.d(TAG, "REQUEST_CAMERA ======================= 777");
+        uploadLocalImageFile();
+    }
+    
+    private File getAvatarFile() {
+        File file = getActivity().getFilesDir();
+        String path = file.getAbsolutePath();
+        return new File(path + "/" + IMAGE_FILE_NAME);
+    }
+    
+    private void uploadLocalImageFile() {
+        final String uploadUrl = DataRequestUtils.getUploadUrl();
+        final String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        String mFileName = getAvatarFile().getAbsolutePath();
+
+        RequestParams params = new RequestParams();
+        params.addQueryStringParameter("token", token);
+        params.addQueryStringParameter("fileType", "headImage");
+        params.addBodyParameter("file", new File(mFileName));
+        //上传过程显示进度条
+        Global.progressDialog = ProgressDialog.show(getActivity(), null, getActivity().getString(R.string.upload_ing), true, true);
+        HttpUtils http = new HttpUtils();
+        http.send(HttpRequest.HttpMethod.POST, uploadUrl, params, new RequestCallBack<String>() {
+
+            @Override
+            public void onStart() {
+                LogUtils.d(TAG, "conn...");
+            }
+
+            @Override
+            public void onLoading(long total, long current, boolean isUploading) {
+                if (isUploading) {
+                    LogUtils.d(TAG, "upload: " + current + "/" + total);
+                } else {
+                    LogUtils.d(TAG, "reply: " + current + "/" + total);
+                }
+            }
+
+            @Override
+            public void onSuccess(ResponseInfo<String> responseInfo) {
+                LogUtils.d(TAG, "reply: " + responseInfo.result);
+                UploadDataModel uploadModel = null;
+                try {
+                    uploadModel = JsonParserFactory.parseStringJson(UploadDataModel.class, responseInfo.result);
+                } catch (JSONException e) {
+                    // TODO Auto-generated catch block
+                    LogUtils.e(TAG, "exception break out!!!", e);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    LogUtils.e(TAG, "exception break out!!!", e);
+                } catch (Exception e) {
+					// TODO Auto-generated catch block
+                	LogUtils.e(TAG, "exception break out!!!", e);
+				} finally {
+                    if (uploadModel == null) {
+                        LogUtils.e(TAG, "uploadLocalVoiceFile uploadModel == null");
+                        return;
+                    }
+                    if(uploadModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                        LoginActivity.startActivity(getActivity());
+  					}
+                    LogUtils.e(TAG, "uploadLocalVoiceFile uploadModel == " + responseInfo);
+                    // 通知server
+                    String content = uploadModel.getPath() + uploadModel.getRealName();
+                    // 通知server
+                    getSaveSingleMyInfoRequest(content);
+                }
+            }
+
+            @Override
+            public void onFailure(HttpException error, String msg) {
+            	if(Global.progressDialog != null && Global.progressDialog.isShowing()) {
+            		Global.progressDialog.dismiss();
+            	}
+            	LogUtils.d(TAG, error.getExceptionCode() + ":" + msg);
+            }
+        });
+    }
+    
+    private void getSaveSingleMyInfoRequest(String path) {
+        String type = "headImage";
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getUpdateMyInfoequestParam(TAG, token, type, path),
+                JsonParserFactory.parseBaseModel(DoctorSingleDataModel.class), new IResultReceiver() {
+
+                    @SuppressWarnings("unused")
+					@Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	if(Global.progressDialog != null && Global.progressDialog.isShowing()) {
+                    		Global.progressDialog.dismiss();
+                    	}
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DoctorSingleDataModel dataModel = (DoctorSingleDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            if (dataModel != null) {
+                                Intent intent = new Intent(AppConstants.HEADIMAGE_UPDATE_INTENT_ACTION);
+                                LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(intent);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            }
+                        }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                            LoginActivity.startActivity(getActivity());
+      					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+
+    public void registerUpdateReceiver() {
+        IntentFilter myIntentFilter = new IntentFilter();
+        myIntentFilter.addAction(AppConstants.MYINFO_UPDATE_INTENT_ACTION);
+        myIntentFilter.addAction(AppConstants.CHOOSE_IMAGE_INTENT_ACTION);
+        // 注册广播
+        LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(mUpdateReceiver,
+                myIntentFilter);
+    }
+
+    public void unRegisterUpdateReceiver() {
+        LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(mUpdateReceiver);
+    }
+
+    private BroadcastReceiver mUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (AppConstants.MYINFO_UPDATE_INTENT_ACTION.equals(action)) {
+                // 开始上传
+                Bundle bundle = intent.getExtras();
+                if (bundle != null) {
+                    int style = bundle.getInt(IntentTools.EXTRA_INPUT_STYLE);
+                    String content = bundle.getString(IntentTools.EXTRA_INPUT_CONTENT);
+                    switch (style) {
+                        case 1:
+                            username_tv.setText(content);
+                            break;
+                        case 2:
+                            if ("1".equals(content)) {
+                                content = "男";
+                            } else {
+                                content = "女";
+                            }
+                            sex_tv.setText(content);
+                            break;
+                        case 3:
+                            if(!StringUtils.isEmpty(content)){
+                            	birth_tv.setText(content);
+                            }
+                            break;
+                        case 4:
+                            //city_tv.setText(content);
+                            break;
+                        case 5:
+                            hospital_tv.setText(content);
+                            break;
+                        case 6:
+                            department_tv.setText(content);
+                            break;
+                        case 7:
+                        	doctorDto.setProfessional(content);
+                        	tvProfessionalContent.setText(content);
+                        	break;
+                        case 9:
+                        	tvMyInfosContent.setText(content);
+                        	doctorDto.setIntroduction(content);
+                        	break;
+                        	
+                    }
+                }
+            } else if (AppConstants.CHOOSE_IMAGE_INTENT_ACTION.equals(action)) {
+                Bundle bundle = intent.getExtras();
+                if (bundle != null) {
+                    int type = bundle.getInt(IntentTools.EXTRA_CHOOSE_TYPE);
+                    if (type == ChooseImageDialogFragment.TYPE_CAMERA) {
+                        chooseCamera();
+                    } else {
+                        chooseLocalImage();
+                    }
+                }
+            }
+        }
+    };
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+    
+    DatePickerDialog.OnDateSetListener dateSetListener = new DatePickerDialog.OnDateSetListener() {
+		
+		@Override
+		public void onDateSet(DatePicker view, int year, int monthOfYear,
+				int dayOfMonth) {
+	    	    monthOfYear+=1;//月份加1
+				String month=monthOfYear>=10?String.valueOf(monthOfYear):"0"+monthOfYear;
+			    String day=dayOfMonth>=10?String.valueOf(dayOfMonth):"0"+dayOfMonth;
+			    birthday=year+"-"+month+"-"+day;
+		        String type = "birthday";
+			    getSaveSingleMyInfoRequest(type, birthday,year,monthOfYear,dayOfMonth);
+		}
+	};
+
+	/**
+	 * @param launcherFrom the launcherFrom to set
+	 */
+	public void setLauncherFrom(int launcherFrom) {
+		this.launcherFrom = launcherFrom;
+	}
+}

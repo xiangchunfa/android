@@ -1,0 +1,45 @@
+package com.qdoc.client.model;
+
+/**
+ * create at 2014-11-6 16:34
+ * @author antony
+ *提现流水记录返回类（包括状态码、状态说明和提现流水记录）
+ */
+public class ListWithdrawalWaterDataModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6373221186608372374L;
+	
+	private int page;//页码
+	private Pagination<DoctorWithdrawDto> pager;
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<DoctorWithdrawDto> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<DoctorWithdrawDto> pager) {
+		this.pager = pager;
+	}
+
+	/**
+	 * @return the page
+	 */
+	public int getPage() {
+		return page;
+	}
+
+	/**
+	 * @param page the page to set
+	 */
+	public void setPage(int page) {
+		this.page = page;
+	}
+}

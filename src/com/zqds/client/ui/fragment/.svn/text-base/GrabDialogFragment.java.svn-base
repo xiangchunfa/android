@@ -1,0 +1,118 @@
+/*
+ * GrabDialogFragment.java
+ * classes : com.qdoc.client.ui.fragment.GrabDialogFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-18 上午2:31:20
+ 
+package com.qdoc.client.ui.fragment;
+
+import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.ConsultDetailActivity;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+
+*//**
+ * com.qdoc.client.ui.fragment.GrabDialogFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-18 上午2:31:20
+ *//*
+public class GrabDialogFragment extends DialogFragment {
+    *//**
+     * TAG
+     *//*
+    public static final String TAG = GrabDialogFragment.class.getSimpleName();
+
+    *//**
+     * view
+     *//*
+    private Button btnConfirm;
+    private Button btnCancel;
+
+    *//**
+     * params
+     *//*
+    private int consultId;
+    private ElementsModel mElemetnsModel;
+
+    public static GrabDialogFragment newInstance(Bundle bundle) {
+        final GrabDialogFragment fragment = new GrabDialogFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setStyle(DialogFragment.STYLE_NO_TITLE, 0);
+    }
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_dialog_grabbill, container, false);
+        WindowManager.LayoutParams wmlp = getDialog().getWindow().getAttributes();
+        wmlp.gravity = Gravity.BOTTOM;
+        return v;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initParams();
+        initView(view);
+        initListener();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+        if (getArguments() != null) {
+            consultId = getArguments().getInt(IntentTools.EXTRA_CONSULT_ID);
+            mElemetnsModel = (ElementsModel) getArguments().getSerializable(IntentTools.EXTRA_ELEMENT_MODEL);
+        }
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        btnConfirm = (Button) view.findViewById(R.id.btn_share_confirm);
+        btnCancel = (Button) view.findViewById(R.id.btn_share_cancel);
+    }
+
+    protected void initListener() {
+        btnConfirm.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                dismiss();
+                if (mElemetnsModel == null) {
+                    LogUtils.e(TAG, "GrabDialogFragment  mElemetnsModel == null !!!");
+                    return;
+                }
+                ConsultDetailActivity.startActivity(getActivity(), String.valueOf(mElemetnsModel.getId()),AppConstants.FROM_DETAIL);
+            }
+        });
+        
+        btnCancel.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                dismiss();
+            }
+        });
+    }
+
+}
+*/

@@ -1,0 +1,208 @@
+package com.qdoc.client.ui;
+
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.ui.fragment.AboutmeFragment;
+import com.qdoc.client.ui.fragment.MyMobileClinicFragment;
+import com.qdoc.client.ui.view.MyEditText;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.DisplayUtils;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * 
+ * @author Antony
+ * create at 2015-08-31 20:17
+ *
+ */
+public class EditMyResumeActivity extends BaseActivity {
+	
+	private static final String TAG = EditMyResumeActivity.class.getSimpleName();
+	
+	private TitleBar mTitleBar;
+	private TextView rightTitle;
+	private MyEditText et_doctor_resume;
+	private MyEditText et_doctor_profesional;
+	
+	private String doctor_resume;
+	private String doctor_professional;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_edit_myresume);
+		
+		initView();
+		initData();
+		initListener();
+	}
+
+	@Override
+	protected void initView() {
+    	mTitleBar = (TitleBar)findViewById(R.id.titlebar);
+    	mTitleBar.setTitleInfoWithRightText(R.string.doctor_synopsis, R.drawable.icon_back, R.string.save, actionBarLeftBtnListener, actionBarRightListener, getResources().getColor(R.color.titlebar_bg));
+    	rightTitle = (TextView)findViewById(R.id.titlebar_righttitle);
+    	//根据屏幕密度来显示右边按钮文字的大小
+    	if(320>DisplayUtils.getDensityDpi(getContext())){
+    		//小于320证明是hdpi/mdpi/ldpi
+    		rightTitle.setTextSize(15);
+    	}else{
+    		//大于等于320证明是xhdpi/xxhdpi
+    		rightTitle.setTextSize(17);
+    	}
+    	et_doctor_resume = (MyEditText) findViewById(R.id.et_doctor_resume);
+    	et_doctor_profesional = (MyEditText) findViewById(R.id.et_doctor_profesional);
+    	et_doctor_resume.getEt_input().setHint("");
+    	et_doctor_profesional.getEt_input().setHint("");
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			finish();
+		}
+	};
+	
+	OnClickListener actionBarRightListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			//修改后的个人简介
+			String afterEditDoctorResume = et_doctor_resume.getEt_input().getText().toString();
+			//修改后的专业领域
+			String afterEditDoctorProfesion = et_doctor_profesional.getEt_input().getText().toString();
+			if(afterEditDoctorResume.equals(doctor_resume) && afterEditDoctorProfesion.equals(doctor_professional)){
+				ToastUtils.ToastShort(EditMyResumeActivity.this, R.string.no_change_need_to_save);
+			}else if(afterEditDoctorResume.equals(doctor_resume) && !afterEditDoctorProfesion.equals(doctor_professional)){
+				doctor_professional = afterEditDoctorProfesion;
+				updateDoctorResumeAndProfession(null, afterEditDoctorProfesion);
+			}else if(!afterEditDoctorResume.equals(doctor_resume) && afterEditDoctorProfesion.equals(doctor_professional)){
+				doctor_resume = afterEditDoctorResume;
+				updateDoctorResumeAndProfession(afterEditDoctorResume, null);
+			}else{
+				doctor_resume = afterEditDoctorResume;
+				doctor_professional = afterEditDoctorProfesion;
+				updateDoctorResumeAndProfession(afterEditDoctorResume, afterEditDoctorProfesion);
+			}
+		}
+	};
+	
+	private void initData(){
+		doctor_resume = getIntent().getExtras().getString(IntentTools.EXTRA_DOCTOR_RESUME);
+		doctor_professional = getIntent().getExtras().getString(IntentTools.EXTRA_DOCTOR_PROFESIONAL);
+		et_doctor_resume.getEt_input().setText(TextUtils.isEmpty(doctor_resume)?"":doctor_resume);
+		et_doctor_profesional.getEt_input().setText(TextUtils.isEmpty(doctor_professional)?"":doctor_professional);
+	}
+
+	@Override
+	protected void initListener() {
+		
+	}
+	
+	/**
+     * 我的个人资料修改（单个属性修改）
+     * @param type :类型
+     * @param value :值
+     */
+/*    private void getSaveSingleMyInfoRequest(final String type, String value) {
+    	Global.progressDialog = ProgressDialog.show(EditMyResumeActivity.this, null,getString(R.string.saving), true,true);
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getUpdateMyInfoequestParam(TAG, token, type, value),
+                JsonParserFactory.parseBaseModel(DoctorSingleDataModel.class), new IResultReceiver() {
+					@Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DoctorSingleDataModel dataModel = (DoctorSingleDataModel) resultData;
+                            if(dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	AboutmeFragment.getDoctorInfo = true; 	
+                                if(type == AppConstants.PROFESSIONAL){
+                                	et_professional_field.setFocusable(false);
+                                	tv_professional_field_operation.setText(getString(R.string.edit));
+                                	tv_professional_field_operation.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_edit, 0, 0, 0);
+                                	ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.professional_save_success);
+                                	InputTools.KeyBoard(et_professional_field, InputTools.CLOSE);
+                                }else if(type == AppConstants.INTRODUCTION){
+                                	et_individual_resume.setFocusable(false);
+                                	tv_individual_resume_operation.setText(getString(R.string.edit));
+                                	tv_individual_resume_operation.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_edit, 0, 0, 0);
+                                	ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.introduction_save_success);
+                                	InputTools.KeyBoard(et_individual_resume, InputTools.CLOSE);
+                                } 
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(EditMyResumeActivity.this);
+      					    }else{
+      					    	ToastUtils.ToastShort(getContext().getApplicationContext(),dataModel.getErrorMsg());
+      					    }
+                        }else{
+                        	ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                        }
+                    }
+                });
+    }*/
+    
+    /**
+     * 修改个人简介和专业领域
+     */
+    private void updateDoctorResumeAndProfession(String doctorResume,String doctorProfession){
+    	if(!NetworkUtils.isOnline(this)){
+    		ToastUtils.ToastShort(this, R.string.network_unavaible);
+    		return;
+    	}
+    	Global.progressDialog = ProgressDialog.show(EditMyResumeActivity.this, null,getString(R.string.saving), true,true);
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.updateResumeAndProfession(TAG, token, doctorResume, doctorProfession), 
+    			JsonParserFactory.parseBaseModel(BaseModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					BaseModel dataModel = (BaseModel) resultData;
+					if(ServerErrorCode.INTERFACE_SUCCESS == dataModel.getState()){
+						AboutmeFragment.getDoctorInfo = true; 
+						ToastUtils.ToastShort(EditMyResumeActivity.this, R.string.save_clinic_time_success);
+						Intent intent = new Intent(EditMyResumeActivity.this, MyMobileClinicFragment.class);
+						intent.putExtra(IntentTools.EXTRA_DOCTOR_RESUME, doctor_resume);
+						intent.putExtra(IntentTools.EXTRA_DOCTOR_PROFESIONAL, doctor_professional);
+						setResult(RESULT_OK, intent);
+						finish();
+					}else if(ServerErrorCode.TOKEN_INVALID == dataModel.getState()){
+						LoginActivity.startActivity(EditMyResumeActivity.this);
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(),dataModel.getErrorMsg());
+					}
+				}else{
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+				}
+			}
+		});
+    }
+    
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+}

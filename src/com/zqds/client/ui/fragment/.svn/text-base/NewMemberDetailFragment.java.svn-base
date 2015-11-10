@@ -1,0 +1,203 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.content.res.ColorStateList;
+import android.os.Bundle;
+import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.TranslateAnimation;
+import android.widget.HorizontalScrollView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.RadioGroup.OnCheckedChangeListener;
+
+import com.qdoc.client.R;
+import com.qdoc.client.ui.AboutmeActivity;
+import com.qdoc.client.ui.adapter.NewMemberTabsAdapter;
+import com.qdoc.client.ui.widget.SyncHorizontalScrollView;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class NewMemberDetailFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = NewMemberDetailFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private ViewPager mViewPager;
+    private HorizontalScrollView mHorNavBarParent;
+    private RadioGroup rg_nav_content;
+
+    /**
+     * params
+     */
+    private String[] mTabTitles;// 顶部Tab的title
+    private NewMemberTabsAdapter mAdapter;
+    private int currentIndicatorLeft = 0;
+    private LayoutInflater mInflater;
+    private int mPageIndex;
+
+    public static NewMemberDetailFragment newInstance(Bundle bundle) {
+        final NewMemberDetailFragment fragment = new NewMemberDetailFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_newmember_detail, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initParams();
+        initNavigationTitle();
+        initListener();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+        mTabTitles = getResources().getStringArray(R.array.newmember_tab_title_array);
+        mAdapter = new NewMemberTabsAdapter(getActivity().getSupportFragmentManager(), mTabTitles);
+        mViewPager.setAdapter(mAdapter);
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.aboutus_member, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+                getResources().getColor(R.color.titlebar_bg));
+
+        // 设置tab
+        mHorNavBarParent = (SyncHorizontalScrollView) view.findViewById(R.id.hor_tab);
+        rg_nav_content = (RadioGroup) view.findViewById(R.id.rg_nav_content);
+        mViewPager = (ViewPager) view.findViewById(R.id.viewPager);
+    }
+
+    private void initNavigationTitle() {
+        DisplayMetrics dm = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
+
+        int indicatorWidth = dm.widthPixels >> 1;
+        // 获取布局填充器
+        mInflater = (LayoutInflater) getActivity().getSystemService(getActivity().LAYOUT_INFLATER_SERVICE);
+        rg_nav_content.removeAllViews();
+
+        ColorStateList colorState = getResources().getColorStateList(R.drawable.indicator_bg);
+
+        for (int i = 0; i < mTabTitles.length; i++) {
+            RadioButton rb = (RadioButton) mInflater.inflate(R.layout.nav_radiogroup_item, null);
+            rb.setId(i);
+            rb.setText(mTabTitles[i]);
+            rb.setLayoutParams(new LayoutParams(indicatorWidth, LayoutParams.MATCH_PARENT));
+            rb.setTextColor(colorState);
+            rg_nav_content.addView(rb);
+        }
+    }
+
+    public void startHttpRequest() {
+
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+/*            final AboutmeActivity msgActivity = (AboutmeActivity) getActivity();
+            if (msgActivity == null) {
+                LogUtils.d(TAG, "msgActivity == null!!!!");
+                return;
+            }
+
+            msgActivity.switchToNewMemberFrament();*/
+        	getActivity().finish();
+        }
+    };
+
+    private void initListener() {
+        // TODO Auto-generated method stub
+
+        ((RadioButton) rg_nav_content.getChildAt(mPageIndex)).setChecked(true);
+        mViewPager.setOnPageChangeListener(new OnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                if (rg_nav_content != null && rg_nav_content.getChildCount() > position) {
+                    ((RadioButton) rg_nav_content.getChildAt(position)).performClick();
+                }
+            }
+
+            @Override
+            public void onPageScrolled(int arg0, float arg1, int arg2) {
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int arg0) {
+
+            }
+        });
+        rg_nav_content.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if (rg_nav_content.getChildAt(checkedId) != null) {
+                    TranslateAnimation animation = new TranslateAnimation(currentIndicatorLeft,
+                            ((RadioButton) rg_nav_content.getChildAt(checkedId)).getLeft(), 0f, 0f);
+                    animation.setInterpolator(new LinearInterpolator());
+                    animation.setDuration(100);
+                    animation.setFillAfter(true);
+
+                    mViewPager.setCurrentItem(checkedId); // ViewPager 跟随一起 切换
+
+                    // 记录当前 下标的距最左侧的 距离
+                    currentIndicatorLeft = ((RadioButton) rg_nav_content.getChildAt(checkedId)).getLeft();
+
+                    mHorNavBarParent.smoothScrollTo(
+                            (checkedId > 1 ? ((RadioButton) rg_nav_content.getChildAt(checkedId)).getLeft() : 0)
+                                    - ((RadioButton) rg_nav_content.getChildAt(1)).getLeft(), 0);
+
+                    mPageIndex = checkedId;
+                }
+            }
+        });
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+
+    @Override
+    public void onClick(View v) {
+        // TODO Auto-generated method stub
+
+    }
+}

@@ -1,0 +1,31 @@
+package com.qdoc.client.model;
+
+/**
+ * 移动诊所的就医分享返回
+ * @author Antony
+ * create at 2015-08-21
+ *
+ */
+public class ConsultShareListModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3168600314706007828L;
+	
+	private Pagination<ConsultShareListDto> pager;
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<ConsultShareListDto> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<ConsultShareListDto> pager) {
+		this.pager = pager;
+	}
+}

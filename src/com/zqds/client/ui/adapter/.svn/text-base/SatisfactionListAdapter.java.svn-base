@@ -1,0 +1,118 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.SatisfactionSurveyListDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+
+public class SatisfactionListAdapter extends BaseAdapter {
+	
+	private LayoutInflater inflater;
+	private List<SatisfactionSurveyListDto> satisfactionList;
+	private Context mContext;
+
+	/**
+	 * @param satisfactionList the satisfactionList to set
+	 */
+	public void setSatisfactionList(List<SatisfactionSurveyListDto> satisfactionList) {
+		if(satisfactionList==null)
+			this.satisfactionList = new ArrayList<SatisfactionSurveyListDto>();
+		else
+			this.satisfactionList = satisfactionList;
+	}
+	
+	public SatisfactionListAdapter(Context context,List<SatisfactionSurveyListDto> mSatisfactionList){
+		inflater = LayoutInflater.from(context);
+		this.mContext = context;
+		setSatisfactionList(mSatisfactionList);
+	}
+	
+	public void changeData(List<SatisfactionSurveyListDto> satisfactionList){
+		setSatisfactionList(satisfactionList);
+		notifyDataSetChanged();
+	}
+
+	@Override
+	public int getCount() {
+		return satisfactionList.size();
+	}
+
+	@Override
+	public Object getItem(int position) {
+		return satisfactionList.get(position);
+	}
+
+	@Override
+	public long getItemId(int position) {
+		return position;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			convertView = inflater.inflate(R.layout.satisfaction_list_item, null);
+			holder = new ViewHolder();
+			holder.iv_fans_head = (ImageView) convertView.findViewById(R.id.iv_fans_head);
+			holder.tv_fans_nickname = (TextView) convertView.findViewById(R.id.tv_fans_nickname);
+			holder.tv_satisfaction_level = (TextView) convertView.findViewById(R.id.tv_satisfaction_level);
+			holder.tv_satisfaction_time = (TextView) convertView.findViewById(R.id.tv_satisfaction_time);
+			holder.tv_leave_message = (TextView) convertView.findViewById(R.id.tv_leave_message);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		SatisfactionSurveyListDto satisfaction = satisfactionList.get(position);
+		ImageLoaderHelper.getInstance(mContext).displayImage(satisfaction.getHeadimgurl(), holder.iv_fans_head, R.drawable.bank_owener_default_header);
+		holder.tv_fans_nickname.setText(satisfaction.getNicknameStr());
+		if(AppConstants.SATISFACTION_LEVEL_HIGH==satisfaction.getSynthesisScore()){
+			//满意
+			holder.tv_satisfaction_level.setText(mContext.getString(R.string.satisfaction_level_high));
+			Drawable drawable = mContext.getResources().getDrawable(R.drawable.satisfaction_level_high);
+			drawable.setBounds(0, 0, drawable.getMinimumWidth(), drawable.getMinimumHeight());  
+			holder.tv_satisfaction_level.setCompoundDrawables(drawable, null, null, null);
+		}else if(AppConstants.SATISFACTION_LEVEL_MIDDLE==satisfaction.getSynthesisScore()){
+			//一般
+			holder.tv_satisfaction_level.setText(mContext.getString(R.string.satisfaction_level_middle));
+			Drawable drawable = mContext.getResources().getDrawable(R.drawable.satisfaction_level_middle);
+			drawable.setBounds(0, 0, drawable.getMinimumWidth(), drawable.getMinimumHeight()); 
+			holder.tv_satisfaction_level.setCompoundDrawables(drawable, null, null, null);
+		}else if(AppConstants.SATISFACTION_LEVEL_LOW==satisfaction.getSynthesisScore()){
+			//不满意
+			holder.tv_satisfaction_level.setText(mContext.getString(R.string.satisfaction_level_low));
+			Drawable drawable = mContext.getResources().getDrawable(R.drawable.satisfaction_level_low);
+			drawable.setBounds(0, 0, drawable.getMinimumWidth(), drawable.getMinimumHeight());
+			holder.tv_satisfaction_level.setCompoundDrawables(drawable, null, null, null);
+		}
+		holder.tv_satisfaction_time.setText(satisfaction.getCreatTime());
+		if(TextUtils.isEmpty(satisfaction.getOpinion())){
+			holder.tv_leave_message.setText("");
+			holder.tv_leave_message.setVisibility(View.GONE);
+		}else{
+			holder.tv_leave_message.setVisibility(View.VISIBLE);
+			holder.tv_leave_message.setText(satisfaction.getOpinion());
+		}
+		return convertView;
+	}
+
+	class ViewHolder{
+		ImageView iv_fans_head;
+		TextView tv_fans_nickname;
+		TextView tv_satisfaction_level;
+		TextView tv_satisfaction_time;
+		TextView tv_leave_message;
+	}
+}

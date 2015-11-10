@@ -1,0 +1,508 @@
+package com.qdoc.client.util;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
+import android.text.style.ImageSpan;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.SimpleAdapter;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ChatEmoji;
+import com.qdoc.client.ui.view.MyView;
+
+/**
+ * 
+ ****************************************** 
+ * @author andy
+ * @文件名称 : FaceConversionUtil.java
+ * @创建时间 : 2013-1-27 下午02:34:09
+ * @文件描述 : 表情轉換工具
+ ****************************************** 
+ */
+public class FaceConversionUtil {
+
+	/** 每一页表情的个数 */
+	private int pageSize = 20;
+
+	private static FaceConversionUtil mFaceConversionUtil;
+	public static final String START_LABEL ="<highlight>";
+	public static final String END_LABEL = "</highlight>";
+	public static final String QDOC_START_LABEL = "/:";
+	public static final String QDOC_END_LABEL = ":/";
+	/** 显示gridview的个数  */
+	private ArrayList<GridView> grids;
+
+	/** 保存于内存中的表情HashMap */
+	private HashMap<String, String> emojiMap = new HashMap<String, String>();
+
+	/** 保存于内存中的表情集合 */
+	private List<ChatEmoji> emojis = new ArrayList<ChatEmoji>();
+
+	/** 表情分页的结果集合 */
+	private List<List<ChatEmoji>> emojiLists = new ArrayList<List<ChatEmoji>>();
+	
+	/** 字符串替代表情 */
+	private String[] emojiesReplaceStr = {"/::)","/::~","/::B","/::|","/:8-)","/::<","/::$","/::X","/::Z","/::'(","/::-|",
+			"/::@","/::P","/::D","/::O","/::(","/::+","/:--b","/::Q","/::T","/:,@P",
+			"/:,@-D","/::d","/:,@o","/::g","/:|-)","/::!","/::L","/::>","/::,@","/:,@f",
+			"/::-S","/:?","/:,@x","/:,@@","/::8","/:,@!","/:!!!","/:xx","/:bye","/:wipe",
+			"/:dig","/:handclap","/:&-(","/:B-)","/:<@","/:@>","/::-O","/:>-|","/:P-(","/::'|",
+			"/:X-)","/::*","/:@x","/:8*","/:pd","/:<W>","/:beer","/:basketb","/:oo","/:coffee",
+			"/:eat","/:pig","/:rose","/:fade","/:showlove","/:heart","/:break","/:cake","/:li","/:bome",
+			"/:kn","/:footb","/:ladybug","/:shit","/:moon","/:sun","/:gift","/:hug","/:strong","/:weak",
+			"/:share","/:v","/:@)","/:jj","/:@@","/:bad","/:lvu","/:no","/:ok","/:love",
+			"/:<L>","/:jump","/:shake","/:<O>","/:circle","/:kotow","/:turn","/:skip","/:oY","/:#-0","/:kiss","/:<&","/:&>"};
+	
+	/** 微信表情格式转换为可爱医生表情格式集合 */
+	private HashMap<String, String> weChatConvertQDOC = new HashMap<String, String>();
+	
+	public List<List<ChatEmoji>> getEmojiLists() {
+		return emojiLists;
+	}
+
+	public void setEmojiLists(List<List<ChatEmoji>> emojiLists) {
+		this.emojiLists = emojiLists;
+	}
+
+	private FaceConversionUtil(Context context) {
+		getFileText(context);
+	}
+
+	public static FaceConversionUtil getInstace(Context context) {
+		if (mFaceConversionUtil == null) {
+			mFaceConversionUtil = new FaceConversionUtil(context);
+		}
+		return mFaceConversionUtil;
+	}
+
+	/**
+	 * 得到一个SpanableString对象，通过传入的字符串,并进行正则判断
+	 * 
+	 * @param context
+	 * @param str
+	 * @return
+	 */
+	public SpannableString getExpressionString(Context context, String str) {
+		SpannableString spannableString = new SpannableString(str);
+		// 正则表达式比配字符串里是否含有表情，如： 我好[开心]啊
+		String zhengze = "/:\\d+.png:/";
+		// 通过传入的正则表达式来生成一个pattern
+		Pattern sinaPatten = Pattern.compile(zhengze, Pattern.CASE_INSENSITIVE);
+		try {
+			dealExpression(context, spannableString, sinaPatten, 0);
+		} catch (Exception e) {
+			Log.e("dealExpression", e.getMessage());
+		}
+		return spannableString;
+	}
+
+	
+	/**
+	 * 添加表情
+	 * 
+	 * @param context
+	 * @param imgId 
+	 * @param spannableString
+	 * @return
+	 */
+	public SpannableString addFace(Context context, int imgId, String faceName) {
+		Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imgId);
+		int i = Tools.convertDIP2PX(context, 20);
+		ImageSpan imageSpan = new ImageSpan(context, BitmapUtils.zoomBitmap(bitmap, i, i));
+		SpannableString spannableString = new SpannableString(faceName);
+		spannableString.setSpan(imageSpan, 0, faceName.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+		return spannableString;
+	}
+
+	/**
+	 * 对spanableString进行正则判断，如果符合要求，则以表情图片代替
+	 * 
+	 * @param context
+	 * @param spannableString
+	 * @param patten
+	 * @param start
+	 * @throws Exception
+	 */
+	private void dealExpression(Context context, SpannableString spannableString, Pattern patten, int start) throws Exception {
+		Matcher matcher = patten.matcher(spannableString);
+		while (matcher.find()) {
+			String text = matcher.group();
+			String key = text.substring(text.indexOf(":") + 1, text.lastIndexOf(":"));
+			// 返回第一个字符的索引的文本匹配整个正则表达式,ture 则继续递归
+			if (matcher.start() < start) {
+				continue;
+			}
+			String value = emojiMap.get(key);
+			if (TextUtils.isEmpty(value)) {
+				continue;
+			}
+			int resId = context.getResources().getIdentifier(value, "drawable", context.getPackageName());
+			// 通过上面匹配得到的字符串来生成图片资源id
+			// 计算该图片名字的长度，也就是要替换的字符串的长度
+			int end = matcher.start() + text.length();
+			if (resId != 0) {
+				// 通过图片资源id来得到bitmap，用一个ImageSpan来包装
+				Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), resId);
+				int i = Tools.convertDIP2PX(context, 20);
+				ImageSpan imageSpan = new ImageSpan(context, BitmapUtils.zoomBitmap(bitmap, i, i));
+				// 将该图片替换字符串中规定的位置中
+				spannableString.setSpan(imageSpan, matcher.start(), end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+				if (end < spannableString.length()) {
+					// 如果整个字符串还未验证完，则继续。。
+					dealExpression(context, spannableString, patten, end);
+				}
+				break;
+			} else {
+				spannableString.setSpan("", matcher.start(), end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+			}
+		}
+	}
+
+	public void getFileText(Context context) {
+		List<String> data = FileUtil.getEmojiFile(context);
+		ParseIconData(data, context);
+		ParseData(data, context);
+		getFaceData();
+	}
+    
+	/**
+	 * 解析图片类型字符
+	 * 
+	 * @param data
+	 */
+	private void ParseIconData(List<String> data, Context context) {
+		if (data == null) {
+			return;
+		}
+		try {
+			for (int i = 0; i < data.size(); i++) {
+				String str = data.get(i);
+				String[] text1 = str.split("\\.");
+				String[] text2= str.split("_");
+				emojiMap.put(text2[1],text1[0]);
+				weChatConvertQDOC.put(emojiesReplaceStr[i], text2[1]);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 解析字符,微信表情与微信替代字符串对应
+	 * 
+	 * @param context
+	 * @return 
+	 */
+	public void ParseData(List<String> data, Context context) {
+
+		if (data == null) {
+			return;
+		}
+		ChatEmoji emojEentry;
+		try {
+			for (int i = 0; i <= data.size(); i++) {
+				String fullFileName = data.get(i);
+				String SimpleFileName = fullFileName.substring(0, fullFileName.lastIndexOf("."));
+				int resID = context.getResources().getIdentifier(SimpleFileName,
+						"drawable", context.getPackageName());
+				if (resID != 0) {
+					emojEentry = new ChatEmoji();
+					emojEentry.setId(resID);
+					emojEentry.setQDOCfaceName(QDOC_START_LABEL + fullFileName.split("_")[1] + QDOC_END_LABEL);
+					emojEentry.setFaceName(START_LABEL + emojiesReplaceStr[i] + END_LABEL);
+					emojis.add(emojEentry);
+				}
+			}
+		
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 获取表情分页数据
+	 * 
+	 * @param page
+	 * @return 
+	 */
+	 public List<List<ChatEmoji>> getFaceData() {
+		int pageCount =  emojis.size() / pageSize;
+		if(emojis.size() % pageSize != 0) {
+			pageCount += 1;
+		}
+		for (int page = 0; page < pageCount; page++) {
+			int startIndex = page * pageSize;
+			int endIndex = startIndex + pageSize;
+			if (endIndex > emojis.size()) {
+				endIndex = emojis.size();
+			}
+			// 不这么写，会在viewpager加载中报集合操作异常，我也不知道为什么
+			List<ChatEmoji> list = new ArrayList<ChatEmoji>();
+			list.addAll(emojis.subList(startIndex, endIndex));
+			emojiLists.add(list);
+		}
+		return emojiLists;
+	}
+
+	// 根据正则表达式，替换<highlight></highlight>标签
+	public String getReplaceTag(String str) {
+		if (TextUtils.isEmpty(str))
+			str = "";
+		SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+		String regexStr = START_LABEL + ".+?" + END_LABEL;
+		Pattern sinaPatten = Pattern.compile(regexStr, Pattern.CASE_INSENSITIVE);
+		try {
+			replaceTag(spannableStringBuilder, sinaPatten);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return spannableStringBuilder.toString();
+	}
+
+	// 替换<highlight></highlight>标签
+	public void replaceTag(SpannableStringBuilder spannableStringBuilder, Pattern patten) throws Exception {
+		Matcher matcher = patten.matcher(spannableStringBuilder);
+		while (matcher.find()) {
+			int start = matcher.start();
+			int end = matcher.end();
+			int spannableStringBuilderLenght = spannableStringBuilder.length();
+			String matcherStr = matcher.group();
+			String replaceResultStr = matcherStr.substring(START_LABEL.length(), matcherStr.length() - END_LABEL.length());
+			spannableStringBuilder.replace(start, end, replaceResultStr);
+			if (end < spannableStringBuilderLenght) {
+				replaceTag(spannableStringBuilder, patten);
+			}
+		}
+	}
+	
+	/**
+	 * 微信表情格式转换为可爱医生表情格式
+	 */
+    public String WeChatConvertQDOC(String weChat) {
+    	if (TextUtils.isEmpty(weChat))
+    		weChat = "";
+		SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(
+				weChat);
+		String regexStr = START_LABEL + ".+?" + END_LABEL;
+		Pattern sinaPatten = Pattern.compile(regexStr, Pattern.CASE_INSENSITIVE);
+		try {
+			replaceWechatFaceFormat(spannableStringBuilder, sinaPatten);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return spannableStringBuilder.toString();
+    }
+    
+    // 微信表情格式替换为可爱医生表情格式
+ 	public void replaceWechatFaceFormat(SpannableStringBuilder spannableStringBuilder, Pattern patten) throws Exception {
+ 		Matcher matcher = patten.matcher(spannableStringBuilder);
+ 		while (matcher.find()) {
+ 			int start = matcher.start();
+ 			int end = matcher.end();
+ 			int spannableStringBuilderLenght = spannableStringBuilder.length();
+ 			String matcherStr = matcher.group();
+ 			String wechatStr = matcherStr.substring(START_LABEL.length(), matcherStr.length() - END_LABEL.length());
+ 			spannableStringBuilder.replace(start, end, QDOC_START_LABEL + weChatConvertQDOC.get(wechatStr) + QDOC_END_LABEL);
+ 			if (end < spannableStringBuilderLenght) {
+ 				replaceWechatFaceFormat(spannableStringBuilder, patten);
+ 			}
+ 		}
+ 	}
+ 	
+ 	/**
+	 * 通过微信表情格式字符串获取微信表情
+	 * @param context
+	 * @param str
+	 * @return
+	 */
+	public SpannableString getWechatExpressionString(Context context, String str) {
+		SpannableString spannableString = new SpannableString(str);
+		// 正则表达式比配字符串里是否含有表情
+		String zhengze = START_LABEL + ".+?" + END_LABEL;
+		// 通过传入的正则表达式来生成一个pattern
+		Pattern sinaPatten = Pattern.compile(zhengze, Pattern.CASE_INSENSITIVE);
+		try {
+			dealWechatExpression(context, spannableString, sinaPatten, 0);
+		} catch (Exception e) {
+			Log.e("dealExpression", e.getMessage());
+		}
+		return spannableString;
+	}
+	
+	/**
+	 * 对spanableString进行正则判断，如果符合要求，则以表情图片代替
+	 * 
+	 * @param context
+	 * @param spannableString
+	 * @param patten
+	 * @param start
+	 * @throws Exception
+	 */
+	private void dealWechatExpression(Context context,
+			SpannableString spannableString, Pattern patten, int start)
+			throws Exception {
+		Matcher matcher = patten.matcher(spannableString);
+		while (matcher.find()) {
+			String text = matcher.group();
+			String key = text.substring(START_LABEL.length(), text.length() - END_LABEL.length());
+			// 返回第一个字符的索引的文本匹配整个正则表达式,ture 则继续递归
+			if (matcher.start() < start) {
+				continue;
+			}
+			String value = emojiMap.get(weChatConvertQDOC.get(key));
+			if (TextUtils.isEmpty(value)) {
+				continue;
+			}
+			int resId = context.getResources().getIdentifier(value, "drawable", context.getPackageName());
+			// 通过上面匹配得到的字符串来生成图片资源id
+			// 计算该图片名字的长度，也就是要替换的字符串的长度
+			int end = matcher.start() + text.length();
+			if (resId != 0) {
+				// 通过图片资源id来得到bitmap，用一个ImageSpan来包装
+				Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), resId);
+				int i = Tools.convertDIP2PX(context, 20);
+				ImageSpan imageSpan = new ImageSpan(context, BitmapUtils.zoomBitmap(bitmap, i, i));
+//				ImageSpan imageSpan = new ImageSpan(context, BitmapUtils.zoomBitmap(bitmap, i, i), ImageSpan.ALIGN_BASELINE);
+				// 将该图片替换字符串中规定的位置中
+				spannableString.setSpan(imageSpan, matcher.start(), end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+				if (end < spannableString.length()) {
+					// 如果整个字符串还未验证完，则继续。。
+					dealWechatExpression(context, spannableString, patten, end);
+				}
+				break;
+			} else {
+				spannableString.setSpan("", matcher.start(), end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+			}
+		}
+	}
+	
+	/**
+	 * 加载表情界面
+	 */
+	public void initFace(final Context context, int gridview_resid, final EditText etText, ViewPager viewPager, MyView dotView) {
+		LayoutInflater inflater = LayoutInflater.from(context);
+		grids = new ArrayList<GridView>();
+//		List<List<ChatEmoji>> faceList = faceConversion.getEmojiLists();
+		for (int i = 0; i < emojiLists.size(); i++) {
+			List<Map<String, Object>> listItems = new ArrayList<Map<String, Object>>();
+			for (int j = 0; j < emojiLists.get(i).size(); j++) {
+				Map<String, Object> listItem = new HashMap<String, Object>();
+				listItem.put("image", emojiLists.get(i).get(j).getId());
+				listItem.put("emoji", emojiLists.get(i).get(j));
+				listItems.add(listItem);
+			}
+			// 添加页面最后一个删除按钮
+			Map<String, Object> listItem = new HashMap<String, Object>();
+			ChatEmoji emoji = new ChatEmoji();
+			emoji.setId(R.drawable.face_backspace);
+			listItem.put("image", R.drawable.face_backspace);
+			listItem.put("emoji", emoji);
+			listItems.add(listItem);
+
+			GridView gv_base = (GridView) inflater.inflate(gridview_resid, null);
+			SimpleAdapter simpleAdapter = new SimpleAdapter(context,
+					listItems, R.layout.single_expression,
+					new String[] { "image" }, new int[] { R.id.image });
+			gv_base.setAdapter(simpleAdapter);
+			gv_base.setOnItemClickListener(new OnItemClickListener() {
+				@Override
+				public void onItemClick(AdapterView<?> parent, View view,
+						int position, long id) {
+					ChatEmoji emoji = (ChatEmoji) ((Map<String, Object>) parent
+							.getAdapter().getItem(position)).get("emoji");
+					if (emoji.getId() == R.drawable.face_backspace) {
+						int selection = etText.getSelectionStart();
+						String text = etText.getText().toString();
+						if (selection > 0) {
+							String text2 = text.substring(selection
+									- FaceConversionUtil.END_LABEL.length());
+							if (FaceConversionUtil.END_LABEL.equals(text2)) {
+								int start1 = text
+										.lastIndexOf(FaceConversionUtil.START_LABEL);
+								int end1 = selection;
+								etText.getText().delete(start1, end1);
+								return;
+							}
+							etText.getText().delete(selection - 1, selection);
+						}
+					} else {
+						SpannableString face = addFace(
+								context, (Integer) emoji.getId(),
+								emoji.getFaceName());
+						etText.append(face);
+					}
+				}
+			});
+			grids.add(gv_base);
+		}
+		viewPager.setAdapter(mPagerAdapter);
+		dotView.setCount(mPagerAdapter.getCount());
+		viewPager.setOnPageChangeListener(new GuidePageChangeListener(dotView));
+	}
+	
+	class GuidePageChangeListener implements OnPageChangeListener {
+
+		private MyView dotView;
+		
+		public GuidePageChangeListener(MyView dotView) {
+		    this.dotView = dotView;
+		}
+		 
+		@Override
+		public void onPageScrollStateChanged(int arg0) {
+		}
+
+		@Override
+		public void onPageScrolled(int arg0, float arg1, int arg2) {
+		}
+
+		@Override
+		public void onPageSelected(int arg0) {
+			dotView.setSeletion(arg0);
+		}
+	}
+	
+	PagerAdapter mPagerAdapter = new PagerAdapter() {
+		@Override
+		public boolean isViewFromObject(View arg0, Object arg1) {
+			return arg0 == arg1;
+		}
+
+		@Override
+		public int getCount() {
+			return grids.size();
+		}
+
+		@Override
+		public void destroyItem(View container, int position, Object object) {
+			((ViewPager) container).removeView(grids.get(position));
+		}
+
+		@Override
+		public Object instantiateItem(View container, int position) {
+			((ViewPager) container).addView(grids.get(position));
+			return grids.get(position);
+		}
+	};
+}

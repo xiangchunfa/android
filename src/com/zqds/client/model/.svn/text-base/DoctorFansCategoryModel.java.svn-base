@@ -1,0 +1,34 @@
+package com.qdoc.client.model;
+
+import java.util.List;
+
+/**
+ * create at 2015-06-09 10:34
+ * @author Antony
+ *
+ */
+public class DoctorFansCategoryModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8017745304561289734L;
+	
+	private List<UserFocusDoctorCategoryDto> categoryList;//粉丝分组列表
+
+	/**
+	 * @return the categoryList
+	 */
+	public List<UserFocusDoctorCategoryDto> getCategoryList() {
+		return categoryList;
+	}
+
+	/**
+	 * @param categoryList the categoryList to set
+	 */
+	public void setCategoryList(List<UserFocusDoctorCategoryDto> categoryList) {
+		this.categoryList = categoryList;
+	}
+	
+
+}

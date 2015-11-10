@@ -1,0 +1,44 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentPagerAdapter;
+
+/**
+ * FileName    : BasePagerAdapter.java
+ * Description : 输入法工具类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-4-29 
+ **/
+public class BasePagerAdapter extends FragmentPagerAdapter {
+
+	private final Context mContext;
+    private final ArrayList<Fragment> mTabs = new ArrayList<Fragment>();
+
+    public BasePagerAdapter(FragmentActivity activity) {
+        super(activity.getSupportFragmentManager());
+        mContext = activity;
+    }
+
+    @Override
+    public int getCount() {
+        return mTabs.size();
+    }
+
+    @Override
+    public Fragment getItem(int position) {
+        Fragment fragment = mTabs.get(position);
+        return fragment;
+    }
+
+    public void addTab(Fragment fragment) {
+        mTabs.add(fragment);
+        notifyDataSetChanged();
+    }
+}

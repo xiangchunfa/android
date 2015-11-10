@@ -1,0 +1,28 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class ListReviewsModel extends AbstractBaseModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2505562030544238099L;
+	
+	private Pagination<RepReviewDto> pager;
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<RepReviewDto> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<RepReviewDto> pager) {
+		this.pager = pager;
+	}
+
+}

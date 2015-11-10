@@ -1,0 +1,130 @@
+/*
+ * MessageListAdapter.java
+ * classes : com.qdoc.client.ui.adapter.MessageListAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午5:57:58
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.util.ListUtils;
+
+/**
+ * com.qdoc.client.ui.adapter.MessageListAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午5:57:58
+ */
+public class MyCollectListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = MyCollectListAdapter.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private final LayoutInflater mInflater;
+    private ArrayList<ElementsModel> mElementsList;
+    private SteadyGridViewAdapter mGridViewAdapter;
+    private Context mContext;
+
+    public MyCollectListAdapter(Context context) {
+        mContext = context;
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mElementsList = new ArrayList<ElementsModel>();
+    }
+
+    public void addListData(ArrayList<ElementsModel> elementsList) {
+        mElementsList.clear();
+        mElementsList.addAll(elementsList);
+        notifyDataSetChanged();
+    }
+
+    public void addMoreListData(ArrayList<ElementsModel> elementsList) {
+        mElementsList.addAll(elementsList);
+        notifyDataSetChanged();
+    }
+
+    public void clearListData() {
+        mElementsList.clear();
+        mElementsList = null;
+    }
+
+    @Override
+    public int getCount() {
+        // TODO Auto-generated method stub
+        return ListUtils.isEmpty(mElementsList) ? 0 : mElementsList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        // TODO Auto-generated method stub
+        if (!ListUtils.isEmpty(mElementsList)) {
+            int size = mElementsList.size();
+            return mElementsList.get(position % size);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public long getItemId(int position) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public View getView(final int position, View convertView, ViewGroup parent) {
+        // TODO Auto-generated method stub
+        ViewHolder holder = null;
+        if (convertView == null) {
+            holder = new ViewHolder();
+            convertView = mInflater.inflate(R.layout.listitem_myshare, null);
+            holder.icon_head = (ImageView) convertView.findViewById(R.id.icon_head);
+            holder.tv_name = (TextView) convertView.findViewById(R.id.name);
+            holder.tv_time = (TextView) convertView.findViewById(R.id.time);
+
+            holder.patient_layout = (LinearLayout) convertView.findViewById(R.id.patient_layout);
+
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        if (getCount() > position) {
+            ElementsModel model = mElementsList.get(position);
+            if (model != null) {
+                holder.tv_name.setText(model.getUserName());
+                ImageLoaderHelper.getInstance(mContext).displayImage(model.getHeadImageUrl(), holder.icon_head, R.drawable.bank_owener_default_header);
+
+                holder.tv_time.setText(mContext.getResources().getString(R.string.aboutus_collect_time,
+                        TextUtils.isEmpty(model.getAcceptTime()) ? "未知时间" : model.getAcceptTime()));
+            }
+        }
+        return convertView;
+    }
+
+    private static class ViewHolder {
+        private ImageView icon_head;
+        private TextView tv_name;
+        private TextView tv_time;
+
+        private LinearLayout patient_layout;
+    }
+}

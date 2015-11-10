@@ -1,0 +1,112 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.qdoc.client.R;
+import com.qdoc.client.model.UserKindnessDto;
+import com.qdoc.client.system.AppConstants;
+import android.content.Context;
+import android.graphics.Color;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+/**
+ * 锦旗列表适配器
+ * @author Administrator
+ *
+ */
+public class UserKindnessAdapter extends BaseAdapter {
+	
+	private LayoutInflater inflater;
+	private Context context;
+	private List<UserKindnessDto> userKindnessList;
+
+	/**
+	 * @param userKindnessList the userKindnessList to set
+	 */
+	public void setUserKindnessList(List<UserKindnessDto> userKindnessList) {
+		if(userKindnessList==null)
+			this.userKindnessList = new ArrayList<UserKindnessDto>();
+		else
+			this.userKindnessList = userKindnessList;
+	}
+	
+	public UserKindnessAdapter(Context context,List<UserKindnessDto> userKindnessList){
+		this.context = context;
+		inflater = LayoutInflater.from(context);
+		setUserKindnessList(userKindnessList);
+	}
+	
+	public void changeData(List<UserKindnessDto> userKindnessList){
+		setUserKindnessList(userKindnessList);
+		notifyDataSetChanged();
+	}
+
+	@Override
+	public int getCount() {
+		return userKindnessList.size();
+	}
+
+	@Override
+	public Object getItem(int position) {
+		return userKindnessList.get(position);
+	}
+
+	@Override
+	public long getItemId(int position) {
+		return position;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			holder = new ViewHolder();
+			convertView = inflater.inflate(R.layout.user_kindness_list_item, null);
+			holder.iv_flag_icon = (ImageView) convertView.findViewById(R.id.iv_flag_icon);
+			holder.tv_kindness_time = (TextView) convertView.findViewById(R.id.tv_kindness_time);
+			holder.tv_kindness_username = (TextView) convertView.findViewById(R.id.tv_kindness_username);
+			holder.tv_kindness_message = (TextView) convertView.findViewById(R.id.tv_kindness_message);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		UserKindnessDto userKindnessDto = userKindnessList.get(position);
+		if(AppConstants.FLAG_SMALL==userKindnessDto.getType()){
+			holder.iv_flag_icon.setImageResource(R.drawable.flag_small);
+		}else if(AppConstants.FLAG_MIDDLE==userKindnessDto.getType()){
+			holder.iv_flag_icon.setImageResource(R.drawable.flag_middle);
+		}else if(AppConstants.FLAG_BIG==userKindnessDto.getType()){
+			holder.iv_flag_icon.setImageResource(R.drawable.flag_big);
+		}
+		String frontStr = context.getString(R.string.send_flag_front_text);
+		String middleStr = context.getString(R.string.send_flage);
+		String afterStr = context.getString(R.string.send_flag_after_text);
+		String userNickName = userKindnessDto.getNickName();
+		double money = userKindnessDto.getMoney()/100.00;
+		java.text.DecimalFormat df = new java.text.DecimalFormat("##.00");
+		String kindnessMoney = df.format(money);
+		String nickNameAndFlagText = frontStr+userNickName+middleStr+kindnessMoney+afterStr;
+		SpannableString spanText = new SpannableString(nickNameAndFlagText);
+		spanText.setSpan(new ForegroundColorSpan(Color.parseColor("#17a2fa")), frontStr.length(), frontStr.length()+userNickName.length(),Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+		spanText.setSpan(new ForegroundColorSpan(Color.parseColor("#FF0000")), frontStr.length()+userNickName.length()+middleStr.length(), frontStr.length()+userNickName.length()+middleStr.length()+kindnessMoney.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+		holder.tv_kindness_username.setText(spanText);
+		holder.tv_kindness_time.setText(userKindnessDto.getCreateTime());
+		holder.tv_kindness_message.setText(userKindnessDto.getContent());
+		return convertView;
+	}
+
+	class ViewHolder{
+		ImageView iv_flag_icon;
+		TextView tv_kindness_time;
+		TextView tv_kindness_username;
+		TextView tv_kindness_message;
+	}
+}

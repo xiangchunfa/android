@@ -1,0 +1,147 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 用户心意数据对象
+ * @author Antony
+ *
+ */
+public class UserKindnessDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7061847590435014338L;
+	
+	private long id;//用户信息ID
+	private long doctorId;//医生ID
+	private long userId;//赠送用户ID
+	private String headImg;//赠送人头像地址
+	private String nickName;//赠送人名称
+	private int type;//类型（0：小锦旗，1：中锦旗，2：大锦旗）
+	private int money;//锦旗面值，单位：分
+	private String content;//心意语
+	private String createTime;//赠送时间
+	private String pennantsImg;//锦旗图片地址
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+	/**
+	 * @return the doctorId
+	 */
+	public long getDoctorId() {
+		return doctorId;
+	}
+	/**
+	 * @param doctorId the doctorId to set
+	 */
+	public void setDoctorId(long doctorId) {
+		this.doctorId = doctorId;
+	}
+	/**
+	 * @return the userId
+	 */
+	public long getUserId() {
+		return userId;
+	}
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(long userId) {
+		this.userId = userId;
+	}
+	/**
+	 * @return the headImg
+	 */
+	public String getHeadImg() {
+		return headImg;
+	}
+	/**
+	 * @param headImg the headImg to set
+	 */
+	public void setHeadImg(String headImg) {
+		this.headImg = headImg;
+	}
+	/**
+	 * @return the nickName
+	 */
+	public String getNickName() {
+		return nickName;
+	}
+	/**
+	 * @param nickName the nickName to set
+	 */
+	public void setNickName(String nickName) {
+		this.nickName = nickName;
+	}
+	/**
+	 * @return the type
+	 */
+	public int getType() {
+		return type;
+	}
+	/**
+	 * @param type the type to set
+	 */
+	public void setType(int type) {
+		this.type = type;
+	}
+	/**
+	 * @return the money
+	 */
+	public int getMoney() {
+		return money;
+	}
+	/**
+	 * @param money the money to set
+	 */
+	public void setMoney(int money) {
+		this.money = money;
+	}
+	/**
+	 * @return the content
+	 */
+	public String getContent() {
+		return content;
+	}
+	/**
+	 * @param content the content to set
+	 */
+	public void setContent(String content) {
+		this.content = content;
+	}
+	/**
+	 * @return the createTime
+	 */
+	public String getCreateTime() {
+		return createTime;
+	}
+	/**
+	 * @param createTime the createTime to set
+	 */
+	public void setCreateTime(String createTime) {
+		this.createTime = createTime;
+	}
+	/**
+	 * @return the pennantsImg
+	 */
+	public String getPennantsImg() {
+		return pennantsImg;
+	}
+	/**
+	 * @param pennantsImg the pennantsImg to set
+	 */
+	public void setPennantsImg(String pennantsImg) {
+		this.pennantsImg = pennantsImg;
+	}
+}

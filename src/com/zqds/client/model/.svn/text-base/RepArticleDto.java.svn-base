@@ -1,0 +1,228 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+
+/**
+ * 文章对象
+ * @author Antony
+ * create at 2015-04-15 14:38
+ *
+ */
+public class RepArticleDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8215622141185153418L;
+	
+	private long id;//文本ID
+	private String artTitle;//文章标题
+	private String artHeadImgUrl;//文章头像外部图片
+	private String artTopImgUrl;//文章内容顶部图片
+	private String artContent;//文章内容
+	private String artDigest;//文章摘要
+	private String artSource;//文章来源
+	private String artPublishTime;//文章发布时间
+	private String artAuthor;//文章作者
+	private long praiseCount;//点赞数
+	private long treadCount;//点踩数
+	private long readCount;//阅读量
+	private long reviewCount;//评论数
+	private boolean favorites;//是否已经收藏(false为收藏   true已收藏)
+	private ArrayList<RepArticleDto> articles;//相关文章列表
+	private int artStatus;//文章状态
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+	/**
+	 * @return the artTitle
+	 */
+	public String getArtTitle() {
+		return artTitle;
+	}
+	/**
+	 * @param artTitle the artTitle to set
+	 */
+	public void setArtTitle(String artTitle) {
+		this.artTitle = artTitle;
+	}
+	/**
+	 * @return the artHeadImgUrl
+	 */
+	public String getArtHeadImgUrl() {
+		return artHeadImgUrl;
+	}
+	/**
+	 * @param artHeadImgUrl the artHeadImgUrl to set
+	 */
+	public void setArtHeadImgUrl(String artHeadImgUrl) {
+		this.artHeadImgUrl = artHeadImgUrl;
+	}
+	/**
+	 * @return the artTopImgUrl
+	 */
+	public String getArtTopImgUrl() {
+		return artTopImgUrl;
+	}
+	/**
+	 * @param artTopImgUrl the artTopImgUrl to set
+	 */
+	public void setArtTopImgUrl(String artTopImgUrl) {
+		this.artTopImgUrl = artTopImgUrl;
+	}
+	/**
+	 * @return the artContent
+	 */
+	public String getArtContent() {
+		return artContent;
+	}
+	/**
+	 * @param artContent the artContent to set
+	 */
+	public void setArtContent(String artContent) {
+		this.artContent = artContent;
+	}
+	/**
+	 * @return the artDigest
+	 */
+	public String getArtDigest() {
+		return artDigest;
+	}
+	/**
+	 * @param artDigest the artDigest to set
+	 */
+	public void setArtDigest(String artDigest) {
+		this.artDigest = artDigest;
+	}
+	/**
+	 * @return the artSource
+	 */
+	public String getArtSource() {
+		return artSource;
+	}
+	/**
+	 * @param artSource the artSource to set
+	 */
+	public void setArtSource(String artSource) {
+		this.artSource = artSource;
+	}
+	/**
+	 * @return the artPublishTime
+	 */
+	public String getArtPublishTime() {
+		return artPublishTime;
+	}
+	/**
+	 * @param artPublishTime the artPublishTime to set
+	 */
+	public void setArtPublishTime(String artPublishTime) {
+		this.artPublishTime = artPublishTime;
+	}
+	/**
+	 * @return the artAuthor
+	 */
+	public String getArtAuthor() {
+		return artAuthor;
+	}
+	/**
+	 * @param artAuthor the artAuthor to set
+	 */
+	public void setArtAuthor(String artAuthor) {
+		this.artAuthor = artAuthor;
+	}
+	/**
+	 * @return the praiseCount
+	 */
+	public long getPraiseCount() {
+		return praiseCount;
+	}
+	/**
+	 * @param praiseCount the praiseCount to set
+	 */
+	public void setPraiseCount(long praiseCount) {
+		this.praiseCount = praiseCount;
+	}
+	/**
+	 * @return the treadCount
+	 */
+	public long getTreadCount() {
+		return treadCount;
+	}
+	/**
+	 * @param treadCount the treadCount to set
+	 */
+	public void setTreadCount(long treadCount) {
+		this.treadCount = treadCount;
+	}
+	/**
+	 * @return the reviewCount
+	 */
+	public long getReviewCount() {
+		return reviewCount;
+	}
+	/**
+	 * @param reviewCount the reviewCount to set
+	 */
+	public void setReviewCount(long reviewCount) {
+		this.reviewCount = reviewCount;
+	}
+	/**
+	 * @return the favorites
+	 */
+	public boolean isFavorites() {
+		return favorites;
+	}
+	/**
+	 * @param favorites the favorites to set
+	 */
+	public void setFavorites(boolean favorites) {
+		this.favorites = favorites;
+	}
+	/**
+	 * @return the articles
+	 */
+	public ArrayList<RepArticleDto> getArticles() {
+		return articles;
+	}
+	/**
+	 * @param articles the articles to set
+	 */
+	public void setArticles(ArrayList<RepArticleDto> articles) {
+		this.articles = articles;
+	}
+	/**
+	 * @return the readCount
+	 */
+	public long getReadCount() {
+		return readCount;
+	}
+	/**
+	 * @param readCount the readCount to set
+	 */
+	public void setReadCount(long readCount) {
+		this.readCount = readCount;
+	}
+	/**
+	 * @return the artStatus
+	 */
+	public int getArtStatus() {
+		return artStatus;
+	}
+	/**
+	 * @param artStatus the artStatus to set
+	 */
+	public void setArtStatus(int artStatus) {
+		this.artStatus = artStatus;
+	}
+
+}

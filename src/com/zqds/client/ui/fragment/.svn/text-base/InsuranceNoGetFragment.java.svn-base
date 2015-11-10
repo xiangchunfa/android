@@ -1,0 +1,444 @@
+/*
+ * ConsultListFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultListFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:03
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
+import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.VerifyUtil;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.ServiceTermModel;
+import com.qdoc.client.model.ShowInsuranceModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.AdDetailActivity;
+import com.qdoc.client.ui.InsuranceDetailActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.InputTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtil;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.InsuranceDetailzFragment
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-29 上午2:00:03
+ */
+@SuppressLint("UseSparseArrays")
+public class InsuranceNoGetFragment extends BaseFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = InsuranceNoGetFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private TextView tvUserAgreement;
+    private TextView tvInSure;
+    private TextView tvInsuredName;
+    private EditText etIdNumber;
+	private CheckBox cbCheck;
+    private TextView account_active_tips;
+    private RelativeLayout checkbox_layout;
+    /**
+     * PARAMS
+     */
+	private ShowInsuranceModel dataModel;
+	private Resources res;
+    private Map<Integer, Integer> insureStatusMap = new HashMap<Integer, Integer>();
+
+	public static InsuranceNoGetFragment newInstance(Bundle bundle) {
+		final InsuranceNoGetFragment fragment = new InsuranceNoGetFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+    
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_insurance_no_get, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+  	  int[] insuranceStatus = getResources().getIntArray(R.array.insurance_status);
+	  TypedArray drawables= getResources().obtainTypedArray(R.array.insurance_status_icon);
+      int size = insuranceStatus.length;
+      for (int i = 0; i < size; i++) {
+        insureStatusMap.put(insuranceStatus[i], drawables.getResourceId(i, 0));
+      }
+      startShowInsuranceRequest(getActivity());
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+    	res=getActivity().getResources();
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.loveliness_doctor, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+                getResources().getColor(R.color.titlebar_bg));
+     
+        tvUserAgreement=(TextView) view.findViewById(R.id.tv_user_agreement);
+        etIdNumber=(EditText) view.findViewById(R.id.et_id_number);
+        tvInSure=(TextView) view.findViewById(R.id.tv_insure);
+        cbCheck=(CheckBox) view.findViewById(R.id.cb_check);
+        checkbox_layout = (RelativeLayout) view.findViewById(R.id.cb_check_layout);
+        tvInsuredName=(TextView) view.findViewById(R.id.tv_assured);
+        account_active_tips = (TextView) view.findViewById(R.id.accout_active_tips);
+		setEnabled(tvInSure, false, R.drawable.addcard_unable_corner_bg);//默认不能投保
+    }
+
+    protected void initListener() {
+    	tvInSure.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+				//账号需要审核通过才能投保
+				if(Global.getUserStatus()==AppConstants.ALL_PERMISSIONS){
+					if(dataModel==null||dataModel.getSimpleInsuranceDto()==null){
+	                    ToastUtils.ToastLong(getActivity(), R.string.discovery_get_insure_detail);
+						return;
+					}
+					String insuredName=tvInsuredName.getText().toString();
+					String insuredCardNo=etIdNumber.getText().toString();
+					if(StringUtils.isEmpty(insuredName)){
+					   ToastUtil.show(getActivity(), getActivity().getString(R.string.discovery_input_insured),Gravity.BOTTOM); 
+					   return;
+					}
+				    if(!VerifyUtil.verifyCardNo(getActivity(), insuredCardNo)){
+				       return;  
+				    }
+				    String insuredTel = dataModel.getSimpleInsuranceDto().getInsuredTel();
+				    if(StringUtils.isEmpty(insuredTel)){
+				    	//获取当前账号
+				    	insuredTel = PersonalConfig
+								.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+				    }
+			       startSaveApplyRequest(insuredName, insuredCardNo, insuredTel);
+				}
+			}
+		});
+    	
+    	cbCheck.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			
+			@Override
+			public void onCheckedChanged(CompoundButton arg0, boolean isCheck) {
+				// TODO Auto-generated method stub
+				if(isCheck){
+					if(Global.getUserStatus()==AppConstants.ALL_PERMISSIONS)
+						setEnabled(tvInSure, true, R.drawable.addcard_able_corner_bg);
+				}else{
+					setEnabled(tvInSure, false, R.drawable.addcard_unable_corner_bg);
+				}
+			}
+		});
+    	
+    	checkbox_layout.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				cbCheck.performClick();
+			}
+		});
+  
+          
+        SpannableString spannableString1 = new SpannableString(res.getString(R.string.discovery_insure_agreement));
+        spannableString1.setSpan(new ClickableSpan()
+        {
+        	 @Override
+             public void updateDrawState(TextPaint ds) {
+                 super.updateDrawState(ds);
+                 ds.setUnderlineText(false);      //设置下划线
+             }
+	
+           @Override
+            public void onClick(View widget)
+            {
+             	startServiceTermRequest(AppConstants.INSURE_SERVICE_NOTICE,res.getString(R.string.discovery_insure_notice));
+            }
+        }, 7, 13, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannableString1.setSpan(new ClickableSpan()
+         {   
+       	     @Override
+             public void updateDrawState(TextPaint ds) {
+             super.updateDrawState(ds);
+             ds.setUnderlineText(false);      //设置下划线
+             }
+            @Override
+             public void onClick(View widget)
+             {
+            startServiceTermRequest(AppConstants.INSURE_SERVICE_CLAUSE,res.getString(R.string.discovery_insure_clause));  
+             }
+         }, 14, 20, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannableString1.setSpan(new ForegroundColorSpan(res.getColor(R.color.insurance_link)),  7, 13, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);  //设置前景色为洋红色  
+        spannableString1.setSpan(new ForegroundColorSpan(res.getColor(R.color.insurance_link)),  14, 20, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);  //设置前景色为洋红色  
+
+        tvUserAgreement.setText(spannableString1);
+        //  在单击链接时凡是有要执行的动作，都必须设置MovementMethod对象
+        tvUserAgreement.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            final InsuranceDetailActivity activity = (InsuranceDetailActivity) getActivity();
+            if (activity == null) {
+                LogUtils.d(TAG, "msgActivity == null!!!!");
+                return;
+            }
+            activity.finish();
+        }
+    };
+   
+    /**
+     * APP服务条框接口
+     */
+    private  void startServiceTermRequest(int type,final String title) {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.serviceTerm(TAG, token, String.valueOf(type)),
+                JsonParserFactory.parseBaseModel(ServiceTermModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                        	ServiceTermModel dataModel = (ServiceTermModel) resultData;
+                            if (dataModel != null&&dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                        		Intent intent = new Intent(getActivity(),
+                    					AdDetailActivity.class);
+                    			intent.putExtra("imglink",dataModel.getTermUrl());
+                    			intent.putExtra("title", title);
+                    			startActivity(intent);
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    /**
+     * 申请免费领取保险
+     */
+    private  void startSaveApplyRequest(String insuredName,String insuredCardNo,String insuredTel) {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(getActivity(), null,
+	    		  getActivity().getString(R.string.discovery_submit_insure), true,
+					true);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.getSaveApplyRequestParam(TAG, token,insuredName,insuredCardNo,insuredTel),
+                JsonParserFactory.parseBaseModel(BaseModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode== ServerErrorCode.STATUS_SUCCESS) {
+                        	BaseModel dataModel = (BaseModel) resultData;
+                            if (dataModel != null &&dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS ) {
+                            	InsuranceDetailActivity activity = (InsuranceDetailActivity) getActivity();
+                                if (activity == null) {
+                                    return;
+                                }
+                                activity.switchToInsuranceGetFragment(TAG);
+                                ToastUtils.ToastShort(getActivity(),R.string.discovery_insure_success);
+                                InputTools.HideKeyboard(etIdNumber);
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}else{
+          						ToastUtils.ToastShort(getActivity(), dataModel.getErrorMsg());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity(), (String) resultData);
+                            }
+                        }
+                    }
+                });
+    }
+
+   private void showLongInsurance(ShowInsuranceModel model){
+	   tvInsuredName.setText(model.getSimpleInsuranceDto().getInsuredName());
+	   int insuranceGetState = model.getSimpleInsuranceDto().getStatus();
+	   boolean getInsuranceChange = insuranceGetState==AppConstants.GET_FAIL||insuranceGetState==AppConstants.NO_GET;
+	   if(Global.getUserStatus()==AppConstants.ALL_PERMISSIONS && getInsuranceChange){
+		   //审核通过
+		   account_active_tips.setVisibility(View.GONE);
+		   setEnabled(tvInSure, true, R.drawable.addcard_able_corner_bg);
+	   }else{
+		   //未审核通过
+		   account_active_tips.setVisibility(View.VISIBLE);
+		   setEnabled(tvInSure, false, R.drawable.addcard_unable_corner_bg);
+	   }
+   }
+
+    private static class InnerHandler extends Handler {
+        private WeakReference<InsuranceNoGetFragment> fragmentReference;
+
+        public InnerHandler(InsuranceNoGetFragment fragment) {
+            fragmentReference = new WeakReference<InsuranceNoGetFragment>(fragment);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            final InsuranceNoGetFragment fragment = fragmentReference.get();
+            if (fragment == null) {
+                return;
+            }
+            switch (msg.what) {
+                default:
+                    break;
+            }
+        }
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        HttpTaskManager.stop(TAG);
+    }
+
+    /**
+     * @return
+     * @see com.qdoc.client.ui.fragment.BaseFragment#getReqestTag()
+     */
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+    
+    /** 
+     *  
+     * @param tv TextView 
+     * @param clickableSpan Click event 
+     * @param text Text to show 
+     * @param start Start point in text for handle click event 
+     * @param end End point in text for handle click event 
+     */  
+	private void setClickableSpanForTextView(TextView tv, ClickableSpan clickableSpan, String text, int start, int end) {  
+        SpannableString sp = new SpannableString(text);  
+        sp.setSpan(clickableSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);  
+        tv.setText(sp);  
+        tv.setLinkTextColor(getActivity().getResources().getColor(R.color.bg_agreement));  
+        tv.setMovementMethod(LinkMovementMethod.getInstance());  
+        tv.setFocusable(false);  
+        tv.setClickable(false);  
+        tv.setLongClickable(false);  
+    }  
+	
+
+	  private  void startShowInsuranceRequest(final Context context) {
+	        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+	        Global.progressDialog = ProgressDialog.show(context, null,context.getString(R.string.discovery_get_insure), true,true);
+	        HttpTaskManager.startStringRequest(
+	                DataRequestUtils.getShowInsuranceRequestParam(TAG, token),
+	                JsonParserFactory.parseBaseModel(ShowInsuranceModel.class), new IResultReceiver() {
+
+	                    @Override
+	                    public void onReceiveResult(int resultCode, Object resultData) {
+	                        // TODO Auto-generated method stub
+	                    	Global.progressDialog.dismiss();
+	                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+	                        	dataModel = (ShowInsuranceModel) resultData;
+	                            if (dataModel != null&&dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+	                            	LogUtils.d(TAG, "---------------------startShowInsuranceRequest--------------------------");
+	                            	//showInsurance( dataModel);
+	                            	showLongInsurance(dataModel);
+	                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+	                                LoginActivity.startActivity(getActivity());
+	          					}
+	                        } else {
+	                            if (resultData == null) {
+	                                ToastUtils.ToastShort(context, R.string.network_error);
+	                            } else {
+	                                ToastUtils.ToastShort(context, (String) resultData);
+	                            }
+	                        }
+	                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+	                    }
+	                });
+	    }
+  
+	    /**
+	     *设置是否可以点击
+	     */
+		public void setEnabled(View view,boolean isEnabled,int resID) {
+			view.setBackgroundResource(resID);
+			view.setEnabled(isEnabled);
+		}
+	    
+	    @Override
+	    public void onPause() {
+	    	super.onPause();
+	    }
+	    
+	    @Override
+	    public void onResume() {
+	    	super.onResume();
+	    }
+}

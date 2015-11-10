@@ -1,0 +1,364 @@
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.ShareService;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.DoctorDataModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.model.UserKindnessDto;
+import com.qdoc.client.model.UserKindnessModel;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.adapter.UserKindnessAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.util.DisplayUtils;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.ToastUtils;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+public class KindlyFeelingsFragment extends BaseFragment {
+	
+	public static final String TAG = KindlyFeelingsFragment.class.getSimpleName();
+	
+	private TitleBar mTitleBar;
+	private TextView rightTitle;
+	
+	
+	private int currentPage;
+	private int PAGESIZE = 20;
+	private PullRefreshView kindness_listview;
+	private PullListMaskController mViewController;
+	private List<UserKindnessDto> global_userKindnessList;
+	private UserKindnessAdapter userKindnessAdapter;
+	
+	private DoctorModel doctorDto;
+	private String shareUrl;
+	private int totalCount;
+	
+	public static KindlyFeelingsFragment getNewInstance(Bundle bundle){
+		final KindlyFeelingsFragment mKindlyFellingsFragment = new KindlyFeelingsFragment();
+		mKindlyFellingsFragment.setArguments(bundle);
+		return mKindlyFellingsFragment;
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_kindly_feelings, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		
+		initView(view);
+		initData();
+		initListener();
+	}
+
+	private void initView(View view) {
+    	mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+    	mTitleBar.setTitleInfoWithRightText(R.string.receive_kindly_feelings, R.drawable.icon_back, R.string.show_off, actionBarLeftBtnListener, actionBarRightListener, getResources().getColor(R.color.titlebar_bg));
+    	rightTitle = (TextView) view.findViewById(R.id.titlebar_righttitle);
+    	//根据屏幕密度来显示右边按钮文字的大小
+    	if(320>DisplayUtils.getDensityDpi(getContext())){
+    		//小于320证明是hdpi/mdpi/ldpi
+    		rightTitle.setTextSize(15);
+    	}else{
+    		//大于等于320证明是xhdpi/xxhdpi
+    		rightTitle.setTextSize(17);
+    	}
+    	rightTitle.setVisibility(View.INVISIBLE);
+    	kindness_listview = (PullRefreshView) view.findViewById(R.id.listView);
+		// 自定义emptyview
+		ErrorMaskView maskView = (ErrorMaskView)view.findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(kindness_listview, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+	}
+
+	private void initData() {
+		doctorDto = (DoctorModel) getArguments().getSerializable(IntentTools.EXTAR_DOCTORMODEL);
+		global_userKindnessList = new ArrayList<UserKindnessDto>();
+		userKindnessAdapter = new UserKindnessAdapter(getContext(), global_userKindnessList);
+		kindness_listview.setAdapter(userKindnessAdapter);
+		getReceiveKindlyFeelingsInit();
+	}
+
+	private void initListener() {
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				getReceiveKindlyFeelingsInit();
+			}
+		});
+		
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+			
+			@Override
+			public void onClickFootView() {
+				getReceiveKindlyFeelingMore();
+			}
+		});
+		
+		mViewController.setOnRefreshListener(new OnRefreshListener() {
+			
+			@Override
+			public void onRefresh() {
+				getReceiveKindlyFeelingsRefresh();
+			}
+		});
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			if(null != getActivity())
+				getActivity().finish();
+		}
+	};
+	
+	OnClickListener actionBarRightListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			//炫耀心意
+			displayKindness();
+		}
+	};
+	
+	/**
+	 * 获取首页心意列表
+	 */
+	private void getReceiveKindlyFeelingsInit(){
+		currentPage = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.receiveKindlyFeelings(TAG, token, PAGESIZE, currentPage), 
+				JsonParserFactory.parseBaseModel(UserKindnessModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					UserKindnessModel userKindnessModel = (UserKindnessModel) resultData;
+					if(userKindnessModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<UserKindnessDto> pager = userKindnessModel.getPager();
+						shareUrl = userKindnessModel.getShareUrl();
+						if(pager!=null){
+							ArrayList<UserKindnessDto> userKindnessList =  pager.getElements();
+							totalCount = pager.getTotalCount();
+							if(ListUtils.isEmpty(userKindnessList)){
+								 mViewController.showViewStatus(ListViewState.EMPTY_USER_DEFINED, getString(R.string.no_kindness_tips),R.drawable.empty_kindness_icon);
+							}else if(pager.isHasNext()){
+								//有下一页
+								processInitResultData(userKindnessList, ListViewState.LIST_NORMAL_HAS_MORE);
+							}else{
+								//无下一页
+								processInitResultData(userKindnessList, ListViewState.LIST_NO_MORE);
+							}
+						}else{
+							 mViewController.showViewStatus(ListViewState.EMPTY_USER_DEFINED, getString(R.string.no_kindness_tips),R.drawable.empty_kindness_icon);
+						}
+					}else if(userKindnessModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getContext());
+					}else{
+						ToastUtils.ToastShort(getContext(), userKindnessModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void processInitResultData(List<UserKindnessDto> userKindnessList,ListViewState listviewState){
+		rightTitle.setVisibility(View.VISIBLE);
+		global_userKindnessList.clear();
+		global_userKindnessList = userKindnessList;
+		userKindnessAdapter.changeData(global_userKindnessList);
+		mViewController.showViewStatus(listviewState);
+	}
+	
+	private void getReceiveKindlyFeelingMore(){
+		currentPage = currentPage+1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.receiveKindlyFeelings(TAG, token, PAGESIZE, currentPage), 
+				JsonParserFactory.parseBaseModel(UserKindnessModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					UserKindnessModel userKindnessModel = (UserKindnessModel) resultData;
+					if(userKindnessModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<UserKindnessDto> pager = userKindnessModel.getPager();
+						if(pager!=null){
+							ArrayList<UserKindnessDto> userKindnessList =  pager.getElements();
+							if(ListUtils.isEmpty(userKindnessList)){
+								mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+							}else if(pager.isHasNext()){
+								processMoreResultData(userKindnessList, ListViewState.LIST_NORMAL_HAS_MORE);
+							}else{
+								processMoreResultData(userKindnessList, ListViewState.LIST_NO_MORE);
+							}
+						}else{
+							 mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(userKindnessModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getContext());
+					}else{
+						ToastUtils.ToastShort(getContext(), userKindnessModel.getErrorMsg());
+						mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						currentPage = currentPage -1;
+					}
+				}else{
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+					//请求失败，页码回滚
+					currentPage = currentPage - 1;
+					mViewController.showViewStatus(ListViewState.LIST_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void processMoreResultData(List<UserKindnessDto> userKindnessList,ListViewState listviewState){
+		global_userKindnessList.addAll(userKindnessList);
+		userKindnessAdapter.changeData(global_userKindnessList);
+		mViewController.showViewStatus(listviewState);
+	}
+	
+	/**
+	 * 刷新首页心意列表
+	 */
+	private void getReceiveKindlyFeelingsRefresh(){
+		currentPage = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.receiveKindlyFeelings(TAG, token, PAGESIZE, currentPage), 
+				JsonParserFactory.parseBaseModel(UserKindnessModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					UserKindnessModel userKindnessModel = (UserKindnessModel) resultData;
+					if(userKindnessModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<UserKindnessDto> pager = userKindnessModel.getPager();
+						if(pager!=null){
+							ArrayList<UserKindnessDto> userKindnessList =  pager.getElements();
+							if(ListUtils.isEmpty(userKindnessList)){
+								 mViewController.showViewStatus(ListViewState.EMPTY_USER_DEFINED, getString(R.string.no_kindness_tips),R.drawable.empty_kindness_icon);
+							}else if(pager.isHasNext()){
+								//有下一页
+								processInitResultData(userKindnessList, ListViewState.LIST_REFRESH_COMPLETE);
+							}else{
+								//无下一页
+								processInitResultData(userKindnessList, ListViewState.PULL_DOWN_LIST_NO_MORE);
+							}
+						}else{
+							 mViewController.showViewStatus(ListViewState.EMPTY_USER_DEFINED, getString(R.string.no_kindness_tips),R.drawable.empty_kindness_icon);
+						}
+					}else if(userKindnessModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getContext());
+					}else{
+						ToastUtils.ToastShort(getContext(), userKindnessModel.getErrorMsg());
+					}
+				}else{
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void displayKindness(){
+		if(null==doctorDto){
+			getDoctorInfoRequest();
+		}else{
+			initShareData();
+		}
+			
+
+	}
+	
+	private void initShareData(){
+		if(null==doctorDto || TextUtils.isEmpty(shareUrl)){
+			ToastUtils.ToastShort(getContext(), R.string.network_error);
+			return;
+		}
+		ShareService share = new ShareService(getActivity());
+		String shareTitle = getString(R.string.display_flag_title, totalCount);
+		String shareContent = getString(R.string.mobile_clinic_for_who, doctorDto.getDoctorName())+getString(R.string.professional, doctorDto.getProfessional());
+		share.configUMShare(getContext(),shareContent, shareTitle,doctorDto.getRealHeadImage(),shareUrl);
+		share.openShareBoard();
+	}
+	
+	/**
+	 * 获取医生信息
+	 */
+	private void getDoctorInfoRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.getDocInfoRequestParam(TAG, token),
+				JsonParserFactory.parseBaseModel(DoctorDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							DoctorDataModel dataModel = (DoctorDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if ((dataModel != null) && (dataModel.getDoctorDto() != null)) {
+									doctorDto = dataModel.getDoctorDto();
+									initShareData();
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}else{
+								ToastUtils.ToastShort(getContext(), R.string.network_error);
+							}
+						} else {
+							ToastUtils.ToastShort(getContext(), R.string.network_error);
+						}
+					}
+				});
+	}
+
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+}

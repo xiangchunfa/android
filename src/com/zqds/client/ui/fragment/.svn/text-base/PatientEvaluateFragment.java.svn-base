@@ -1,0 +1,324 @@
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.View.OnClickListener;
+import android.widget.AbsListView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ListSatisfactionModel;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.model.SatisfactionSurveyListDto;
+import com.qdoc.client.model.UserKindnessDto;
+import com.qdoc.client.model.UserKindnessModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.adapter.MobileClinicSatisfactionAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.util.AttachUtil;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.ToastUtils;
+
+import de.greenrobot.event.EventBus;
+/**
+ * FileName    : PatientEvaluateFragment.java
+ * Description : 患者评价类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : antony
+ * @version    : 1.0 
+ * Create Date : 2015-8-11 
+ **/
+public class PatientEvaluateFragment extends BaseFragment {
+   
+	/**
+	 * TAG
+	 */
+	public static final String TAG = PatientEvaluateFragment.class.getSimpleName();
+	//锦旗部分
+	private int currentKindnessListPage;//锦旗的当前页码
+	private int PAGESIZE = 20;//一页的数量
+	private int totalKindnessCount;//锦旗的总数
+	
+	private LinearLayout header;//锦旗部分
+	private TextView tv_total_kindness_count;//显示锦旗总数的TextView
+	private LinearLayout ll_kindness_list_layout;//锦旗列表的副布局
+	//好评率部分
+	private int currentSatisfactionListPage;//心意的当前页码
+	private List<SatisfactionSurveyListDto> global_satisfactionList;//心意列表
+	
+	
+	private PullRefreshView satisfaction_listview;//显示心意列表控件
+	private PullListMaskController mViewController;//上下拉加载控件
+	private MobileClinicSatisfactionAdapter mobileClinicSatisfactionAdapter;//心意列表适配器
+	
+
+	
+    public static PatientEvaluateFragment newInstance(Bundle bundle) {
+	     final PatientEvaluateFragment fragment = new PatientEvaluateFragment();
+	     return fragment;
+	}
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_patient_evaluate, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		initView(view);
+		initParams();
+		initListener();
+	}
+	
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		super.onActivityCreated(savedInstanceState);
+	}
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+	public void initView(View v) {
+		header = (LinearLayout) LayoutInflater.from(getContext()).inflate(R.layout.horizontal_kindness_flag, null);
+		tv_total_kindness_count = (TextView) header.findViewById(R.id.tv_total_kindness_count);
+		ll_kindness_list_layout = (LinearLayout) header.findViewById(R.id.ll_kindness_list_layout);
+		
+		satisfaction_listview = (PullRefreshView) v.findViewById(R.id.listView);
+		// 自定义emptyview
+		ErrorMaskView maskView = (ErrorMaskView)v.findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(satisfaction_listview, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+	}
+
+	public void initParams() {
+		global_satisfactionList = new ArrayList<SatisfactionSurveyListDto>();
+		mobileClinicSatisfactionAdapter = new MobileClinicSatisfactionAdapter(global_satisfactionList, getContext());
+		satisfaction_listview.setAdapter(mobileClinicSatisfactionAdapter);
+
+		getReceiveKindlyFeelingsInit();
+	}
+
+	public void initListener() {
+		// attach top，防止下拉时，联动头部一起滑动
+		satisfaction_listview.setOnScrollListener(new AbsListView.OnScrollListener() {
+			@Override
+			public void onScrollStateChanged(AbsListView view, int scrollState) {
+			}
+
+			@Override
+			public void onScroll(AbsListView view, int firstVisibleItem,int visibleItemCount, int totalItemCount) {
+				EventBus.getDefault().post(AttachUtil.isAdapterViewAttach(view));
+			}
+		});
+		
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				getReceiveKindlyFeelingsInit();
+			}
+		});
+		
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+			
+			@Override
+			public void onClickFootView() {
+				getSatisfactionListMore();
+			}
+		});
+	}
+	
+	/**
+	 * 获取首页锦旗列表
+	 */
+	private void getReceiveKindlyFeelingsInit(){
+		//判断网络状态
+		if(!NetworkUtils.isOnline(getContext())){
+			ToastUtils.ToastShort(getContext(), R.string.network_unavailable);
+			return;
+		}
+		currentKindnessListPage = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.receiveKindlyFeelings(TAG, token, PAGESIZE, currentKindnessListPage), 
+				JsonParserFactory.parseBaseModel(UserKindnessModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					UserKindnessModel userKindnessModel = (UserKindnessModel) resultData;
+					if(userKindnessModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<UserKindnessDto> pager = userKindnessModel.getPager();
+						if(pager!=null){
+							ArrayList<UserKindnessDto> userKindnessList =  pager.getElements();
+							totalKindnessCount = pager.getTotalCount();
+							tv_total_kindness_count.setText(String.format(getString(R.string.total_kindness_count), totalKindnessCount));
+							if(ListUtils.isEmpty(userKindnessList)){
+								//没有收到过锦旗，不添加锦旗布局到ListView头部
+								satisfaction_listview.removeHeaderView(header);
+							}else{
+								for(int i=0;i<userKindnessList.size();i++){
+									ImageView flagImageView = new ImageView(getContext());
+									UserKindnessDto userKindnessDto = userKindnessList.get(i);
+									if(AppConstants.FLAG_SMALL==userKindnessDto.getType()){
+										flagImageView.setImageResource(R.drawable.flag_small);
+									}else if(AppConstants.FLAG_MIDDLE==userKindnessDto.getType()){
+										flagImageView.setImageResource(R.drawable.flag_middle);
+									}else if(AppConstants.FLAG_BIG==userKindnessDto.getType()){
+										flagImageView.setImageResource(R.drawable.flag_big);
+									}
+									flagImageView.setPadding(20, 0, 20, 0);
+									ll_kindness_list_layout.addView(flagImageView);
+								}
+								//有锦旗，把锦旗布局添加到ListView头部
+								satisfaction_listview.addHeaderView(header);
+							}
+						}
+					}else if(userKindnessModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						//设备变更
+						LoginActivity.startActivity(getContext());
+					}
+				}else{
+					//没有收到过锦旗，隐藏锦旗布局
+					satisfaction_listview.removeHeaderView(header);
+				}
+				getSatisfactionListInit();
+			}
+		});
+	}
+	
+	/**
+	 * 获取好评率列表(第一页数据)
+	 */
+	private void getSatisfactionListInit(){
+		currentSatisfactionListPage = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getSatisfactionList(TAG, token, currentSatisfactionListPage, PAGESIZE), 
+				JsonParserFactory.parseBaseModel(ListSatisfactionModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(ServerErrorCode.STATUS_SUCCESS==resultCode){
+					ListSatisfactionModel listSatisfactionModel = (ListSatisfactionModel) resultData;
+					if(null!=listSatisfactionModel && listSatisfactionModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<SatisfactionSurveyListDto> pager = listSatisfactionModel.getPager();
+						if(pager!=null){
+							List<SatisfactionSurveyListDto> satisfactionListInit = pager.getElements();
+							if(ListUtils.isEmpty(satisfactionListInit)){
+								mViewController.showViewStatus(ListViewState.EMPTY_USER_DEFINED, getString(R.string.no_satisfaction),R.drawable.empty_satisfaction_icon);
+							}else if(pager.isHasNext()){
+								//有下一页
+								processInitResultData(satisfactionListInit, ListViewState.LIST_NORMAL_HAS_MORE);
+							}else{
+								//没有下一页
+								processInitResultData(satisfactionListInit, ListViewState.LIST_NO_MORE);
+							}
+						}else{
+							mViewController.showViewStatus(ListViewState.EMPTY_USER_DEFINED, getString(R.string.no_satisfaction),R.drawable.empty_satisfaction_icon);
+						}
+					}else if(null!=listSatisfactionModel && listSatisfactionModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getContext());
+					}else{
+						ToastUtils.ToastShort(getContext(), listSatisfactionModel.getErrorMsg());
+					}
+				}else{
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+	
+	/**
+	 * 加载更多好评数据
+	 */
+	private void getSatisfactionListMore(){
+		currentSatisfactionListPage = currentSatisfactionListPage + 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getSatisfactionList(TAG, token, currentSatisfactionListPage, PAGESIZE), 
+				JsonParserFactory.parseBaseModel(ListSatisfactionModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(ServerErrorCode.STATUS_SUCCESS==resultCode){
+					ListSatisfactionModel listSatisfactionModel = (ListSatisfactionModel) resultData;
+					if(listSatisfactionModel!=null && ServerErrorCode.INTERFACE_SUCCESS==listSatisfactionModel.getState()){
+						Pagination<SatisfactionSurveyListDto> pager = listSatisfactionModel.getPager();
+						if(pager!=null){
+							ArrayList<SatisfactionSurveyListDto> satisfactionListMore =  pager.getElements();
+							if(ListUtils.isEmpty(satisfactionListMore)){
+								mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+							}else if(pager.isHasNext()){
+								processMoreResultData(satisfactionListMore, ListViewState.LIST_NORMAL_HAS_MORE);
+							}else{
+								processMoreResultData(satisfactionListMore, ListViewState.LIST_NO_MORE);
+							}
+						}else{
+							 mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(listSatisfactionModel!=null && ServerErrorCode.TOKEN_INVALID==listSatisfactionModel.getState()){
+						LoginActivity.startActivity(getContext());
+					}else{
+						ToastUtils.ToastShort(getContext(), listSatisfactionModel.getErrorMsg());
+						mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						currentSatisfactionListPage = currentSatisfactionListPage -1;
+					}
+				}else{
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+					//请求失败，页码回滚
+					currentSatisfactionListPage = currentSatisfactionListPage - 1;
+					mViewController.showViewStatus(ListViewState.LIST_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void processMoreResultData(List<SatisfactionSurveyListDto> satisfactionList,ListViewState listviewState){
+		global_satisfactionList.addAll(satisfactionList);
+		mobileClinicSatisfactionAdapter.changeData(global_satisfactionList);
+		mViewController.showViewStatus(listviewState);
+	}
+	
+	private void processInitResultData(List<SatisfactionSurveyListDto> satisfactionList,ListViewState listviewState){
+		global_satisfactionList.clear();
+		global_satisfactionList = satisfactionList;
+		mobileClinicSatisfactionAdapter.changeData(global_satisfactionList);
+		mViewController.showViewStatus(listviewState);
+	}
+    
+    
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+}

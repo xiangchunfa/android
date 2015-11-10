@@ -1,0 +1,169 @@
+/*
+ * TreatmentDtoModel.java
+ * classes : com.qdoc.client.model.TreatmentDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午4:17:53
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.TreatmentDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午4:17:53
+ */
+public class TreatmentDtoModel {
+
+    private int consultId;
+    private String cureAdvise;
+    private String diagnosis;
+    private int doctorId;
+    private String doctorName;
+    private int id;
+    private String openid;
+    private String symptom;
+    private int treatmentStatus;
+    private String uuid;
+
+    /**
+     * @return the consultId
+     */
+    public int getConsultId() {
+        return consultId;
+    }
+
+    /**
+     * @param consultId the consultId to set
+     */
+    public void setConsultId(int consultId) {
+        this.consultId = consultId;
+    }
+
+    /**
+     * @return the cureAdvise
+     */
+    public String getCureAdvise() {
+        return cureAdvise;
+    }
+
+    /**
+     * @param cureAdvise the cureAdvise to set
+     */
+    public void setCureAdvise(String cureAdvise) {
+        this.cureAdvise = cureAdvise;
+    }
+
+    /**
+     * @return the diagnosis
+     */
+    public String getDiagnosis() {
+        return diagnosis;
+    }
+
+    /**
+     * @param diagnosis the diagnosis to set
+     */
+    public void setDiagnosis(String diagnosis) {
+        this.diagnosis = diagnosis;
+    }
+
+    /**
+     * @return the doctorId
+     */
+    public int getDoctorId() {
+        return doctorId;
+    }
+
+    /**
+     * @param doctorId the doctorId to set
+     */
+    public void setDoctorId(int doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    /**
+     * @return the doctorName
+     */
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    /**
+     * @param doctorName the doctorName to set
+     */
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the openid
+     */
+    public String getOpenid() {
+        return openid;
+    }
+
+    /**
+     * @param openid the openid to set
+     */
+    public void setOpenid(String openid) {
+        this.openid = openid;
+    }
+
+    /**
+     * @return the symptom
+     */
+    public String getSymptom() {
+        return symptom;
+    }
+
+    /**
+     * @param symptom the symptom to set
+     */
+    public void setSymptom(String symptom) {
+        this.symptom = symptom;
+    }
+
+    /**
+     * @return the treatmentStatus
+     */
+    public int getTreatmentStatus() {
+        return treatmentStatus;
+    }
+
+    /**
+     * @param treatmentStatus the treatmentStatus to set
+     */
+    public void setTreatmentStatus(int treatmentStatus) {
+        this.treatmentStatus = treatmentStatus;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+}

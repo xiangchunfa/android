@@ -1,0 +1,96 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 咨询记录内容对象
+ * @author antony
+ *
+ */
+public class ConsultRecordListDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4255282652650313039L;
+	
+	private String description;//咨询内容
+	private int consultState;//咨询状态
+	private String acceptTime;//接单时间
+	private long consultId;//咨询服务ID
+	private String consultStateStr;//咨询单状态情况
+	private TreatmentDto treatment;//TreatmentDto对象
+
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	/**
+	 * @return the consultState
+	 */
+	public int getConsultState() {
+		return consultState;
+	}
+	/**
+	 * @param consultState the consultState to set
+	 */
+	public void setConsultState(int consultState) {
+		this.consultState = consultState;
+	}
+	/**
+	 * @return the acceptTime
+	 */
+	public String getAcceptTime() {
+		return acceptTime;
+	}
+	/**
+	 * @param acceptTime the acceptTime to set
+	 */
+	public void setAcceptTime(String acceptTime) {
+		this.acceptTime = acceptTime;
+	}
+	/**
+	 * @return the consultStateStr
+	 */
+	public String getConsultStateStr() {
+		return consultStateStr;
+	}
+	/**
+	 * @param consultStateStr the consultStateStr to set
+	 */
+	public void setConsultStateStr(String consultStateStr) {
+		this.consultStateStr = consultStateStr;
+	}
+	/**
+	 * @return the consultId
+	 */
+	public long getConsultId() {
+		return consultId;
+	}
+	/**
+	 * @param consultId the consultId to set
+	 */
+	public void setConsultId(long consultId) {
+		this.consultId = consultId;
+	}
+	/**
+	 * @return the treatment
+	 */
+	public TreatmentDto getTreatment() {
+		return treatment;
+	}
+	/**
+	 * @param treatment the treatment to set
+	 */
+	public void setTreatment(TreatmentDto treatment) {
+		this.treatment = treatment;
+	}
+}

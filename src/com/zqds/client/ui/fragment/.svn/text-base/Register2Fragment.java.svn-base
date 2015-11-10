@@ -1,0 +1,280 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.VerifyUtil;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.LoginModel;
+import com.qdoc.client.model.VertifyCodeDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.SystemBarUtil;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.Register2Fragment
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-18 上午9:24:13
+ */
+public class Register2Fragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = Register2Fragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private EditText edtSetPassword;
+    private TextView edtConfirmPassword;
+    private Button btnSave;
+    private TitleBar mTitleBar;
+    
+    /**
+     * params
+     */
+    private static final int MESSAGE_SUCCESS = 0x01;
+    private static final int MESSAGE_FAIL = 0x02;
+    private static final int NO_ENTRY = 1;
+    private static final int NO_ACTIVE = 2;
+    private String doctorName;
+    private String hospitalName;
+    private String departName;
+    private int doctor_title;//医生职称
+    
+    
+    public static Register2Fragment newInstance(Bundle bundle) {
+        final Register2Fragment fragment = new Register2Fragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_set_password, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    	SystemBarUtil.setSystemStatusBar(false, 0, getActivity());
+    }
+
+    private void initParams() {
+    	Bundle bundle = getArguments();
+    	this.doctorName = bundle.getString(IntentTools.EXTRA_NAME);
+    	this.hospitalName = bundle.getString(IntentTools.EXTRA_HOSPITAL);
+    	this.departName = bundle.getString(IntentTools.EXTRA_DEPARTMENT);
+    	this.doctor_title = bundle.getInt(IntentTools.EXTRA_DOCTOR_TITLE_VALUE);
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.set_password, R.drawable.icon_back,0,
+                actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+    	edtSetPassword = (EditText)view.findViewById(R.id.et_set_password);
+        btnSave = (Button)view. findViewById(R.id.login_btn);
+        edtConfirmPassword = (TextView) view.findViewById(R.id.et_comfirm_password);
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+        	LoginActivity activity = (LoginActivity) getActivity();
+            if (activity == null) {
+                return;
+            }
+            activity.removeContent(TAG);
+        }
+    };
+    
+    protected void initListener() {
+
+    	btnSave.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+            	String setPWD=edtSetPassword.getText().toString();
+            	String confirmPWD=edtConfirmPassword.getText().toString();
+            	if(StringUtils.isBlank(setPWD)){
+            		ToastUtils.ToastLong(getActivity(), R.string.input_password);
+            		return;
+            	}
+            	if(StringUtils.isBlank(confirmPWD)){
+            		ToastUtils.ToastLong(getActivity(), R.string.input_confirm_password);
+            		return;
+            	}
+            	if(!VerifyUtil.verifyPasswordSame(getActivity(), setPWD, confirmPWD)){
+            		return;
+            	}
+            	//String doctorName,String hospitalName,String departName, String password
+            	try {
+					registerApplyRequest(doctorName, hospitalName,departName,confirmPWD,doctor_title,"");
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+            }
+        });
+    }
+
+
+    private void startLoginRequest() {
+        final String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+        String devicetoken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+    	Global.progressDialog = ProgressDialog.show(getActivity(), null, getActivity().getString(R.string.load_data), true, true);
+    	if(TextUtils.isEmpty(Global.APP_VERSION_NAME))
+    		Global.APP_VERSION_NAME = Global.getVerName(getContext());
+    	if(TextUtils.isEmpty(Global.OS_VERSION))
+    		Global.OS_VERSION = Global.getOSVersion();
+    	if(TextUtils.isEmpty(Global.PHONE_MODEL))
+    		Global.PHONE_MODEL = Global.getPhoneModel();
+        RequestParams params=DataRequestUtils.getLoginRequestParam(TAG, accountName, "", AppConstants.ANDROID, devicetoken, AppConstants.MODEL_DEFAULT,Global.APP_VERSION_NAME,Global.OS_VERSION,Global.PHONE_MODEL);
+        HttpTaskManager.startStringRequest(
+        		params,
+                JsonParserFactory.parseBaseModel(LoginModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final LoginModel dataModel = (LoginModel) resultData;
+                            // 先清除再保存TOKEN数据
+                            if (PersonalConfig.hasKey(PersonalConfigKey.EXTRA_TOKEN)) {
+                                PersonalConfig.remove(PersonalConfigKey.EXTRA_TOKEN);
+                            }
+                            PersonalConfig.putString(PersonalConfigKey.EXTRA_TOKEN, dataModel.getToken());
+                            PersonalConfig.putString(PersonalConfigKey.EXTRA_ACCOUNT_HINT, accountName);
+//                          PersonalConfig.putString(PersonalConfigKey.EXTRA_PWD_HINT, password);
+                            PersonalConfig.asyncCommit();
+                            Global.loginSuccess(dataModel.getUserStatus(),true,accountName,dataModel.getDoctorCertificationStatus());
+                            MainActivity.startActivity(getContext(),MainActivity.TAB_INDEX_TAB5_ACTIVITY);
+//                            getActivity().finish();
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                            	
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    private void registerApplyRequest(String doctorName,String hospitalName,String departName, String password,int title,String inviter) {
+    	Global.progressDialog = ProgressDialog.show(getActivity(), null,
+	    		  getActivity().getString(R.string.load_data), true,
+					true);
+    	String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+        String devicetoken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+    	//String tag, String doctorName, String telphone,String hospitalName,String departName,String password,String deviceToken,String deviceType
+    	HttpTaskManager.startStringRequest(
+                DataRequestUtils.getDoctorRegisterequestParam(TAG, doctorName, accountName, hospitalName, departName,password,devicetoken,String.valueOf(AppConstants.ANDROID),title,inviter),
+                JsonParserFactory.parseBaseModel(VertifyCodeDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final VertifyCodeDataModel dataModel = (VertifyCodeDataModel) resultData;
+                            if (dataModel != null&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), "注册申请成功");
+                                startLoginRequest();
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel
+										.getErrorMsg());
+                            }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+       });
+    }
+  
+    public void onDestroy() {
+        super.onDestroy();
+
+    }
+
+    public static void startActivity(Context context) {
+        context.startActivity(IntentTools.getLoginIntent(context));
+    }
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()){
+		}
+	}
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+    @Override
+    public void onDestroyView() {
+    	// TODO Auto-generated method stub
+    	super.onDestroyView();
+    	LogUtils.d(TAG, "onDestroyView");
+    }
+    
+    
+}

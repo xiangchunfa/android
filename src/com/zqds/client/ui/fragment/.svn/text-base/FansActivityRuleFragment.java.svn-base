@@ -1,0 +1,214 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.annotation.SuppressLint;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.AttatchDtoModel;
+import com.qdoc.client.model.FansActiveDetailsDataModel;
+import com.qdoc.client.model.ImprintCardDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.FansIncentiveActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MyCardActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * FileName    : FansActivityRuleFragment.java
+ * Description : 粉丝活动规则页面
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2014-12-23 
+ **/
+public class FansActivityRuleFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = FansActivityRuleFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private LinearLayout llyAddVisitCard; 
+    private TextView tv_add_card;
+    private TextView  tv_activity_rule_details;
+    
+
+    
+    /**
+     * params
+     */
+    private FansActiveDetailsDataModel dataModel;
+    
+    public static FansActivityRuleFragment newInstance(Bundle bundle) {
+        final FansActivityRuleFragment fragment = new FansActivityRuleFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_fans_activity_rule, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+    	dataModel = (FansActiveDetailsDataModel) getArguments().getSerializable(IntentTools.EXTRA_FANS_INCENTIVE);
+    	showActivityDetail(dataModel);
+    }
+
+    private void initView(View view) {
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.loveliness_doctor, R.drawable.icon_back,0,
+                actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        tv_activity_rule_details = (TextView) view.findViewById(R.id.tv_activity_rule_detail);
+        llyAddVisitCard = (LinearLayout) view.findViewById(R.id.lly_add_visit_card);
+    }
+
+    protected void initListener() {
+    	llyAddVisitCard.setOnClickListener(this);
+    }
+
+    /**
+     * 显示活动详情
+     */
+    @SuppressLint("ResourceAsColor")
+	public void showActivityDetail(FansActiveDetailsDataModel dataModel){
+        for(int i=0;i<dataModel.getAttatchDtos().size();i++){
+        	AttatchDtoModel model=dataModel.getAttatchDtos().get(i);
+           if(model.getOrderNo()==AppConstants.ACTIVITY_RULE){
+        	   tv_activity_rule_details.setText(model.getDescription());
+           }
+        }
+    }
+    
+
+    public void onDestroy() {
+        super.onDestroy();
+        HttpTaskManager.stop(TAG);
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	FansIncentiveActivity activity = (FansIncentiveActivity) getActivity();
+			activity.removeContent(TAG);
+        }
+    };
+
+
+    @Override
+    public void onClick(View view) {
+        // save to sharepreference
+    	 switch (view.getId()) {
+         case R.id.lly_add_visit_card: 
+         	MyCardActivity.startActivity(getActivity());//跳转到我的名片
+             break;
+         }
+    }
+
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+    
+    /**
+     * 加印个人名片
+     */
+    private void getPrintMyCardRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+
+        HttpTaskManager.startStringRequest(DataRequestUtils.getPrintMyCradRequestParam(TAG, token ,AppConstants.ACTIVITY_APPLY),
+                JsonParserFactory.parseBaseModel(ImprintCardDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final ImprintCardDataModel dataModel = (ImprintCardDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	 ToastUtils.ToastLong(getContext().getApplicationContext(), dataModel.getResultMsg());
+                            	 setEnable(false,getActivity().getString(R.string.add_printing_success));
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}else{
+          						 ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    /**
+     * 设置加印按钮不可点击
+     */
+    @SuppressLint("ResourceAsColor")
+	public void setEnable(boolean isEnable,String text){
+     	llyAddVisitCard.setVisibility(View.VISIBLE);
+     	llyAddVisitCard.setEnabled(isEnable);
+    	llyAddVisitCard.setBackgroundColor(R.color.bg_no_enable);
+    	tv_add_card.setText(text);
+    	tv_add_card.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0,0);
+    }
+    
+    /**
+     * 是否可以加印名片
+     */
+    public boolean isAddPrint(int status){
+        if(status==AppConstants.CARD_CAN_PRINT){
+    		return true;
+    	}
+    	return false;
+    }
+    
+}

@@ -1,0 +1,70 @@
+package com.qdoc.client.ui.view;
+
+import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.SystemMessageDto;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.Tools;
+
+public class CopyPopWindow extends PopupWindow implements OnClickListener {
+
+    /**
+     * view
+     */
+	private LinearLayout llyCopy;
+	
+    /**
+     * params
+     */
+	private String mContent;
+	private Context mContext;
+    /***
+     *@param content 上下文对象 
+     *@param textView 显示选中的数据
+     */
+	public CopyPopWindow(Context context) {
+		super(context);
+		this.mContext = context;
+		
+		init();
+	}
+    
+	/**
+	 * 设置复制内容
+	 */
+    public void setContent(String content) {
+    	this.mContent = content;
+    }
+
+	private void init() {
+		View view = LayoutInflater.from(mContext).inflate(
+				R.layout.copy_text, null);
+		setContentView(view);
+		setWidth(LayoutParams.WRAP_CONTENT);
+		setHeight(LayoutParams.WRAP_CONTENT);
+		ColorDrawable dw = new ColorDrawable(0x00);
+		setBackgroundDrawable(dw);
+		llyCopy = (LinearLayout) view.findViewById(R.id.lly_copy);
+		llyCopy.setOnClickListener(this);
+	}
+
+	@Override
+	public void onClick(View v) {
+        switch (v.getId()) {
+		case R.id.lly_copy:
+			Tools.setClipBoard(mContent, mContext);
+			ToastUtils.ToastShort(mContext,mContext.getString(R.string.already_copy));
+			this.dismiss();
+			break;
+		} 	    
+	}
+}

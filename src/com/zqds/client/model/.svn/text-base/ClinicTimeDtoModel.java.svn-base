@@ -1,0 +1,47 @@
+/*
+ * ConsultListModel.java
+ * classes : com.qdoc.client.model.ConsultListModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:02:07
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * FileName    : WeekDtoModel.java
+ * Description : 
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-5-15 
+ **/
+public class ClinicTimeDtoModel implements Serializable{
+
+	private static final long serialVersionUID = 1L;
+	
+	private String am;//上午
+	private String pm;//下午
+	private String outpatientAddress;//门诊地址
+    
+	public String getOutpatientAddress() {
+		return outpatientAddress;
+	}
+	public void setOutpatientAddress(String outpatientAddress) {
+		this.outpatientAddress = outpatientAddress;
+	}
+	public String getAm() {
+		return am;
+	}
+	public void setAm(String am) {
+		this.am = am;
+	}
+	public String getPm() {
+		return pm;
+	}
+	public void setPm(String pm) {
+		this.pm = pm;
+	}
+}

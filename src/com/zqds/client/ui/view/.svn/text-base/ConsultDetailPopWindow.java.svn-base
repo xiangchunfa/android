@@ -1,0 +1,93 @@
+package com.qdoc.client.ui.view;
+
+import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.ui.AdviceAndLeaveMessgeActivity;
+import com.qdoc.client.ui.ConsultDetailActivity;
+import com.qdoc.client.ui.fragment.AdviceFragment;
+import com.qdoc.client.ui.fragment.ConsultDetailFragment;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.Tools;
+
+public class ConsultDetailPopWindow extends PopupWindow implements OnClickListener {
+
+    /**
+     * view
+     */
+	private LinearLayout llyCopy;
+	private TextView tv_add_consult_advice;
+	private MyViewPager myPagerTab;
+	
+	
+    /**
+     * params
+     */
+	private String mContent;
+	private Context mContext;
+	private Bundle mBundle;
+	private ConsultDetailFragment consultDetailFra;
+	
+    /***
+     *@param content 上下文对象 
+     *@param textView 显示选中的数据
+     */
+	public ConsultDetailPopWindow(Context context,ConsultDetailFragment consultDetailfra) {
+		super(context);
+		this.mContext = context;
+		this.consultDetailFra = consultDetailfra;
+		init();
+		initListener();
+	}
+    
+	/**
+	 * 设置复制内容
+	 */
+    public void setBundle(Bundle bundle) {
+    	this.mBundle = bundle;
+    }
+
+	private void init() {
+		View view = LayoutInflater.from(mContext).inflate(R.layout.popwindow_consult_detail, null);
+		setContentView(view);
+		setWidth(LayoutParams.WRAP_CONTENT);
+		setHeight(LayoutParams.WRAP_CONTENT);
+		ColorDrawable dw = new ColorDrawable(0x00);
+		setBackgroundDrawable(dw);
+		llyCopy = (LinearLayout) view.findViewById(R.id.lly_copy);
+		tv_add_consult_advice = (TextView) view.findViewById(R.id.tv_add_consult_advice);
+		setOutsideTouchable(true);
+	}
+
+	public void initListener() {
+		tv_add_consult_advice.setOnClickListener(this);
+		llyCopy.setOnClickListener(this);
+	}
+	
+	@Override
+	public void onClick(View v) {
+        switch (v.getId()) {
+		case R.id.lly_copy:
+			mContent = mBundle.getString(IntentTools.EXTRA_CONSULT_ADVICE_CONTENT_KEY);
+			Tools.setClipBoard(mContent, mContext);
+			ToastUtils.ToastShort(mContext,mContext.getString(R.string.already_copy));
+			this.dismiss();
+			break;
+		case R.id.tv_add_consult_advice:
+			//consultDetailAct.mAdviceFragment.getEt_cure_advice().getEt_input().setText(mContent);
+			AdviceAndLeaveMessgeActivity.startActivityForResult(mContext, consultDetailFra, mBundle, AdviceAndLeaveMessgeActivity.ADVICE, ConsultDetailFragment.REQUEST_CONSULT_ADVICE);
+			this.dismiss();
+			break;
+		} 	    
+	}
+}

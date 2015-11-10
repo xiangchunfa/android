@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <!-- 填充颜色 不需要填充就写@null -->
+    <solid android:color="#ffffff" />
+    
+
+    
+    <!-- 把矩形设置成圆角 radius为圆角的半径 -->
+    <corners android:topLeftRadius="0dp" android:topRightRadius="0dp" android:bottomLeftRadius="15dp" android:bottomRightRadius="15dp" />
+
+</shape>

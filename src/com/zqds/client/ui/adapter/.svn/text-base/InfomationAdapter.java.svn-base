@@ -1,0 +1,118 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.qdoc.client.R;
+import com.qdoc.client.model.ArticleListDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import android.content.Context;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+/**
+ * 资讯列表适配器
+ * @author Antony
+ * create at 2015-04-11
+ *
+ */
+public class InfomationAdapter extends BaseAdapter {
+	
+	private LayoutInflater inflater;
+	private ArrayList<ArticleListDto> infomationList;
+	private Context mContext;
+	private List<Long> newArticleIdList;
+
+	/**
+	 * @param infomationList the infomationList to set
+	 */
+	public void setInfomationList(ArrayList<ArticleListDto> infomationList) {
+		if(infomationList==null)
+			this.infomationList = new ArrayList<ArticleListDto>();
+		else
+			this.infomationList = infomationList;
+	}
+	
+	/**
+	 * @param newArticleIdList the newArticleIdList to set
+	 */
+	public void setNewArticleIdList(List<Long> newArticleIdList) {
+		if(newArticleIdList==null)
+			this.newArticleIdList = new ArrayList<Long>();
+		else
+			this.newArticleIdList = newArticleIdList;
+	}
+
+	public InfomationAdapter(Context context,ArrayList<ArticleListDto> infomationList,List<Long> newArticleIdList){
+		this.mContext = context;
+		inflater = LayoutInflater.from(context);
+		setInfomationList(infomationList);
+		setNewArticleIdList(newArticleIdList);
+	}
+	
+	public void changeData(ArrayList<ArticleListDto> infomationList){
+		setInfomationList(infomationList);
+		notifyDataSetChanged();
+	}
+
+	@Override
+	public int getCount() {
+		return infomationList.size();
+	}
+
+	@Override
+	public Object getItem(int arg0) {
+		return infomationList.get(arg0);
+	}
+
+	@Override
+	public long getItemId(int arg0) {
+		return arg0;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			holder = new ViewHolder();
+			convertView = inflater.inflate(R.layout.infomation_item, null);
+			holder.iv_infomation_icon = (ImageView) convertView.findViewById(R.id.iv_infomation_icon);
+			holder.tv_infomation_title = (TextView) convertView.findViewById(R.id.tv_infomation_title);
+			holder.tv_new_info_mark = (TextView) convertView.findViewById(R.id.tv_new_info_mark);
+			holder.tv_infomation_amount_of_ready = (TextView) convertView.findViewById(R.id.tv_infomation_amount_of_ready);
+			holder.tv_infomation_comment = (TextView) convertView.findViewById(R.id.tv_infomation_comment);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		ArticleListDto articleDto = infomationList.get(position);
+		if(AppConstants.TODAY_INFOMATION==articleDto.getNewStatus()){
+			//是当天咨询
+			if(!newArticleIdList.contains(articleDto.getArticleId())){
+				holder.tv_new_info_mark.setVisibility(View.VISIBLE);
+			}else{
+				holder.tv_new_info_mark.setVisibility(View.GONE);
+			}
+		}else{
+			holder.tv_new_info_mark.setVisibility(View.GONE);
+		}
+		ImageLoaderHelper.getInstance(mContext).displayImage(articleDto.getArtHeadImgUrl(), holder.iv_infomation_icon, R.drawable.icon_default);
+		holder.tv_infomation_title.setText(TextUtils.isEmpty(articleDto.getArtTitle())?"":articleDto.getArtTitle());
+		holder.tv_infomation_amount_of_ready.setText(String.valueOf(articleDto.getReadCount()));
+		holder.tv_infomation_comment.setText(String.valueOf(articleDto.getReviewCount()));
+		return convertView;
+	}
+
+	class ViewHolder{
+		ImageView iv_infomation_icon;
+		TextView tv_infomation_title;
+		TextView tv_new_info_mark;
+		TextView tv_infomation_amount_of_ready;
+		TextView tv_infomation_comment;
+	}
+}

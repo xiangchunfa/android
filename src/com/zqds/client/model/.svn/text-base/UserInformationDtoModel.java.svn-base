@@ -1,0 +1,165 @@
+/*
+ * DoctorCardDataModel.java
+ * classes : com.qdoc.client.model.DoctorCardDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-19 下午11:22:51
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * com.qdoc.client.model.DoctorCardDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-19 下午11:22:51
+ */
+public class UserInformationDtoModel implements Serializable {
+    
+	
+	private static final long serialVersionUID = 1L;
+	private String openId;//用户编号
+    private String nicknameStr;//用户昵称
+    private String headimgurl;//用户头像
+    private int focusStatus;//是否关注   0:关注，1:取消
+    private String focusChannel;//关注渠道
+    private long consultNub;//咨询当前医生的次数
+    private long allConsultNub;//总咨询数
+    private int sex;
+    private String focusTime;
+    private String age;//年龄
+    private String description;
+    private String remarkName;//备注名
+    private long categoryId;
+    private String categoryName;//分组名
+	public String getOpenId() {
+		return openId;
+	}
+	public void setOpenId(String openId) {
+		this.openId = openId;
+	}
+	public String getNicknameStr() {
+		return nicknameStr;
+	}
+	public void setNicknameStr(String nicknameStr) {
+		this.nicknameStr = nicknameStr;
+	}
+	public String getHeadimgurl() {
+		return headimgurl;
+	}
+	public void setHeadimgurl(String headimgurl) {
+		this.headimgurl = headimgurl;
+	}
+	public int getFocusStatus() {
+		return focusStatus;
+	}
+	public void setFocusStatus(int focusStatus) {
+		this.focusStatus = focusStatus;
+	}
+	public String getFocusChannel() {
+		return focusChannel;
+	}
+	public void setFocusChannel(String focusChannel) {
+		this.focusChannel = focusChannel;
+	}
+	public long getConsultNub() {
+		return consultNub;
+	}
+	public void setConsultNub(long consultNub) {
+		this.consultNub = consultNub;
+	}
+	public long getAllConsultNub() {
+		return allConsultNub;
+	}
+	public void setAllConsultNub(long allConsultNub) {
+		this.allConsultNub = allConsultNub;
+	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+	/**
+	 * @return the sex
+	 */
+	public int getSex() {
+		return sex;
+	}
+	/**
+	 * @param sex the sex to set
+	 */
+	public void setSex(int sex) {
+		this.sex = sex;
+	}
+	/**
+	 * @return the focusTime
+	 */
+	public String getFocusTime() {
+		return focusTime;
+	}
+	/**
+	 * @param focusTime the focusTime to set
+	 */
+	public void setFocusTime(String focusTime) {
+		this.focusTime = focusTime;
+	}
+	/**
+	 * @return the age
+	 */
+	public String getAge() {
+		return age;
+	}
+	/**
+	 * @param age the age to set
+	 */
+	public void setAge(String age) {
+		this.age = age;
+	}
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	/**
+	 * @return the remarkName
+	 */
+	public String getRemarkName() {
+		return remarkName;
+	}
+	/**
+	 * @param remarkName the remarkName to set
+	 */
+	public void setRemarkName(String remarkName) {
+		this.remarkName = remarkName;
+	}
+	/**
+	 * @return the categoryId
+	 */
+	public long getCategoryId() {
+		return categoryId;
+	}
+	/**
+	 * @param categoryId the categoryId to set
+	 */
+	public void setCategoryId(long categoryId) {
+		this.categoryId = categoryId;
+	}
+	/**
+	 * @return the categoryName
+	 */
+	public String getCategoryName() {
+		return categoryName;
+	}
+	/**
+	 * @param categoryName the categoryName to set
+	 */
+	public void setCategoryName(String categoryName) {
+		this.categoryName = categoryName;
+	}
+}

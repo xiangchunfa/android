@@ -1,0 +1,1016 @@
+package com.qdoc.client.ui;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.json.JSONException;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
+import android.graphics.Matrix;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
+import android.text.TextUtils;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.RequestParams;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.http.client.HttpRequest;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.FindCertificationDataModel;
+import com.qdoc.client.model.UploadDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.fragment.ChooseImageDialogFragment;
+import com.qdoc.client.ui.fragment.ChooseImageDialogFragment.OnDialogclickListener;
+import com.qdoc.client.ui.fragment.MyInfoFragment;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.UploadImageUtil;
+import com.tencent.android.tpush.XGPushManager;
+
+public class DoctorCertificationActivity extends BaseActivity implements OnClickListener{
+	
+	private static final String TAG = DoctorCertificationActivity.class.getSimpleName();
+	
+	//当前点击的ImageView控件的类型
+	private static final String UPLOAD_IMAGEVIEW_HEADIMAGE = "head_image";
+	private static final String UPLOAD_IMAGEVIEW_CERTIFICATION_1 = "certification_1";
+	private static final String UPLOAD_IMAGEVIEW_CERTIFICATION_2 = "certification_2";
+	
+    private static final int REQUEST_CAMERA = 30;// 拍照
+    private static final int REQUEST_GALLERY = 31;
+    private static final int REQUEST_RESIZE = 32;
+    private static final String IMAGE_UNSPECIFIED = "image/*";
+    //保存图片的文件名
+    private static final String HEAD_IMAGE_FILE_NAME = "certification_header.jpg";
+    private static final String CERTIFICATION_1_FILE_NAME = "certification_facade.jpg";
+    private static final String CERTIFICATION_2_FILE_NAME = "certification_rear.jpg";
+	
+	private int intent_certification_status = -2;
+	//上传的图片类型为认证类型
+	private String uploadFileType = "certificate";
+	//记录当前点击的ImageView的类型
+	private String currentUploadImageView;
+	
+	private TitleBar mTitleBar;
+	//认证通过显示的图片
+	private ImageView certification_success_image;
+	//网络异常布局
+	private RelativeLayout network_error_layout;
+	//上传执照最外层布局
+	private ScrollView doctor_certification;
+	//顶部的提示文案文本框
+	private TextView certification_tips;
+	
+	//上传头像案例布局
+	private RelativeLayout upload_head_image_case_layout;
+	//上传头像区域布局
+	private RelativeLayout upload_head_image_layout;
+	//上传头像图片
+	private ImageView upload_head_image_content_iv;
+	//上传头像区的上传图标
+	private TextView upload_head_image_logo_tv;
+	//取消上传头像图标
+	private ImageView upload_head_image_cancel_iv;
+	
+	//上传医生执照正面案例区布局
+	private RelativeLayout upload_certificate_case_1_layout;
+	//上传医生执照正面内容区布局
+	private RelativeLayout upload_certification_content_1_layout;
+	//上传医生执照正面内容ImageView控件
+	private ImageView upload_certification_content_1_iv;
+	//上传医生执照正面图标
+	private TextView upload_certification_content_logo_1_tv;
+	//取消上传医生执照正面图标
+	private ImageView upload_certification_content_cancel_1_iv;
+	
+	//上传医生执照背面案例区布局
+	private RelativeLayout upload_certificate_case_2_layout;
+	//上传医生执照背面内容区布局
+	private RelativeLayout upload_certificate_content_2_layout;
+	//上传医生执照背面内容ImageView控件
+	private ImageView upload_certificate_content_2_iv;
+	//上传医生执照背面内容logo控件
+	private TextView upload_certificate_content_logo_2_tv;
+	//取消医生执照背面上传图标
+	private ImageView upload_certificate_content_cancel_2_iv;
+
+	//提交认证按钮
+	private TextView submit_certificate_info;
+	
+	//服务器中半身照的图片路径
+	private String certificateImage;
+	//服务器中执照正面的路径
+	private String certificateFrontImage;
+	//服务器中执照的背面路径
+	private String certificateReverseImage;
+	
+	//记录上传半身照成功的布尔值变量
+	private boolean isUploadHeadImageSuccess = false;
+	//记录上传执照正面照成功的布尔值
+	private boolean isUploadCertification1Success = false;
+	//记录上传执照背面照成功的布尔值
+	private boolean isUploadCertification2Success = false;
+	//启动来源界面(如果是来自个人资料界面，测直接关闭，否则需要启动个人资料界面)
+	private String startActivityResoure;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_doc_certification);
+		initView();
+		initListener();
+		initParam();
+	}
+
+	@Override
+	protected void initView() {
+		//标题部分
+		mTitleBar = (TitleBar)findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.doctor_certification, R.drawable.icon_back, 0, actionBarLeftBtnListener,
+                null, getResources().getColor(R.color.titlebar_bg));
+		//最外层父布局
+		certification_success_image = (ImageView) findViewById(R.id.certification_success_image);
+		network_error_layout = (RelativeLayout) findViewById(R.id.network_error_layout);
+		doctor_certification = (ScrollView) findViewById(R.id.doctor_certification);
+		certification_tips = (TextView) findViewById(R.id.certification_tips);
+		//上传半身照部分
+		upload_head_image_case_layout = (RelativeLayout) findViewById(R.id.upload_head_image_case_layout);
+		upload_head_image_layout = (RelativeLayout) findViewById(R.id.upload_head_image_layout);
+		upload_head_image_content_iv = (ImageView) findViewById(R.id.upload_head_image_content_iv);
+		upload_head_image_logo_tv = (TextView) findViewById(R.id.upload_head_image_logo_tv);
+		upload_head_image_cancel_iv = (ImageView) findViewById(R.id.upload_head_image_cancel_iv);
+		//上传执照第一面部分
+		upload_certificate_case_1_layout = (RelativeLayout) findViewById(R.id.upload_certificate_case_1_layout);
+		upload_certification_content_1_layout = (RelativeLayout) findViewById(R.id.upload_certification_content_1_layout);
+		upload_certification_content_1_iv = (ImageView) findViewById(R.id.upload_certification_content_1_iv);
+		upload_certification_content_logo_1_tv = (TextView) findViewById(R.id.upload_certification_content_logo_1_tv);
+		upload_certification_content_cancel_1_iv = (ImageView) findViewById(R.id.upload_certification_content_cancel_1_iv);
+		//上传执照背面部分
+		upload_certificate_case_2_layout = (RelativeLayout) findViewById(R.id.upload_certificate_case_2_layout);
+		upload_certificate_content_2_layout = (RelativeLayout) findViewById(R.id.upload_certificate_content_2_layout);
+		upload_certificate_content_2_iv = (ImageView) findViewById(R.id.upload_certificate_content_2_iv);
+		upload_certificate_content_logo_2_tv = (TextView) findViewById(R.id.upload_certificate_content_2_logo_tv);
+		upload_certificate_content_cancel_2_iv = (ImageView) findViewById(R.id.upload_certificate_content_2_cancel_iv);
+		//提交文本按钮
+		submit_certificate_info = (TextView) findViewById(R.id.submit_certificate_info);
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+	    	if(!MyInfoFragment.TAG.equals(startActivityResoure)){
+	    		//如果不是从个人资料界面启动，那么关闭后需要启动个人资料界面
+	    		MyInfoActivity.startActivity(DoctorCertificationActivity.this, 0);
+	    	}
+			finish();
+		}
+	};
+
+	@Override
+	protected void initListener() {
+		//网络异常布局的点击事件
+		network_error_layout.setOnClickListener(this);
+		//上传图片布局的点击事件
+		upload_head_image_case_layout.setOnClickListener(this);
+		upload_certificate_case_1_layout.setOnClickListener(this);
+		upload_certificate_case_2_layout.setOnClickListener(this);
+		//上传头像内容布局点击事件
+		upload_head_image_layout.setOnClickListener(this);
+		upload_head_image_logo_tv.setOnClickListener(this);
+		//上传执照正面布局点击事件
+		upload_certification_content_1_layout.setOnClickListener(this);
+		upload_certification_content_logo_1_tv.setOnClickListener(this);
+		//上传执照背面布局点击事件
+		upload_certificate_content_2_layout.setOnClickListener(this);
+		upload_certificate_content_logo_2_tv.setOnClickListener(this);
+		//提交按钮的点击事件
+		submit_certificate_info.setOnClickListener(this);
+		//清除半身照图标点击事件
+		upload_head_image_cancel_iv.setOnClickListener(this);
+		//清除执照正面图标的点击事件
+		upload_certification_content_cancel_1_iv.setOnClickListener(this);
+		//清除执照照背面图标的点击事件
+		upload_certificate_content_cancel_2_iv.setOnClickListener(this);
+	}
+	
+	private void initParam(){
+		intent_certification_status = getIntent().getExtras().getInt(IntentTools.EXTAR_CERTIFICATION_STATE, -2);
+		startActivityResoure = getIntent().getExtras().getString(IntentTools.EXTRA_START_ACTIVITY_RESOURE);
+		if(intent_certification_status == AppConstants.doctor_certification_static_uncertification){
+			//如果是未认证状态，直接显示上传执照界面，不再调取接口获取信息
+			unCertificationStateShow();
+			return;
+		}
+		if(intent_certification_status == AppConstants.doctor_certification_status_success){
+			//如果是认证成功状态，直接显示认证成功图片，不再调取接口获取信息
+			certificateSuccessStateShow();
+			return;
+		}
+		getCertificationInfo();
+	}
+	
+	/**
+	 * 未认证状态的显示情况(要根据审核状态来显示不同的文案)
+	 */
+	private void unCertificationStateShow(){
+		doctor_certification.setVisibility(View.VISIBLE);
+		certification_success_image.setVisibility(View.GONE);
+		network_error_layout.setVisibility(View.GONE);
+		int strRes;
+		//设置顶部提示文案
+		if(Global.getUserStatus()==AppConstants.ALL_PERMISSIONS)
+			strRes = R.string.audited_unrecognized;
+		else
+			strRes = R.string.unaudited_unrecognized;
+		setTopTips(strRes, R.color.top_tips_color_929292);
+		//显示上传logo图标
+		setUploadLogoVisible(true);
+		//隐藏红色清除图片图标
+		setCancelUploadRedRod(false);
+		//设置底部按钮
+		setSubmitButtomState(R.string.sumbit_certification, R.drawable.add_clinic_set_corner_red, true);
+	}
+	
+	/**
+	 * 认证成功的显示情况
+	 */
+	private void certificateSuccessStateShow(){
+		 certification_success_image.setVisibility(View.VISIBLE);
+		 doctor_certification.setVisibility(View.GONE);
+		 network_error_layout.setVisibility(View.GONE);
+	}
+	
+	private void certificationFailStateShow(FindCertificationDataModel dataModel){
+		 //认证不通过
+		 certification_success_image.setVisibility(View.GONE);
+		 network_error_layout.setVisibility(View.GONE);
+		 doctor_certification.setVisibility(View.VISIBLE);
+		 //认证不通过提示文案
+		 String certification_fail_reason = TextUtils.isEmpty(dataModel.getCertificationRemarks())?getString(R.string.default_certificationRemarks):dataModel.getCertificationRemarks();
+		 //设置顶部提示文案
+		 setTopTips(getString(R.string.certification_fail_detail)+"\n"+certification_fail_reason, R.color.top_tips_color_e73d43);
+		 //隐藏上传图片LOGO
+		 setUploadLogoVisible(false);
+		 //显示清除上传图片的图标
+		 setCancelUploadRedRod(true);
+		 //加载认证图片
+		 loadImageByAddress(dataModel.getCertificateImage(), dataModel.getCertificateFrontImage(), dataModel.getCertificateReverseImage());
+		 //设置底部按钮
+		 submit_certificate_info.setText(R.string.sumbit_certification_again);
+	}
+	
+	/**
+	 * 认证中状态展示
+	 * @param dataModel
+	 */
+	private void certificatingStateShow(FindCertificationDataModel dataModel){
+		 certification_success_image.setVisibility(View.GONE);
+		 network_error_layout.setVisibility(View.GONE);
+		 doctor_certification.setVisibility(View.VISIBLE);
+		 //初始化顶部提示文案
+		 setTopTips(R.string.recognizing, R.color.top_tips_color_e73d43);
+		 //加载上传的头像图片和认证图片
+		 loadImageByAddress(dataModel.getCertificateImage(), dataModel.getCertificateFrontImage(), dataModel.getCertificateReverseImage());
+		 //隐藏上传头像区的上传图标
+		 setUploadLogoVisible(false);
+		 //隐藏所有红色清除图片的图标
+		 setCancelUploadRedRod(false);
+		 //修改提交按钮的文案
+		 setSubmitButtomState(R.string.waiting_for_certification, R.drawable.add_clinic_set_corner_brown, false);
+	}
+	
+	/**
+	 * 显示顶部提示文案
+	 * @param stringRes 文案内容（资源类型）
+	 * @param textColorRes 文案字体颜色
+	 */
+	private void setTopTips(int stringRes,int textColorRes){
+		certification_tips.setText(stringRes);
+		certification_tips.setTextColor(getResources().getColor(textColorRes));
+	}
+	
+	/**
+	 * 显示顶部提示文案
+	 * @param tips 文案内容(String类型文本)
+	 * @param textColorRes 文案字体颜色
+	 */
+	private void setTopTips(String tips,int textColorRes){
+		certification_tips.setText(tips);
+		certification_tips.setTextColor(getResources().getColor(textColorRes));
+	}
+	
+	/**
+	 * 获取认证详情
+	 */
+	private void getCertificationInfo(){
+		Global.progressDialog = ProgressDialog.show(this, null,getString(R.string.loading), true, true);
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.showCertificationInfo(TAG, token), 
+				JsonParserFactory.parseBaseModel(FindCertificationDataModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final FindCertificationDataModel dataModel = (FindCertificationDataModel) resultData;
+					 if (ServerErrorCode.INTERFACE_SUCCESS == dataModel.getState()) {
+						 if(AppConstants.doctor_certification_status_success==dataModel.getDoctorCertificationStatus()){
+							 //认证成功
+							 certificateSuccessStateShow();
+						 }else if(AppConstants.doctor_certification_static_uncertification==dataModel.getDoctorCertificationStatus()){
+							 //未认证
+							 unCertificationStateShow();
+						 }else if(AppConstants.doctor_certification_static_fail==dataModel.getDoctorCertificationStatus()){
+							 //认证未通过
+							 certificationFailStateShow(dataModel);
+						 }else if(AppConstants.doctor_certification_status_ing==dataModel.getDoctorCertificationStatus()){
+							 //认证中
+							 certificatingStateShow(dataModel);
+						 }
+					 }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						 LoginActivity.startActivity(DoctorCertificationActivity.this);
+					 }else{
+						 ToastUtils.ToastShort(getContext(), dataModel.getErrorMsg());
+					 }
+				}else{
+					network_error_layout.setVisibility(View.VISIBLE);
+					certification_success_image.setVisibility(View.GONE);
+					doctor_certification.setVisibility(View.GONE);
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+				Global.progressDialog.dismiss();
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+	
+	/**
+	 * 下载并显示认证图片
+	 * @param headAddress
+	 * @param notification_1_address
+	 * @param notification_2_address
+	 */
+	private void loadImageByAddress(String headAddress,String notification_1_address,String notification_2_address){
+		 ImageLoaderHelper.getInstance(this).displayImage(headAddress, upload_head_image_content_iv,0);
+		 ImageLoaderHelper.getInstance(this).displayImage(notification_1_address, upload_certification_content_1_iv,0);
+		 ImageLoaderHelper.getInstance(this).displayImage(notification_2_address, upload_certificate_content_2_iv,0);
+	}
+	
+	private void submitCertification(){
+		//先判断是否所有图片已经上传成功
+		if(!isUploadHeadImageSuccess){
+			//头像未上传成功
+			ToastUtils.ToastShort(this, R.string.please_upload_your_head_image);
+			return;
+		}
+		if(!isUploadCertification1Success){
+			//证件第一面没有上传成功
+			ToastUtils.ToastLong(this, R.string.please_upload_your_certification_1);
+			return;
+		}
+		if(!isUploadCertification2Success){
+			//证件背面与工牌的合照
+			ToastUtils.ToastLong(this, R.string.please_upload_your_certification_2);
+			return;
+		}
+		Global.progressDialog = ProgressDialog.show(this, null,getString(R.string.wait_submit), true, true);
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.submitCertification(TAG, token, certificateImage, certificateFrontImage, certificateReverseImage), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final BaseModel dataModel = (BaseModel) resultData;
+					if (ServerErrorCode.INTERFACE_SUCCESS == dataModel.getState()) {
+						//提交认证成功
+						ToastUtils.show(DoctorCertificationActivity.this, R.string.submit_certification_success, Toast.LENGTH_SHORT);
+						//修改顶部提示文案
+						setTopTips(R.string.recognizing, R.color.top_tips_color_e73d43);
+						//隐藏所有清除提交图片的红色图标
+						setCancelUploadRedRod(false);
+						//底部按钮背景变成灰色，更改文案,不可点
+						setSubmitButtomState(R.string.waiting_for_certification, R.drawable.add_clinic_set_corner_brown, false);
+					}else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(DoctorCertificationActivity.this);
+					}else{
+						//提交认证失败
+						ToastUtils.ToastShort(getContext(), dataModel.getErrorMsg());
+						//更新底部提交按钮
+						setSubmitButtomState(R.string.sumbit_certification, R.drawable.add_clinic_set_corner_red, true);
+					 }
+				} else {
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+				Global.progressDialog.dismiss();
+			}
+		});
+	}
+	
+	private void setUploadLogoVisible(boolean show){
+		if(show){
+			upload_head_image_logo_tv.setVisibility(View.VISIBLE);
+			upload_certification_content_logo_1_tv.setVisibility(View.VISIBLE);
+			upload_certificate_content_logo_2_tv.setVisibility(View.VISIBLE);
+		}else{
+			upload_head_image_logo_tv.setVisibility(View.GONE);
+			upload_certification_content_logo_1_tv.setVisibility(View.GONE);
+			upload_certificate_content_logo_2_tv.setVisibility(View.GONE);
+		}
+	}
+	
+	private void setCancelUploadRedRod(boolean show){
+		if(show){
+			upload_head_image_cancel_iv.setVisibility(View.VISIBLE);
+			upload_certification_content_cancel_1_iv.setVisibility(View.VISIBLE);
+			upload_certificate_content_cancel_2_iv.setVisibility(View.VISIBLE);
+		}else{
+			upload_head_image_cancel_iv.setVisibility(View.GONE);
+			upload_certification_content_cancel_1_iv.setVisibility(View.GONE);
+			upload_certificate_content_cancel_2_iv.setVisibility(View.GONE);
+		}
+	}
+	
+	private void setSubmitButtomState(int stringRes,int backGroundRes,boolean clickable){
+		 //修改提交按钮的文案
+		 submit_certificate_info.setText(stringRes);
+		 //修改提交按钮的背景颜色（灰色）
+		 submit_certificate_info.setBackgroundResource(backGroundRes);
+		 //提交按钮不可点击
+		 submit_certificate_info.setClickable(clickable);
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.network_error_layout:
+			//网络异常，点击刷新一遍数据
+			getCertificationInfo();
+			break;
+		case R.id.upload_head_image_case_layout:
+		    ImageDetailResActivity.startActivity(this, 0, R.drawable.head_image_case_big);
+			break;
+		case R.id.upload_certificate_case_1_layout:
+			ImageDetailResActivity.startActivity(this, 0, R.drawable.certification_case_1);
+			break;
+		case R.id.upload_certificate_case_2_layout:
+			ImageDetailResActivity.startActivity(this, 0, R.drawable.certification_case_2);
+			break;
+		case R.id.upload_head_image_logo_tv://点击上传头像图片区域的LOGO
+			currentUploadImageView = UPLOAD_IMAGEVIEW_HEADIMAGE;
+			openChooseImageDialogFragment();
+			break;
+		case R.id.upload_certification_content_logo_1_tv://点击上传执照正面照区域的上传LOGO
+			currentUploadImageView = UPLOAD_IMAGEVIEW_CERTIFICATION_1;
+			openChooseImageDialogFragment();
+			break;
+		case R.id.upload_certificate_content_2_logo_tv://点击上传执照背面照区域的上传LOGO
+			currentUploadImageView = UPLOAD_IMAGEVIEW_CERTIFICATION_2;
+			openChooseImageDialogFragment();
+			break;
+		case R.id.submit_certificate_info:
+			submitCertification();
+			break;
+		case R.id.upload_head_image_cancel_iv://点击了清除半身照
+			cancelIVOnClick(upload_head_image_cancel_iv,upload_head_image_content_iv, upload_head_image_logo_tv);
+			break;
+		case R.id.upload_certification_content_cancel_1_iv://点击了清除执照正面照
+			cancelIVOnClick(upload_certification_content_cancel_1_iv,upload_certification_content_1_iv, upload_certification_content_logo_1_tv);
+			break;
+		case R.id.upload_certificate_content_2_cancel_iv://点击了清除执照背面照
+			cancelIVOnClick(upload_certificate_content_cancel_2_iv,upload_certificate_content_2_iv, upload_certificate_content_logo_2_tv);
+			break;
+		}
+	}
+	
+	/**
+	 * 点击清除图片事件响应操作
+	 * @param contentIV 需要清除图片内容的ImageView控件
+	 * @param uploadLogoIV 需要显示的上传LOGO图片控件
+	 */
+	private void cancelIVOnClick(ImageView cancelIV,ImageView contentIV,TextView uploadLogoIV){
+		cancelIV.setVisibility(View.GONE);
+		contentIV.setImageBitmap(null);
+		uploadLogoIV.setVisibility(View.VISIBLE);
+	}
+	
+	private void openChooseImageDialogFragment(){
+        FragmentManager fm = getSupportFragmentManager();
+        ChooseImageDialogFragment chooseDialog = new ChooseImageDialogFragment(new OnDialogclickListener() {
+			@Override
+			public void onButtonClick(int type, DialogFragment dialog) {
+				switch (type) {
+				case AppConstants.CAMERA:
+					chooseCamera();
+					dialog.dismiss();
+					break;
+
+				case AppConstants.PHOTO_ALBUM:
+					chooseLocalImage();
+					dialog.dismiss();
+					break;
+				}
+			}
+		});
+        chooseDialog.show(fm, ChooseImageDialogFragment.TAG);
+	}
+	
+    private void chooseLocalImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK, null);
+        intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, IMAGE_UNSPECIFIED);
+        startActivityForResult(intent, REQUEST_GALLERY);
+    }
+
+    private void chooseCamera() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if(UPLOAD_IMAGEVIEW_HEADIMAGE.equals(currentUploadImageView)){
+        	intent.putExtra(MediaStore.EXTRA_OUTPUT,Uri.fromFile(new File(Environment.getExternalStorageDirectory(),HEAD_IMAGE_FILE_NAME)));
+        }else if(UPLOAD_IMAGEVIEW_CERTIFICATION_1.equals(currentUploadImageView)){
+        	intent.putExtra(MediaStore.EXTRA_OUTPUT,Uri.fromFile(new File(Environment.getExternalStorageDirectory(),CERTIFICATION_1_FILE_NAME)));
+        }else if(UPLOAD_IMAGEVIEW_CERTIFICATION_2.equals(currentUploadImageView)){
+        	intent.putExtra(MediaStore.EXTRA_OUTPUT,Uri.fromFile(new File(Environment.getExternalStorageDirectory(),CERTIFICATION_2_FILE_NAME)));
+        }
+        startActivityForResult(intent, REQUEST_CAMERA);
+    }
+    
+    private BroadcastReceiver mUpdateReceiver = new BroadcastReceiver() {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if (AppConstants.UPLOAD_IMAGE_INTENT_ACTION.equals(action)) {
+	                Bundle bundle = intent.getExtras();
+	                if (bundle != null) {
+	                    int type = bundle.getInt(IntentTools.EXTRA_CHOOSE_TYPE);
+	                    if (type == ChooseImageDialogFragment.TYPE_CAMERA) {
+	                        chooseCamera();
+	                    } else {
+	                        chooseLocalImage();
+	                    }
+	                }
+	        }
+		}
+	};
+
+    
+    /**
+     * 启用手机裁剪功能
+     * @param uri
+     */
+    private void resizeImage(Uri uri) {
+    	try {
+    			Intent intent = new Intent("com.android.camera.action.CROP");
+	            intent.setDataAndType(uri, IMAGE_UNSPECIFIED);
+	            fillIntent(intent, uri);
+	            startActivityForResult(intent, REQUEST_RESIZE);
+	        } catch (Exception e) {
+	            LogUtils.e(TAG, "", e);
+	        }
+	        LogUtils.d(TAG, "REQUEST_CAMERA ======================= 222");
+    }
+    
+    private void fillIntent(Intent intent, Uri uri) {
+        try {
+            	intent.putExtra("crop", "true");
+            	intent.putExtra("aspectX", 1);
+            	intent.putExtra("aspectY", 1);
+            	intent.putExtra("outputX", 320);
+            	intent.putExtra("outputY", 320);
+            	intent.putExtra("scale", true);
+            	intent.putExtra("return-data", true);
+            	intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+            	intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
+            	intent.putExtra("noFaceDetection", true); // no face detection
+        } catch (Exception e) {
+            LogUtils.e(TAG, "", e);
+        }
+    }
+    
+    /**
+     * 裁剪后得到的图片
+     * @param data
+     * @param fileType
+     */
+    private void showResizeCameraImage(Intent data,String fileType) {
+        try {
+            if (data != null) {
+                Bundle extras = data.getExtras();
+                if (extras != null) {
+                    Bitmap photo = extras.getParcelable("data");
+                    LogUtils.d(TAG, "REQUEST_CAMERA ======================= 444");
+                    if (photo == null) {
+                        return;
+                    }
+                    LogUtils.d(TAG, "REQUEST_CAMERA ======================= 555");
+                    FileOutputStream stream = openFileOutput(HEAD_IMAGE_FILE_NAME, Context.MODE_PRIVATE);
+                    // (0-100)压缩文件(已经裁剪，不再压缩)
+                    photo.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                    if (photo != null) {
+                    	//由于目前只有头像做了裁剪，所以其他情况不做处理
+                    	if(currentUploadImageView.equals(UPLOAD_IMAGEVIEW_HEADIMAGE)){
+                    		//当前点击的是上传头像，上传成功后头像ImageView显示上传成功的图片
+                    		upload_head_image_content_iv.setImageBitmap(photo);
+                    		saveBitmap(HEAD_IMAGE_FILE_NAME,photo,fileType);
+                    	}
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LogUtils.e(TAG, "", e);
+        } catch (Exception e) {
+            LogUtils.e(TAG, "", e);
+        }
+    }
+    
+    /**
+     * 保存上传的图片
+     * @param fileName
+     * @param bm
+     * @param fileType
+     * @throws IOException
+     */
+    private void saveBitmap(String fileName,Bitmap bm,String fileType) throws IOException {
+        FileOutputStream outStream = null;
+        try {
+            outStream = openFileOutput(fileName, Context.MODE_PRIVATE);
+            if (outStream != null) {
+                bm.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
+            }
+        } catch (FileNotFoundException e) {
+            LogUtils.e(TAG, "", e);
+        } catch (Exception e) {
+            LogUtils.e(TAG, "", e);
+        } finally {
+            if (outStream != null) {
+                try {
+                    outStream.close();
+                    outStream = null;
+                } catch (Exception e) {
+                    LogUtils.e(TAG, "", e);
+                }
+            }
+            if(bm != null){
+				// 释放原始图片占用的内存，防止out of memory异常发生
+				//bm.recycle();
+            }
+        }
+        LogUtils.d(TAG, "REQUEST_CAMERA ======================= 777");
+        uploadLocalImageFile(fileName,fileType);
+    }
+    
+    private File getAvatarFile(String fileName) {
+        File file = getFilesDir();
+        String path = file.getAbsolutePath();
+        return new File(path + File.separator + fileName);
+    }
+    
+    private void uploadLocalImageFile(String fileName,final String fileType) {
+        final String uploadUrl = DataRequestUtils.getUploadUrl();
+        final String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        String mFileName = getAvatarFile(fileName).getAbsolutePath();
+
+        RequestParams params = new RequestParams();
+        params.addQueryStringParameter("token", token);
+        params.addQueryStringParameter("fileType", fileType);
+        params.addBodyParameter("file", new File(mFileName));
+
+        HttpUtils http = new HttpUtils();
+        //上传过程显示进度条
+        Global.progressDialog = ProgressDialog.show(this, null,getString(R.string.upload_ing), true, true);
+        Global.progressDialog.setCanceledOnTouchOutside(false);
+        http.send(HttpRequest.HttpMethod.POST, uploadUrl, params, new RequestCallBack<String>() {
+
+            @Override
+            public void onStart() {
+                LogUtils.d(TAG, "conn...");
+            }
+
+            @Override
+            public void onLoading(long total, long current, boolean isUploading) {
+                if (isUploading) {
+                    LogUtils.d(TAG, "upload: " + current + "/" + total);
+                } else {
+                    LogUtils.d(TAG, "reply: " + current + "/" + total);
+                }
+            }
+
+            @Override
+            public void onSuccess(ResponseInfo<String> responseInfo) {
+            	//上传文件成功,根据返回的状态刷新界面
+                LogUtils.d(TAG, "reply: " + responseInfo.result);
+                UploadDataModel uploadModel = null;
+                try {
+                    uploadModel = JsonParserFactory.parseStringJson(UploadDataModel.class, responseInfo.result);
+                    if(UPLOAD_IMAGEVIEW_HEADIMAGE.equals(currentUploadImageView)){
+                    	//拼接半身照上传成功后的地址
+                    	certificateImage = uploadModel.getPath()+uploadModel.getRealName();
+                    }else if(UPLOAD_IMAGEVIEW_CERTIFICATION_1.equals(currentUploadImageView)){
+                    	//拼接执照正面照上传成功后的地址
+                    	certificateFrontImage = uploadModel.getPath()+uploadModel.getRealName();
+                    }else if(UPLOAD_IMAGEVIEW_CERTIFICATION_2.equals(currentUploadImageView)){
+                    	//拼接执照反面照上传成功后的地址
+                    	certificateReverseImage = uploadModel.getPath()+uploadModel.getRealName();
+                    }
+                } catch (JSONException e) {
+                    LogUtils.e(TAG, "exception break out!!!", e);
+                } catch (IOException e) {
+                    LogUtils.e(TAG, "exception break out!!!", e);
+                } catch (Exception e) {
+                	LogUtils.e(TAG, "exception break out!!!", e);
+				} finally {
+                    if (uploadModel == null) {
+                        LogUtils.e(TAG, "uploadLocalVoiceFile uploadModel == null");
+                        return;
+                    }
+                    if(uploadModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                        LoginActivity.startActivity(DoctorCertificationActivity.this);
+                        return;
+  					}
+					if(UPLOAD_IMAGEVIEW_HEADIMAGE.equals(currentUploadImageView)){
+						//当前点击的是上传半身照
+						//隐藏上传LOGO
+						upload_head_image_logo_tv.setVisibility(View.GONE);
+						//显示右上角的取消图标
+						upload_head_image_cancel_iv.setVisibility(View.VISIBLE);
+						//记录半身照上传成功
+						isUploadHeadImageSuccess = true;
+					}else if(UPLOAD_IMAGEVIEW_CERTIFICATION_1.equals(currentUploadImageView)){
+						upload_certification_content_logo_1_tv.setVisibility(View.GONE);
+						upload_certification_content_cancel_1_iv.setVisibility(View.VISIBLE);
+						isUploadCertification1Success = true;
+					}else if(UPLOAD_IMAGEVIEW_CERTIFICATION_2.equals(currentUploadImageView)){
+						upload_certificate_content_logo_2_tv.setVisibility(View.GONE);
+						upload_certificate_content_cancel_2_iv.setVisibility(View.VISIBLE);
+						isUploadCertification2Success = true;
+					}
+					Global.progressDialog.dismiss();
+                }
+            }
+
+            @Override
+            public void onFailure(HttpException error, String msg) {
+                LogUtils.d(TAG, error.getExceptionCode() + ":" + msg);
+                Global.progressDialog.dismiss();
+                //上传图片失败
+				if(UPLOAD_IMAGEVIEW_HEADIMAGE.equals(currentUploadImageView)){
+					//上传失败，隐藏上传LOGO
+					upload_head_image_logo_tv.setVisibility(View.GONE);
+					//显示右上角的清除图标
+					upload_head_image_cancel_iv.setVisibility(View.VISIBLE);
+					//上传ImageView显示成上传失败的图片
+					upload_head_image_content_iv.setImageResource(R.drawable.upload_image_fail);
+					//记录上传状态为失败
+					isUploadHeadImageSuccess = false;
+				}else if(UPLOAD_IMAGEVIEW_CERTIFICATION_1.equals(currentUploadImageView)){
+					upload_certification_content_logo_1_tv.setVisibility(View.GONE);
+					upload_certification_content_cancel_1_iv.setVisibility(View.VISIBLE);
+					upload_certification_content_1_iv.setImageResource(R.drawable.upload_image_fail);
+					isUploadCertification1Success = false;
+				}else if(UPLOAD_IMAGEVIEW_CERTIFICATION_2.equals(currentUploadImageView)){
+					upload_certificate_content_logo_2_tv.setVisibility(View.GONE);
+					upload_certificate_content_cancel_2_iv.setVisibility(View.VISIBLE);
+					upload_certificate_content_2_iv.setImageResource(R.drawable.upload_image_fail);
+					isUploadCertification2Success = false;
+				}
+            }
+        });
+    }
+    
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    	super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case REQUEST_CAMERA:
+            	if(resultCode != RESULT_OK)
+            		return;
+                // 拍照
+                // 根据上传图片类型，设置文件保存路径
+                if(UPLOAD_IMAGEVIEW_HEADIMAGE.equals(currentUploadImageView)){
+                	//调用摄像头，拍照上传头像
+                	File picture = new File(Environment.getExternalStorageDirectory() + File.separator + HEAD_IMAGE_FILE_NAME);
+                	//上传头像，调用裁剪功能对拍照得到的图片进行裁剪
+                    resizeImage(Uri.fromFile(picture));
+                }else if(UPLOAD_IMAGEVIEW_CERTIFICATION_1.equals(currentUploadImageView)){
+                	//调用摄像头，拍照上传执照正面照
+                	File picture = new File(Environment.getExternalStorageDirectory() + File.separator + CERTIFICATION_1_FILE_NAME);
+                	Uri uri = Uri.fromFile(picture);
+                	//不裁剪，直接对拍照得到的照片进行处理
+                	showResizeCameraImageNoCrop(upload_certification_content_1_iv, uri, uploadFileType, CERTIFICATION_1_FILE_NAME);
+                }else if(UPLOAD_IMAGEVIEW_CERTIFICATION_2.equals(currentUploadImageView)){
+                	File picture = new File(Environment.getExternalStorageDirectory() + File.separator + CERTIFICATION_2_FILE_NAME);
+                	Uri uri = Uri.fromFile(picture);
+                	showResizeCameraImageNoCrop(upload_certificate_content_2_iv, uri, uploadFileType, CERTIFICATION_2_FILE_NAME);
+                }
+                break;
+            case REQUEST_GALLERY:
+            	if(resultCode != RESULT_OK)
+            		return;
+                if (data == null) {
+                    return;
+                }
+                showResizeLocalImage(data.getData(), uploadFileType);
+                break;
+            case REQUEST_RESIZE:
+                showResizeCameraImage(data,uploadFileType);
+                break;
+            default:
+                break;
+        }
+    }
+    
+    /**
+     * 
+     * @param uri
+     * @param fileType
+     */
+    private void showResizeLocalImage(Uri uri,String fileType){
+        if(UPLOAD_IMAGEVIEW_HEADIMAGE.equals(currentUploadImageView)){
+        	resizeImage(uri);
+        }else if(UPLOAD_IMAGEVIEW_CERTIFICATION_1.equals(currentUploadImageView)){
+        	showResizeLocalImageNoCrop(upload_certification_content_1_iv, uri, fileType, CERTIFICATION_1_FILE_NAME);
+        }else if(UPLOAD_IMAGEVIEW_CERTIFICATION_2.equals(currentUploadImageView)){
+        	showResizeLocalImageNoCrop(upload_certificate_content_2_iv, uri, fileType, CERTIFICATION_2_FILE_NAME);
+        }
+    }
+    
+    /**
+     * 
+     * @param path
+     * @param width
+     * @param height
+     * @return
+     * @throws FileNotFoundException
+     */
+	public static Bitmap getBitmap(String path) throws FileNotFoundException{
+		InputStream is = new FileInputStream(path);
+		Options opts = new Options();
+		opts.inPreferredConfig=Bitmap.Config.RGB_565;//表示16位位图 565代表对应三原色占的位数
+		opts.inJustDecodeBounds = true;
+	    opts.inInputShareable=true;
+	    opts.inPurgeable=true;//设置图片可以被回收
+	    BitmapFactory.decodeStream(is, null, opts);
+		opts.inSampleSize = 5;
+		opts.inJustDecodeBounds = false;
+		is = new FileInputStream(path);
+		return BitmapFactory.decodeStream(is, null, opts);
+	}
+    
+	/**
+	 * 
+	 * @param clickImage
+	 * @param uri
+	 * @param fileType
+	 * @param fileName
+	 */
+	private void showResizeCameraImageNoCrop(ImageView clickImage,Uri uri,String fileType,String fileName){
+		ContentResolver resolver = getContentResolver();
+		// 使用ContentProvider通过URI获取原始图片
+		try {
+			Bitmap photo = MediaStore.Images.Media.getBitmap(resolver,uri);
+			if (photo != null) {
+				// 为防止原始图片过大导致内存溢出，这里先缩小原图显示，然后释放原始Bitmap占用的内存
+				Bitmap smallBitmap = zoomBitmap(photo,photo.getWidth() / 5, photo.getHeight()/ 5);
+				if(photo!=null)
+					photo.recycle();
+				//当前点击的是上传执照正面照，上传成功后正面ImageView显示上传成功的图片
+				clickImage.setImageBitmap(smallBitmap);
+        		saveBitmap(fileName, smallBitmap, fileType);
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}catch (OutOfMemoryError e) {
+			ToastUtils.ToastShort(this, "图片过大！");
+		}
+	}
+	
+    /**
+     * 没有裁剪的图片要先缩放再显示
+     * @param clickImage
+     * @param uri
+     * @param fileType
+     * @param fileName
+     */
+    private void showResizeLocalImageNoCrop(ImageView clickImage,Uri uri,String fileType,String fileName){
+    	 String path = new UploadImageUtil(this).getLocalImagePath(this, uri);
+    	 try {
+			Bitmap bm = getBitmap(path);
+			clickImage.setImageBitmap(bm);
+			saveBitmap(fileName, bm, fileType);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}catch (OutOfMemoryError e) {
+			ToastUtils.ToastShort(this, "图片过大！");
+		}
+    	 //cursor.close();
+    }
+    
+    /**
+     * 对图片进行压缩
+     * @param bitmap
+     * @param width
+     * @param height
+     * @return
+     */
+	private Bitmap zoomBitmap(Bitmap bitmap, int width, int height) {
+		int w = bitmap.getWidth();
+		int h = bitmap.getHeight();
+		Matrix matrix = new Matrix();
+		float scaleWidth = ((float) width / w);
+		float scaleHeight = ((float) height / h);
+		matrix.postScale(scaleWidth, scaleHeight);
+		Bitmap newbmp = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, true);
+		return newbmp;
+	}
+    
+
+	public static void startActivity(Context context, int certification_state){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startDoctorCertificationActivity(context, certification_state));
+	}
+    
+	public static void startActivity(Context context,int certification_state,String startActivityResoures){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startDoctorCertificationActivity(context, certification_state, startActivityResoures));
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if(keyCode == KeyEvent.KEYCODE_BACK){
+	    	if(!MyInfoFragment.TAG.equals(startActivityResoure)){
+	    		//如果不是从个人资料界面启动，那么关闭后需要启动个人资料界面
+	    		MyInfoActivity.startActivity(DoctorCertificationActivity.this, 0);
+	    	}
+	    	finish();
+		}
+		return super.onKeyDown(keyCode, event);
+	}
+	
+    @Override
+    protected void onDestroy() {
+    	super.onDestroy();
+    	HttpTaskManager.stop(TAG);
+    }
+    
+    @Override
+    protected void onPause() {
+        super.onPause();
+        XGPushManager.onActivityStoped(this);
+    }
+
+}

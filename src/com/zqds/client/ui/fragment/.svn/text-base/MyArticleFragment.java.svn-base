@@ -1,0 +1,530 @@
+package com.qdoc.client.ui.fragment;
+
+import java.io.File;
+import java.util.ArrayList;
+import android.app.Activity;
+import android.app.Dialog;
+import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.LinearLayout;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.AdvanceActivitiesDtoModel;
+import com.qdoc.client.model.ArticleListDto;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.InfomationListModel;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ItemOnclickListener;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.AdvanceDetailActivity;
+import com.qdoc.client.ui.ArticleDetailActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.WriteArticleActivity;
+import com.qdoc.client.ui.adapter.ArticleAdapter;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.OnKeyDownUtil;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.UploadImageUtil;
+
+/**
+ * create at 2015-04-09 19:36
+ * @author Antony
+ * 我的文章（Fragment）
+ */
+public class MyArticleFragment extends BaseFragment {
+	
+	private static final String TAG = MyArticleFragment.class.getSimpleName();
+	
+	/* 用来标识请求照相功能的activity */
+	private static final int CAMERA_WITH_DATA = 3023;
+	/* 用来标识请求gallery的activity */
+	private static final int PHOTO_PICKED_WITH_DATA = 3021;
+	//文章拍照的第一张图片名称
+	private String CAMERA_FIRST_IMAGE_PATH = "camera_first_image_path.jpg";
+	
+	private int article_type;//文章类型（0：我的文章；1：我的收藏）
+	
+	private int pageSize = 20;//一页数据条数
+	private int page;//页码
+	
+	private ArrayList<ArticleListDto> articleList;
+	private ArticleAdapter articleAdapter;
+	private PullRefreshView article_listview;
+	private PullListMaskController mViewController;
+	private LinearLayout ll_fragment_article_banner_layout;
+	private LinearLayout ll_write_article;
+	private LinearLayout ll_send_article_email;
+	private ItemOnclickListener itemBtOnClickListener;
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_article, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		
+		initView(view);
+		initListener();
+		initData();
+	}
+	
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onActivityCreated(savedInstanceState);
+	}
+	
+	private void initView(View view) {
+		ll_fragment_article_banner_layout = (LinearLayout) view.findViewById(R.id.ll_fragment_article_banner_layout);
+		ll_write_article = (LinearLayout) view.findViewById(R.id.ll_write_article);
+		ll_send_article_email = (LinearLayout) view.findViewById(R.id.ll_send_article_email);
+		article_listview = (PullRefreshView) view.findViewById(R.id.lv_article);
+	    ErrorMaskView maskView = (ErrorMaskView) view.findViewById(R.id.maskView);
+	    mViewController = new PullListMaskController(article_listview, maskView);
+	    mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+	}
+
+	private void initData() {
+		article_type = getArguments().getInt(AppConstants.MY_ARTICLE_KEY);
+		if(article_type==AppConstants.MY_COLLECTION_VALUE){
+			ll_fragment_article_banner_layout.setVisibility(View.GONE);
+		}else{
+			registeConsultReceiver();
+		}
+		page = 1;
+		articleList = new ArrayList<ArticleListDto>();
+		articleAdapter = new ArticleAdapter(getActivity(), articleList,itemBtOnClickListener);
+		article_listview.setAdapter(articleAdapter);
+		startDoctorArticleListInitRequest();
+	}
+
+	private void initListener() {
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				startDoctorArticleListInitRequest();
+			}
+		});
+		
+		mViewController.setOnRefreshListener(new OnRefreshListener() {
+			
+			@Override
+			public void onRefresh() {
+				startDoctorArticleListRefresh();
+			}
+		});
+		
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+			
+			@Override
+			public void onClickFootView() {
+				startDoctorArticleListMore();
+			}
+		});
+		
+		article_listview.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View item, int position,
+					long arg3) {
+				ArticleListDto articleDto = (ArticleListDto) parent.getAdapter().getItem(position);
+				int column_name = 0;
+				if(article_type==AppConstants.MY_ARTICLE_VALUE)
+					column_name = R.string.my_article;
+				else
+					column_name = R.string.my_collection;
+				if(articleDto!=null)
+					ArticleDetailActivity.startActivity(getActivity(), articleDto.getArticleId(),column_name);
+			}
+		});
+		
+		itemBtOnClickListener = new ItemOnclickListener() {
+			
+			@Override
+			public void onButtonClick(int type, Object obj, View view1, View view2,int position) {}
+			
+			@Override
+			public void onButtonClick(int type, Object obj, View view1, View view2) {}
+			
+			@Override
+			public void onButtonClick(Object obj, View view1, View view2, int position) {
+				if(obj==null)
+					return;
+				if (OnKeyDownUtil.isFastDoubleClick()) {
+					return;
+				}
+				final ArticleListDto articleListDto = (ArticleListDto) obj;
+				if(articleListDto.getArtStatus()!=AppConstants.ARTICLE_STATUS_PASS)
+					return;
+				String title = getString(R.string.dialog_hint_title);
+				String message = getString(R.string.share_article_dialog_message);
+        		String ok_text = getContext().getString(R.string.str_dialog_ok);
+        		String cancle_text = getContext().getString(R.string.str_dialog_cancel);
+        		new HintDlg(getActivity(), message, title, cancle_text, ok_text, new OnDialogclickListener() {
+					
+					@Override
+					public void onButtonClick(int type,Dialog dialog) {
+						switch (type) {
+						case AppConstants.LEFT_BUTTON:
+							//取消
+							dialog.dismiss();
+							break;
+						case AppConstants.RIGHT_BUTTON:
+							//分享文章
+							shareArticleToUser(articleListDto.getArticleId());
+							dialog.dismiss();
+							break;
+						}
+					}
+				},R.layout.print_card_dialog).show();
+			}
+
+			@Override
+			public void onReplyClick(int type, Object obj,View view) {}
+		};
+		
+		ll_send_article_email.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				AdvanceActivitiesDtoModel advanceDetail = new AdvanceActivitiesDtoModel();
+				advanceDetail.setTitle(getString(R.string.doctor_send_article_title));
+				advanceDetail.setActivityUrl(getString(R.string.doctor_send_article_url));
+				AdvanceDetailActivity.startActivity(getActivity(), advanceDetail);
+			}
+		});
+		
+		ll_write_article.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if (Global.getUserCertificationStatus() !=AppConstants.CERTIFICATE_STATE_SUCCESS) {
+					ToastUtils.ToastShort(getContext(), R.string.upload_after_certificated);
+					return;
+				}
+				openChooseImageDialogFragment();
+			}
+		});
+	}
+	
+	private void startDoctorArticleListInitRequest(){
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getDoctorArticleByType(TAG, token, page, pageSize, article_type), 
+				JsonParserFactory.parseBaseModel(InfomationListModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode == ServerErrorCode.STATUS_SUCCESS){
+					InfomationListModel articleListModel = (InfomationListModel) resultData;
+					if(articleListModel!=null && articleListModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ArticleListDto> pager = articleListModel.getPager();
+						ArrayList<ArticleListDto> data = pager.getElements();
+						if(ListUtils.isEmpty(data)){
+							mViewController.showViewStatus(ListViewState.EMPTY_BLANK, 
+									article_type==AppConstants.MY_ARTICLE_VALUE?getString(R.string.no_my_article):getString(R.string.no_my_collection));
+						}else if(pager.isHasNext()){
+							//有文章记录,且还有下一页
+							articleList.clear();//先清空所有记录
+							articleList.addAll(data);//再重新添加新加载的记录
+							articleAdapter.changeData(articleList);
+							mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						}else{
+							//有文章记录，已经是最后一页
+							articleList.clear();//先清空所有记录
+							articleList.addAll(data);//再重新添加新加载的记录
+							articleAdapter.changeData(articleList);
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(articleListModel!=null && articleListModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+						mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+	
+	private void startDoctorArticleListRefresh(){
+		page = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getDoctorArticleByType(TAG, token, page, pageSize, article_type), 
+				JsonParserFactory.parseBaseModel(InfomationListModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					InfomationListModel articleListModel = (InfomationListModel) resultData;
+					if(articleListModel!=null && articleListModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ArticleListDto> pager = articleListModel.getPager();
+						ArrayList<ArticleListDto> data = pager.getElements();
+						if(ListUtils.isEmpty(data)){
+							mViewController.showViewStatus(ListViewState.EMPTY_BLANK, 
+									article_type==AppConstants.MY_ARTICLE_VALUE?getString(R.string.no_my_article):getString(R.string.no_my_collection));
+						}else if(pager.isHasNext()){
+							//有文章信息,且还有下一页
+							articleList.clear();//先清空所有记录
+							articleList.addAll(data);//再重新添加新加载的记录
+							articleAdapter.changeData(articleList);
+							mViewController.showViewStatus(ListViewState.LIST_REFRESH_COMPLETE);
+						}else{
+							//有文章信息,没有下一页
+							articleList.clear();//先清空所有记录
+							articleList.addAll(data);//再重新添加新加载的记录
+							articleAdapter.changeData(articleList);
+							mViewController.showViewStatus(ListViewState.PULL_DOWN_LIST_NO_MORE);
+						}
+					}else if(articleListModel!=null && articleListModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+				}else{
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+	
+	private void startDoctorArticleListMore(){
+		page = page+1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getDoctorArticleByType(TAG, token, page, pageSize, article_type), 
+				JsonParserFactory.parseBaseModel(InfomationListModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					InfomationListModel infomationListModel = (InfomationListModel) resultData;
+					if(infomationListModel!=null && infomationListModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ArticleListDto> pager = infomationListModel.getPager();
+						ArrayList<ArticleListDto> data = pager.getElements();
+						if(ListUtils.isEmpty(data)){
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}else if(pager.isHasNext()){
+							articleList.addAll(data);
+							articleAdapter.changeData(articleList);
+							mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						}else{
+							articleList.addAll(data);
+							articleAdapter.changeData(articleList);
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(infomationListModel!=null && infomationListModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) infomationListModel.getErrorMsg());
+						mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						page = page -1;
+					}
+				}else{
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.LIST_RETRY);
+					page = page - 1;
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+	
+	private void shareArticleToUser(long articleId){
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.shareArticleToUser(TAG, token, articleId), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					BaseModel baseModel = (BaseModel) resultData;
+					if(baseModel!=null && baseModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						//分享成功
+						ToastUtils.ToastShort(getActivity(), R.string.share_to_fans_success);
+					}else if(baseModel!=null && baseModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+				}else{
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+				}
+			}
+		});
+	}
+	
+	private void openChooseImageDialogFragment(){
+        FragmentManager fm = getFragmentManager();
+        ChooseImageDialogFragment chooseDialog = new ChooseImageDialogFragment(new ChooseImageDialogFragment.OnDialogclickListener() {
+			
+			@Override
+			public void onButtonClick(int type, DialogFragment dialog) {
+				switch (type) {
+				case AppConstants.CAMERA:
+					//调用摄像头获取相片
+					doTakePhoto();
+					dialog.dismiss();
+					break;
+				case AppConstants.PHOTO_ALBUM:
+					//调用相册获取相片
+					doPickPhotoFromGallery();
+					dialog.dismiss();
+					break;
+				}
+			}
+		});
+        chooseDialog.show(fm, ChooseImageDialogFragment.TAG);
+	}
+	
+	
+	//拍照获取图片
+	private void doTakePhoto() {
+		try {
+			Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE, null);
+			intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), CAMERA_FIRST_IMAGE_PATH)));
+			startActivityForResult(intent, CAMERA_WITH_DATA);
+		} catch (ActivityNotFoundException e) {
+			Toast.makeText(getContext(), "photoPickerNotFoundText", Toast.LENGTH_LONG).show();
+		}
+	}
+	
+	//读取本地图片
+	private void doPickPhotoFromGallery(){
+        Intent intent = new Intent(Intent.ACTION_PICK, null);
+        intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
+		startActivityForResult(intent, PHOTO_PICKED_WITH_DATA);
+	}
+	
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if(resultCode!=Activity.RESULT_OK)
+			return;
+		switch (requestCode) {
+		case CAMERA_WITH_DATA:
+			String status = Environment.getExternalStorageState();
+			if (status.equals(Environment.MEDIA_MOUNTED)) {// 判断是否有SD卡            
+				try {
+	            	File picture = new File(Environment.getExternalStorageDirectory() + File.separator + CAMERA_FIRST_IMAGE_PATH);
+					WriteArticleActivity.startActivity(getContext(),picture.getAbsolutePath());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}else{
+				ToastUtils.ToastShort(getContext(), R.string.no_sd_card);
+			}
+			break;
+		case PHOTO_PICKED_WITH_DATA:
+			Uri uri = data.getData();
+			String selectImagePath = new UploadImageUtil(getActivity()).getLocalImagePath(getActivity(), uri);
+			WriteArticleActivity.startActivity(getContext(), selectImagePath);
+			break;
+		}
+	}
+	
+	/**
+	 * 接收要求刷新我的文章的广播接收器
+	 */
+	BroadcastReceiver mRefreshReceiver = new BroadcastReceiver() {
+		
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if(AppConstants.REFRESH_MY_ARTICLE_ACTION.equals(action)&&article_type==AppConstants.MY_ARTICLE_VALUE){
+				startDoctorArticleListRefresh();
+			}
+		}
+	};
+	
+	public void registeConsultReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.REFRESH_MY_ARTICLE_ACTION);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(mRefreshReceiver, myIntentFilter);
+	}
+
+	public void unRegisterConsultReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(mRefreshReceiver);
+	}
+	
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+		if(article_type==AppConstants.MY_ARTICLE_VALUE)
+			unRegisterConsultReceiver();
+	}
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+}

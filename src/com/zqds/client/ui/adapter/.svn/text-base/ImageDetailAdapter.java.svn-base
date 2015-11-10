@@ -1,0 +1,76 @@
+/*
+ * ImageDetailAdapter.java
+ * classes : com.qdoc.client.ui.adapter.ImageDetailAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午4:43:33
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ImageDtoModel;
+import com.qdoc.client.system.ImageLoaderHelper;
+
+/**
+ * com.qdoc.client.ui.adapter.ImageDetailAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午4:43:33
+ */
+public class ImageDetailAdapter extends BaseAdapter {
+    private ArrayList<ImageDtoModel> imageList;
+    LayoutInflater inflater;
+    private Context context;
+
+    public ImageDetailAdapter(Context context, ArrayList<ImageDtoModel> list) {
+        this.context = context;
+    	this.imageList = list;
+        this.inflater = LayoutInflater.from(context);
+    }
+
+    @Override
+    public int getCount() {
+        return imageList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return imageList.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        CacheView cacheView;
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.listitem_image, null);
+            cacheView = new CacheView();
+            cacheView.imageView = (ImageView) convertView.findViewById(R.id.imageView);
+            convertView.setTag(cacheView);
+        } else {
+            cacheView = (CacheView) convertView.getTag();
+        }
+
+        int size = imageList.size();
+        ImageLoaderHelper.getInstance(context).displayImage(imageList.get(position % size).getRealUrl(), cacheView.imageView);
+
+        return convertView;
+    }
+
+    private static class CacheView {
+        ImageView imageView;
+    }
+}

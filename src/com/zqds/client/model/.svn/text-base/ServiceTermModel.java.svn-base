@@ -1,0 +1,17 @@
+package com.qdoc.client.model;
+
+
+public class ServiceTermModel extends AbstractBaseModel{
+       
+	private String termUrl;
+
+	public String getTermUrl() {
+		return termUrl;
+	}
+
+	public void setTermUrl(String termUrl) {
+		this.termUrl = termUrl;
+	}
+	
+	  
+}

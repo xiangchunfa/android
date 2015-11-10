@@ -1,0 +1,89 @@
+/*
+ * AccountUtils.java
+ * classes : com.qdoc.client.account.AccountUtils
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-5-28 下午8:47:45
+ */
+package com.qdoc.client.account;
+
+import com.qdoc.client.config.GlobalConfig;
+
+/**
+ * com.qdoc.client.account.AccountUtils
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-5-28 下午8:47:45
+ */
+public class AccountUtils {
+    /**
+     * TAG
+     */
+    private static final String TAG = AccountUtils.class.getSimpleName();
+
+    /**
+     * const
+     */
+    private static final String USERNAME = "account_name";
+    private static final String BDUSS = "account_bduss";
+    private static final String UID = "account_uid";
+    private static final String TOKEN = "token";
+
+    /**
+     * params
+     */
+    private String mUsername;// 登陆成功的用户名
+    private String mUid;// userid
+    private static AccountUtils mInstance = null;
+    private String mBduss;// 登陆成功的bduss
+
+    public static AccountUtils getInstance() {
+        if (mInstance == null) {
+            synchronized (AccountUtils.class) {
+                if (mInstance == null) {
+                    mInstance = new AccountUtils();
+                }
+            }
+        }
+        return mInstance;
+    }
+
+    private AccountUtils() {
+        initAccount();
+    }
+
+    private void initAccount() {
+        loadFromConfig();
+    }
+
+    private void loadFromConfig() {
+        mBduss = GlobalConfig.getString(BDUSS, null);
+        mUsername = GlobalConfig.getString(USERNAME, null);
+        mUid = GlobalConfig.getString(UID, null);
+    }
+
+    public String getUserName() {
+        return mUsername;
+    }
+
+    public void setUsername(String username) {
+        mUsername = username;
+    }
+
+    public String getUid() {
+        return mUid;
+    }
+
+    /**
+     * 获取账号信息，有uid的情况返回uid,
+     * 
+     * @return
+     */
+    public String getAccountInfo() {
+        return getUid();
+    }
+
+    public String getBduss() {
+        return mBduss;
+    }
+}

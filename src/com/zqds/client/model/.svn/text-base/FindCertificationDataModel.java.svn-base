@@ -1,0 +1,80 @@
+package com.qdoc.client.model;
+
+/**
+ * 认证详情信息类
+ * @author antony
+ *
+ */
+public class FindCertificationDataModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4757123139279938338L;
+
+	private int doctorCertificationStatus;//认证状态
+	private String certificateImage;//医生穿着工作服的半身照路径
+	private String certificateFrontImage;//执业照或者资格照正面照片路径
+	private String certificateReverseImage;//执业照或者资格照背面照片路径
+	private String certificationRemarks;//认证描述
+	/**
+	 * @return the doctorCertificationStatus
+	 */
+	public int getDoctorCertificationStatus() {
+		return doctorCertificationStatus;
+	}
+	/**
+	 * @param doctorCertificationStatus the doctorCertificationStatus to set
+	 */
+	public void setDoctorCertificationStatus(int doctorCertificationStatus) {
+		this.doctorCertificationStatus = doctorCertificationStatus;
+	}
+	/**
+	 * @return the certificateImage
+	 */
+	public String getCertificateImage() {
+		return certificateImage;
+	}
+	/**
+	 * @param certificateImage the certificateImage to set
+	 */
+	public void setCertificateImage(String certificateImage) {
+		this.certificateImage = certificateImage;
+	}
+	/**
+	 * @return the certificateFrontImage
+	 */
+	public String getCertificateFrontImage() {
+		return certificateFrontImage;
+	}
+	/**
+	 * @param certificateFrontImage the certificateFrontImage to set
+	 */
+	public void setCertificateFrontImage(String certificateFrontImage) {
+		this.certificateFrontImage = certificateFrontImage;
+	}
+	/**
+	 * @return the certificateReverseImage
+	 */
+	public String getCertificateReverseImage() {
+		return certificateReverseImage;
+	}
+	/**
+	 * @param certificateReverseImage the certificateReverseImage to set
+	 */
+	public void setCertificateReverseImage(String certificateReverseImage) {
+		this.certificateReverseImage = certificateReverseImage;
+	}
+	/**
+	 * @return the certificationRemarks
+	 */
+	public String getCertificationRemarks() {
+		return certificationRemarks;
+	}
+	/**
+	 * @param certificationRemarks the certificationRemarks to set
+	 */
+	public void setCertificationRemarks(String certificationRemarks) {
+		this.certificationRemarks = certificationRemarks;
+	}
+}

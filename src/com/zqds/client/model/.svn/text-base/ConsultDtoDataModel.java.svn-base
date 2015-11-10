@@ -1,0 +1,46 @@
+/*
+ * consultDtoDataModel.java
+ * classes : com.qdoc.client.model.consultDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-31 下午10:49:21
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.consultDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-31 下午10:49:21
+ */
+public class ConsultDtoDataModel extends AbstractBaseModel {
+    
+	private static final long serialVersionUID = 1L;
+
+	private String clinicUrl;
+	
+    public String getClinicUrl() {
+		return clinicUrl;
+	}
+
+	public void setClinicUrl(String clinicUrl) {
+		this.clinicUrl = clinicUrl;
+	}
+
+	private ConsultDtoModel consultDto;
+
+    /**
+     * @return the consultDto
+     */
+    public ConsultDtoModel getConsultDto() {
+        return consultDto;
+    }
+
+    /**
+     * @param consultDto the consultDto to set
+     */
+    public void setConsultDto(ConsultDtoModel consultDto) {
+        this.consultDto = consultDto;
+    }
+
+}

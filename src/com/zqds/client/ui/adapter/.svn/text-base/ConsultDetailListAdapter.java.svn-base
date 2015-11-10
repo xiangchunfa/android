@@ -1,0 +1,652 @@
+/*
+ * ConsultAdapter.java
+ * classes : com.qdoc.client.ui.adapter.ConsultAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午1:56:20
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import android.content.Context;
+import android.text.SpannableString;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.ConsultDtoModel;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.ImageDtoModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.ImageDetailActivity;
+import com.qdoc.client.ui.view.CircularImage;
+import com.qdoc.client.ui.view.ConsultDetailPopWindow;
+import com.qdoc.client.ui.widget.SteadyGridView;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.FaceConversionUtil;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.TimeUtils;
+import com.qdoc.client.util.ViewUtils;
+
+/**
+ * com.qdoc.client.ui.adapter.ConsultAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午1:56:20
+ */
+public class ConsultDetailListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = ConsultDetailListAdapter.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private static final int TYPE_MAX_COUNT = 4;
+    private ListView mListView;
+    
+    /**
+     * params
+     */
+    private final LayoutInflater mInflater;
+    private ArrayList<ElementsModel> mElementsList;
+    private Context mContext;
+    private DetailItemOnclickListener mListener;
+    private ConsultDtoModel mConsultDto;
+	private ConsultDetailPopWindow mPopupWindow;
+	private Animation anima;
+	/**咨询建议时间*/
+	private String treatmentTime;
+	/**咨询多久后自动关闭，单位小时（目前默认5小时）*/
+	private int openNumber;
+	/**用户评价状态（0未邀请， 1已邀请  2已评价），评价为发送满意度*/
+	private int satisfactionStatus;
+	/**用户发送满意度时间*/
+	private String satisfactionTime;
+	private int consultStateDetail;// 咨询服务状态
+	
+	public void setConsultStateDetail(int consultStateDetail) {
+		this.consultStateDetail = consultStateDetail;
+	}
+
+	public void setSatisfactionStatus(int satisfactionStatus) {
+		this.satisfactionStatus = satisfactionStatus;
+	}
+
+	public void setSatisfactionTime(String satisfactionTime) {
+		this.satisfactionTime = satisfactionTime;
+	}
+
+	public void setOpenNumber(int openNumber) {
+		this.openNumber = openNumber;
+	}
+
+	public void setTreatmentTime(String treatmentTime) {
+		this.treatmentTime = treatmentTime;
+	}
+
+	public static interface IMViewType {
+		/**用户信息*/
+		int IM_USER_MSG = 0;
+		/**医生信息*/
+		int IM_DOCTOR_MSG = 1;
+		/**咨询单*/
+		int IM_CONSULT_SINGLE = 2;
+		/**评价*/
+		int IM_EVALUATE = 3;
+	}
+	
+    public ConsultDetailListAdapter(Context context, DetailItemOnclickListener detailItemOnclickListener,ListView listView, ConsultDetailPopWindow popupWindow) {
+        mContext = context;
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mListener = detailItemOnclickListener;
+        mElementsList = new ArrayList<ElementsModel>();
+        mListView = listView;
+        mPopupWindow = popupWindow;
+    	anima = AnimationUtils.loadAnimation(mContext, R.anim.record_progress);
+		anima.setInterpolator(new LinearInterpolator());
+    }
+    
+    /**
+     * 设置列表数据（不包含咨询单）
+     * @param elementsList 消息列表
+     * @param consultDto 咨询服务对象 
+     */
+    public void setListData (ArrayList<ElementsModel> elementsList,ConsultDtoModel consultDto) {
+    	if (consultDto == null || elementsList == null) {
+			return;
+		}
+    	mConsultDto = consultDto;
+        mElementsList = handleList(elementsList, true);
+        notifyDataSetChanged();
+        mListView.setSelection(mListView.getCount() - 1);
+    }
+    
+    /**
+     * 设置列表数据（包含咨询单）
+     * @param elementsList 消息列表
+     * @param consultDto 咨询服务对象 
+     */
+    public void setListDataAddConsultSingle (ArrayList<ElementsModel> elementsList, ConsultDtoModel consultDto) {
+    	ArrayList<ElementsModel> elementsListTemp;
+    	if (elementsList == null) {
+    		elementsListTemp = new ArrayList<ElementsModel>();
+    	} else {
+    		elementsListTemp = elementsList;
+    	}
+    	elementsListTemp.add(getConsultSingleModel(consultDto));
+        setListData(elementsListTemp, consultDto);
+    }
+
+    /**
+     * 设置更多列表数据（不包含咨询单）
+     * @param elementsList 消息列表
+     */
+    
+    public void addMoreListData (final ArrayList<ElementsModel> elementsList) {
+    	if (elementsList == null) {
+			return;
+		}
+		mElementsList.addAll(0, handleList(elementsList, false));
+        notifyDataSetChanged();
+        mListView.post(new Runnable() {
+	          @Override
+	          public void run() {
+	        	    mListView.setSelection(elementsList.size());
+	          }
+	    });
+    }
+    
+    /**
+     * 设置更多列表数据（包含咨询单）
+     * @param elementsList 消息列表
+     * @param consultDto 咨询服务对象 
+     */
+    public void addMoreListDataAddConsultSingle (final ArrayList<ElementsModel> elementsList, ConsultDtoModel consultDto) {
+    	ArrayList<ElementsModel> elementsListTemp;
+    	if (elementsList == null) {
+    		elementsListTemp = new ArrayList<ElementsModel>();
+    	} else {
+    		elementsListTemp = elementsList;
+    	}
+    	elementsListTemp.add(getConsultSingleModel(consultDto));
+    	addMoreListData(elementsList);
+    }
+    
+    /**
+     * 获取咨询单对象
+     */
+    public ElementsModel getConsultSingleModel (ConsultDtoModel consultDto) {
+    	ElementsModel model = new ElementsModel();
+		model.setConsultDto(consultDto);
+		model.setElementModelViewType(IMViewType.IM_CONSULT_SINGLE);
+		return model;
+    }
+    
+    /**
+     * 添加咨询消息
+     * @param model:咨询消息
+     */
+	public void addData(ElementsModel model) {
+		mElementsList.add(model);
+		notifyDataSetChanged();
+	     mListView.post(new Runnable() {
+	          @Override
+	          public void run() {
+	        	    mListView.setSelection(mListView.getCount());
+	          }
+	    });
+	}
+    
+    //更新回复成功状态
+    public void refreshSuccess(int position) {
+    	if (position < 0) {
+    		return;
+    	}
+    	ElementsModel model = mElementsList.get(position);
+    	model.setReplySuccess(true);
+    	model.setReplying(false);
+        notifyDataSetChanged();
+    }
+    
+    //更新回复失败状态
+    public void refreshFail(int position) {
+    	if (position < 0) {
+    		return;
+    	}
+    	ElementsModel model = mElementsList.get(position);
+    	model.setReplying(false);
+    	model.setReplySuccess(false);
+        notifyDataSetChanged();
+        mListView.setSelection(mListView.getCount() - 1);//定位到尾部
+    }
+     /**
+      * 更新为已邀请状态
+      * @param position
+      */
+    public void refreshAlreadyIntive(int position) {
+    	if (position < 0) {
+    		return;
+    	}
+    	ElementsModel model = (ElementsModel) getItem(position);
+    	model.setSatisfactionStatus(AppConstants.INVITE_ALREADY);
+        notifyDataSetChanged();
+        mListView.setSelection(mListView.getCount() - 1);//定位到尾部
+    }
+    
+    /**
+     * 处理数据
+     * @param elementsList  数据源
+     * @param isFisrtInit  是否首次加载
+     * @return
+     */
+	public ArrayList<ElementsModel> handleList(ArrayList<ElementsModel> elementsList, boolean isFisrtInit) {
+		for (ElementsModel model : elementsList) {
+			if (model.getType() == AppConstants.MSG_TYPE_USER) {
+				model.setElementModelViewType(IMViewType.IM_USER_MSG);
+			} else if (model.getType() == AppConstants.MSG_TYPE_DOCTOR) {
+				model.setElementModelViewType(IMViewType.IM_DOCTOR_MSG);
+			}
+		}
+		Collections.reverse(elementsList);
+		if (consultStateDetail != AppConstants.CONSULT_ING && isFisrtInit) {
+			elementsList.add(getEvaluateModel());
+		}
+		return elementsList;
+	}
+    
+	/**
+	 * 评价对象
+	 */
+	public ElementsModel getEvaluateModel() {
+		ElementsModel model = new ElementsModel();
+		model.setSatisfactionStatus(satisfactionStatus);
+		model.setElementModelViewType(IMViewType.IM_EVALUATE);
+		return model;
+	}
+	
+    public void clearListData() {
+        mElementsList.clear();
+        mElementsList = null;
+    }
+
+    @Override
+    public int getCount() {
+        return ListUtils.isEmpty(mElementsList) ? 0 : mElementsList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        if (!ListUtils.isEmpty(mElementsList)) {
+            int size = mElementsList.size();
+            return mElementsList.get(position % size);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return 0;
+    }
+
+    @Override
+    public int getViewTypeCount() {
+        return TYPE_MAX_COUNT;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (!ListUtils.isEmpty(mElementsList)) {
+            return mElementsList.get(position).getElementModelViewType();
+        }
+        return IMViewType.IM_USER_MSG;
+    }
+
+	@Override
+    public View getView(final int position, View convertView, ViewGroup parent) {
+        ElementsModel model=mElementsList.get(position);
+        ViewHolder holder = null;
+        int type = getItemViewType(position);  
+		if (convertView == null) {
+			holder = new ViewHolder();
+			switch (type) {
+			case IMViewType.IM_DOCTOR_MSG:
+				convertView = mInflater.inflate(R.layout.listitem_consultdetail_right_list, null);
+				initConsultMsgView(convertView, holder);
+				break;
+				
+			case IMViewType.IM_USER_MSG:
+				convertView = mInflater.inflate(R.layout.listitem_consultdetail_left_list, null);
+				initConsultMsgView(convertView, holder);
+				break;
+
+			case IMViewType.IM_CONSULT_SINGLE:
+				convertView = mInflater.inflate(R.layout.listitem_consult_single, null);
+				initConsultSingleView(convertView, holder);
+				break;
+				
+			case IMViewType.IM_EVALUATE:
+				convertView = mInflater.inflate(R.layout.listitem_evaluate, null);
+				initEvaluateView(convertView, holder);
+				break;
+			}
+			convertView.setTag(holder);
+		} else {
+			holder = (ViewHolder) convertView.getTag();
+		}
+		if (mPopupWindow.isShowing()) {
+			mPopupWindow.dismiss();
+		}
+		final ViewHolder tempholder = holder;
+		if (model != null) {
+			switch (type) {
+			case IMViewType.IM_DOCTOR_MSG:
+			case IMViewType.IM_USER_MSG:
+				setConsultMsg(tempholder, model, position);
+				break;
+			case IMViewType.IM_CONSULT_SINGLE:
+				setConsultSingle(tempholder, model.getConsultDto());
+				break;
+			case IMViewType.IM_EVALUATE:
+				setEvaluateMsg(tempholder, model, position);
+				break;
+			}
+		}
+        return convertView;
+    }
+
+    public interface DetailItemOnclickListener {
+        public void onButtonClick(int type, Object obj, View view1, View view2);
+        public void onButtonClick(int type, Object obj, View view1, View view2, int position);
+        public void onButtonClick(int type, Object obj, View view1, View view2, ConsultDtoModel consultDto);
+    }
+
+    class ViewHolder {
+        private ImageView image_des;
+        private ImageView icon_userheadurl_list;
+        private TextView description_list;
+        private ImageView consult_vol_list;
+        private LinearLayout volLayout_list;
+        private ImageView vol_animview_list;
+        private TextView tv_time;
+        private TextView tv_duration;
+        private ImageView iv_refresh_progress;
+		private ImageView tv_warning;
+		private TextView tv_consult_text;
+		private SteadyGridView sgv_consult_image;
+		private CircularImage ci_user_head;
+		private TextView tv_hint;
+		private TextView tv_evaluate_text;
+		private TextView tv_evaluate_operation;
+    }
+    
+    /**
+     * 绑定聊天消息的控件
+     */
+    public void initConsultMsgView (View convertView, ViewHolder holder) {
+    	holder.icon_userheadurl_list = (ImageView) convertView.findViewById(R.id.icon_userheadurl_list);
+		holder.description_list = (TextView) convertView.findViewById(R.id.description_list);
+		holder.consult_vol_list = (ImageView) convertView.findViewById(R.id.consult_vol_list);
+		holder.volLayout_list = (LinearLayout) convertView.findViewById(R.id.vol_layout_list);
+		holder.vol_animview_list = (ImageView) convertView.findViewById(R.id.vol_animview_list);
+		holder.image_des = (ImageView) convertView.findViewById(R.id.image_des);
+		holder.tv_time = (TextView) convertView.findViewById(R.id.tv_time);
+		holder.tv_duration = (TextView) convertView.findViewById(R.id.tv_duration);
+		holder.iv_refresh_progress = (ImageView) convertView.findViewById(R.id.iv_refresh_progress);
+		holder.tv_warning = (ImageView) convertView.findViewById(R.id.tv_warning);
+		holder.tv_hint = (TextView) convertView.findViewById(R.id.tv_hint);
+    }
+    
+    /**
+     * 绑定咨询单的控件
+     */
+    public void initConsultSingleView (View convertView, ViewHolder holder) {
+    	holder.tv_consult_text = (TextView) convertView.findViewById(R.id.tv_consult_text);
+	    holder.sgv_consult_image = (SteadyGridView) convertView.findViewById(R.id.sgv_consult_image);
+		holder.ci_user_head = (CircularImage) convertView.findViewById(R.id.ci_user_head);
+    }
+    
+    /**
+     * 绑定评价的控件
+     */
+    public void initEvaluateView (View convertView, ViewHolder holder) {
+    	holder.tv_evaluate_text = (TextView) convertView.findViewById(R.id.tv_evaluate_text);
+    	holder.tv_evaluate_operation = (TextView) convertView.findViewById(R.id.tv_evaluate_operation);
+    	holder.tv_time = (TextView) convertView.findViewById(R.id.tv_time);
+    }
+    
+    /**
+	 * 设置咨询单内容
+	 */
+	public void setConsultSingle(ViewHolder holder, final ConsultDtoModel consultDto) {
+		if (consultDto == null)
+			return;
+		// 头像/名字
+		if (consultDto.getwUserDto() != null) {
+			ImageLoaderHelper.getInstance(mContext).displayImage(consultDto.getwUserDto().getHeadimgurl(),
+					holder.ci_user_head, R.drawable.bank_owener_default_header);
+			holder.ci_user_head.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					mListener.onButtonClick(AppConstants.BUTTON_USER_INFO, null, null, null, consultDto);					
+			  }
+			});
+		}
+		// 内容描述/性别/年龄
+		if (consultDto.getConsultCaseDto() != null) {
+			String personal_info = "("+ (consultDto.getConsultCaseDto().getSexDes() + "," + consultDto.getConsultCaseDto().getAge()) + ")";
+			holder.tv_consult_text.setText(consultDto.getConsultCaseDto().getDescription() + personal_info);
+		}
+		// 图片
+		if (!ListUtils.isEmpty(consultDto.getImageDto())) {
+			SteadyGridViewAdapter mGridViewAdapter = new SteadyGridViewAdapter(mContext);
+			holder.sgv_consult_image.setAdapter(mGridViewAdapter);
+			mGridViewAdapter.addListData(consultDto.getImageDto());
+			ViewUtils.setVisibility(holder.sgv_consult_image, View.VISIBLE);
+		} else {
+			ViewUtils.setVisibility(holder.sgv_consult_image, View.GONE);
+		}
+	} 
+	
+    /**
+	 * 设置咨询消息
+	 */
+	public void setConsultMsg(final ViewHolder holder, final ElementsModel model, final int position) {
+		holder.tv_warning.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+			    if (mListener != null) {
+			    	holder.tv_warning.setVisibility(View.GONE);
+			    	holder.iv_refresh_progress.setVisibility(View.VISIBLE);
+			    	holder.iv_refresh_progress.startAnimation(anima);
+					mListener.onButtonClick(AppConstants.BUTTON_RETRY, model, null, null, position);
+				}
+			}
+		});
+		if (model.isReplying()) {//是否回复中
+			holder.iv_refresh_progress.setVisibility(View.VISIBLE);
+			holder.iv_refresh_progress.startAnimation(anima);
+		} else {
+			holder.iv_refresh_progress.setVisibility(View.GONE);
+			holder.iv_refresh_progress.clearAnimation();
+		}
+		if (model.isReplySuccess()) {//是否回复成功
+			holder.tv_warning.setVisibility(View.GONE);
+		} else {
+			holder.tv_warning.setVisibility(View.VISIBLE);
+		}
+		String preTime = null;
+		if (position > 0)
+			preTime = mElementsList.get(position - 1).getMsgTime();
+		String time = TimeUtils.friendly_time(preTime, model.getMsgTime(), DateUtil.timeFormat2);
+		if (!StringUtils.isEmpty(time)) {
+			holder.tv_time.setVisibility(View.VISIBLE);
+			holder.tv_time.setText(time);
+		} else {
+			holder.tv_time.setVisibility(View.GONE);
+		}
+		// 头像/名字
+		if (model.getType() == 0) {// 患者
+			String userImageUrl = mConsultDto.getwUserDto().getHeadimgurl();
+			ImageLoaderHelper.getInstance(mContext).displayImage(userImageUrl, holder.icon_userheadurl_list,
+					R.drawable.bank_owener_default_header);
+			holder.icon_userheadurl_list.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					mListener.onButtonClick(AppConstants.BUTTON_USER_INFO, null, null, null, mConsultDto);					
+			  }
+			});
+		} else {// 医生
+			String docHeadImg = mConsultDto.getHeadImage();
+			ImageLoaderHelper.getInstance(mContext).displayImage(docHeadImg, holder.icon_userheadurl_list, R.drawable.bank_owener_default_header);
+		}
+		if (AppConstants.MSG_IMAGE.equals(model.getMsgType())) {
+			ViewUtils.setVisibility(holder.volLayout_list, View.GONE);
+			ViewUtils.setVisibility(holder.description_list, View.GONE);
+			ViewUtils.setVisibility(holder.tv_hint, View.GONE);
+			ViewUtils.setVisibility(holder.image_des, View.VISIBLE);
+			ImageLoaderHelper.getInstance(mContext).displayImage(model.getRealUrl(), holder.image_des);
+			holder.image_des.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					ImageDtoModel dataModel = new ImageDtoModel();
+					dataModel.setRealUrl(model.getRealContentUrl());
+					ArrayList<ImageDtoModel> list = new ArrayList<ImageDtoModel>();
+					list.add(dataModel);
+					ImageDetailActivity.startActivity(mContext, 0, list);
+				}
+			});
+		} else if (AppConstants.MSG_VOICE.equals(model.getMsgType())) {
+			ViewUtils.setVisibility(holder.volLayout_list, View.VISIBLE);
+			ViewUtils.setVisibility(holder.description_list, View.GONE);
+			ViewUtils.setVisibility(holder.tv_hint, View.GONE);
+			ViewUtils.setVisibility(holder.image_des, View.GONE);
+			holder.tv_duration.setText(model.getMediaDura() + "\"");
+			holder.volLayout_list.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (mListener != null) {
+						mListener.onButtonClick(AppConstants.BUTTON_VOL, model, holder.consult_vol_list, holder.vol_animview_list);
+					    }
+					}
+			});
+		} else if (AppConstants.MSG_TEXT.equals(model.getMsgType())) {
+			setTextOrTreatmentMsg(holder, model);
+		} else if (AppConstants.MSG_TREAT.equals(model.getMsgType())) {
+			holder.tv_hint.setVisibility(View.VISIBLE);
+			if (treatmentTime != null && treatmentTime.equals(model.getMsgTime())) {
+				String hint = mContext.getResources().getString(R.string.str_first_send_consult_advice, openNumber);
+				holder.tv_hint.setText(hint);
+			} else {
+				holder.tv_hint.setText(mContext.getResources().getString(R.string.str_update_consult_advice));
+			}
+			setTextOrTreatmentMsg(holder, model);
+		} else {
+			ViewUtils.setVisibility(holder.volLayout_list, View.GONE);
+			ViewUtils.setVisibility(holder.description_list, View.GONE);
+		}
+	} 
+	
+	/**
+	 * 设置文本或者咨询建议消息
+	 */
+	public void setTextOrTreatmentMsg(final ViewHolder holder, final ElementsModel model) {
+		SpannableString spannableString = FaceConversionUtil.getInstace(
+				mContext).getExpressionString(mContext, model.getContent());
+		if (!StringUtils.isEmpty(spannableString.toString())) {
+			String consultAdvice = mContext.getResources().getString(R.string.consult_advice);
+			if (AppConstants.MSG_TEXT.equals(model.getMsgType())) {
+				holder.description_list.setText(spannableString);
+			} else if (AppConstants.MSG_TREAT.equals(model.getMsgType())) {
+				holder.description_list.setText(consultAdvice + "：\n" + spannableString);
+			}
+			if (AppConstants.MSG_TEXT.equals(model.getMsgType()) && mConsultDto.getConsultStateDetail() == AppConstants.CONSULT_ING) {
+				holder.description_list.setOnLongClickListener(new OnLongClickListener() {
+					@Override
+					public boolean onLongClick(View arg0) {
+						mListener.onButtonClick(AppConstants.TEXT_COPY, model, holder.description_list, null);
+						return false;
+					}
+				});
+			}
+			
+			holder.description_list.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					mListener.onButtonClick(AppConstants.TEXT_CLICK, model,
+							holder.description_list, null);
+				}
+			});
+			ViewUtils.setVisibility(holder.volLayout_list, View.GONE);
+			ViewUtils.setVisibility(holder.description_list, View.VISIBLE);
+			ViewUtils.setVisibility(holder.image_des, View.GONE);
+			if (AppConstants.MSG_TREAT.equals(model.getMsgType())) {
+				ViewUtils.setVisibility(holder.tv_hint, View.VISIBLE);
+			} else {
+				ViewUtils.setVisibility(holder.tv_hint, View.GONE);
+			}
+		} else {
+			ViewUtils.setVisibility(holder.volLayout_list, View.GONE);
+			ViewUtils.setVisibility(holder.description_list, View.GONE);
+			ViewUtils.setVisibility(holder.tv_hint, View.GONE);
+			ViewUtils.setVisibility(holder.image_des, View.GONE);
+		}
+	}
+	
+	/**
+	 * 设置评价消息
+	 */
+	public void setEvaluateMsg(final ViewHolder holder, final ElementsModel model, final int position) {
+		String preTime = null;
+		if (position > 0)
+			preTime = mElementsList.get(position - 1).getMsgTime();
+		String time = TimeUtils.friendly_time(preTime, model.getMsgTime(), DateUtil.timeFormat2);
+		if (!StringUtils.isEmpty(time)) {
+			holder.tv_time.setVisibility(View.VISIBLE);
+			holder.tv_time.setText(time);
+		} else {
+			holder.tv_time.setVisibility(View.GONE);
+		}
+		if (model.getSatisfactionStatus() == AppConstants.INVITE_NO) {
+			holder.tv_evaluate_text.setVisibility(View.VISIBLE);
+			holder.tv_evaluate_operation.setVisibility(View.VISIBLE);
+			holder.tv_evaluate_text.setText(mContext.getString(R.string.str_no_evaluate));
+			holder.tv_evaluate_operation.setText(mContext.getString(R.string.str_invite_evaluate));
+		} else if (model.getSatisfactionStatus()  == AppConstants.INVITE_ALREADY) {
+			holder.tv_evaluate_text.setVisibility(View.VISIBLE);
+			holder.tv_evaluate_text.setText(mContext.getString(R.string.str_arlready_invite_evaluate));
+			holder.tv_evaluate_operation.setVisibility(View.GONE);
+		} else if (model.getSatisfactionStatus()  == AppConstants.EVALUATE_ALREADY) {
+			holder.tv_evaluate_text.setVisibility(View.VISIBLE);
+			holder.tv_evaluate_operation.setVisibility(View.VISIBLE);
+			String nickName = mConsultDto.getwUserDto().getNicknameStr();
+			holder.tv_evaluate_text.setText(nickName + mContext.getString(R.string.str_already_evaluate));
+			holder.tv_evaluate_operation.setText(mContext.getString(R.string.check_comment));
+		} 
+		holder.tv_evaluate_operation.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+            if (model.getSatisfactionStatus() == AppConstants.INVITE_NO) {   				
+            	mListener.onButtonClick(AppConstants.INVITE_EVALUATE, model, null, null, position);
+            } else if (model.getSatisfactionStatus() == AppConstants.EVALUATE_ALREADY) {
+            	mListener.onButtonClick(AppConstants.CHECK_EVALUATE, model, null, null);
+            }
+			}
+		});
+	}
+}

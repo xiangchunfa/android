@@ -1,0 +1,101 @@
+package com.qdoc.client.ui.dialog;
+
+import android.app.Dialog;
+import android.content.Context;
+import android.os.Bundle;
+import android.view.View;
+import android.view.Window;
+import android.widget.Button;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.helper.ViewInitial;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.util.StringUtils;
+/**
+ * FileName    : SingleHintDlg.java
+ * Description : 单个按钮提示对话框
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : Andy
+ * @version    : 1.0 
+ * Create Date : 2015-4-13 
+ **/
+public class SingleHintDlg extends BaseDlg implements ViewInitial{
+
+	private Button btnCenter;
+	private TextView tvTitle;
+	private TextView tvContent;
+	private String title, content;
+    private String btnCenterText;
+    private int resID;//布局ID
+    private OnDialogclickListener listener;
+    
+    public SingleHintDlg(Context context, String content, String title, OnDialogclickListener listener,int resID) {
+		super(context);
+		this.content = content;
+		this.title = title;
+		this.listener = listener;
+		this.resID = resID;
+	}
+    
+	public SingleHintDlg(Context context, String content, String title,String btnCenterText,OnDialogclickListener listener,int resID) {
+		super(context);
+		this.content = content;
+		this.title = title;
+		this.btnCenterText = btnCenterText;
+		this.listener = listener;
+		this.resID = resID;
+	}
+	
+	public SingleHintDlg(Context context, String content, String title,String btnCenterText, OnDialogclickListener listener,int resID,boolean cancelable) {
+		this(context, content, title, btnCenterText, listener, resID);
+		setCanceledOnTouchOutside(cancelable);
+	}
+	
+	
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(resID);
+		getWindow().setBackgroundDrawableResource(android.R.color.transparent);//设置dialog圆角效果
+        initViews();
+        initDatas();
+        initListeners();
+	}
+
+	@Override
+	public void initViews() {
+		btnCenter = (Button) findViewById(R.id.btn_center_dialog);
+		tvContent = (TextView) findViewById(R.id.tv_text);
+		tvTitle = (TextView) findViewById(R.id.message_title);
+	}
+
+	@Override
+	public void initDatas() {
+        if(!StringUtils.isEmpty(title))		
+		    tvTitle.setText(title);
+		if(!StringUtils.isEmpty(content))
+            tvContent.setText(content);
+		if(!StringUtils.isEmpty(btnCenterText))
+			btnCenter.setText(btnCenterText);
+	}
+
+	@Override
+	public void initListeners() {
+		 if(btnCenter!=null){
+	       btnCenter.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+		          listener.onButtonClick(AppConstants.CENTER_BUTTON,SingleHintDlg.this);		
+			}
+		  }) ; 
+		 }
+	}
+	
+    public interface OnDialogclickListener {
+        public void onButtonClick(int type, Dialog dialog);
+    }
+}

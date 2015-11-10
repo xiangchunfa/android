@@ -1,0 +1,38 @@
+/*
+ * DoctorCardDataModel.java
+ * classes : com.qdoc.client.model.DoctorCardDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-19 下午11:22:51
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.DoctorCardDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-19 下午11:22:51
+ */
+public class DoctorCardDataModel extends AbstractBaseModel {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -5796134827217775410L;
+	
+	private DoctorCardModel doctorCard;
+
+    /**
+     * @return the doctorCard
+     */
+    public DoctorCardModel getDoctorCard() {
+        return doctorCard;
+    }
+
+    /**
+     * @param doctorCard the doctorCard to set
+     */
+    public void setDoctorCard(DoctorCardModel doctorCard) {
+        this.doctorCard = doctorCard;
+    }
+
+}

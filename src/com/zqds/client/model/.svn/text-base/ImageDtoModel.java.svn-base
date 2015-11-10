@@ -1,0 +1,157 @@
+/*
+ * ConsultImageDtoModel.java
+ * classes : com.qdoc.client.model.ConsultImageDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:08:20
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * com.qdoc.client.model.ConsultImageDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:08:20
+ */
+public class ImageDtoModel implements Serializable {
+
+    private static final long serialVersionUID = -1416932114121028040L;
+    private String descript;
+    private int id;
+    private String name;
+    private int type;
+    private String unionId;
+    private String url;
+    private String uuid;
+    private String realUrl;
+    private String realThumbuUrl;
+
+    /**
+     * @return the realUrl
+     */
+    public String getRealUrl() {
+        return realUrl;
+    }
+
+    /**
+     * @param realUrl the realUrl to set
+     */
+    public void setRealUrl(String realUrl) {
+        this.realUrl = realUrl;
+    }
+
+    /**
+     * @return the descript
+     */
+    public String getDescript() {
+        return descript;
+    }
+
+    /**
+     * @param descript the descript to set
+     */
+    public void setDescript(String descript) {
+        this.descript = descript;
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @param name the name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * @return the type
+     */
+    public int getType() {
+        return type;
+    }
+
+    /**
+     * @param type the type to set
+     */
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    /**
+     * @return the unionId
+     */
+    public String getUnionId() {
+        return unionId;
+    }
+
+    /**
+     * @param unionId the unionId to set
+     */
+    public void setUnionId(String unionId) {
+        this.unionId = unionId;
+    }
+
+    /**
+     * @return the url
+     */
+    public String getUrl() {
+        return url;
+    }
+
+    /**
+     * @param url the url to set
+     */
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * @return the realThumbuUrl
+     */
+    public String getRealThumbuUrl() {
+        return realThumbuUrl;
+    }
+
+    /**
+     * @param realThumbuUrl the realThumbuUrl to set
+     */
+    public void setRealThumbuUrl(String realThumbuUrl) {
+        this.realThumbuUrl = realThumbuUrl;
+    }
+
+}

@@ -1,0 +1,404 @@
+package com.qdoc.client.ui;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.UserInformationDtoDataModel;
+import com.qdoc.client.model.UserInformationDtoModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.fragment.MyConsultListFragment;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+
+public class FansDetailInfoActivity extends BaseActivity {
+	
+	public static final String TAG = FansDetailInfoActivity.class.getSimpleName();
+	
+	private TitleBar mTitleBar;
+	private ImageView fans_header_img;
+	//private TextView consult_count;
+	private TextView fans_name;
+	private TextView fans_sex_and_age;
+	private TextView focus_time;
+	private TextView focus_type;
+	private EditText remark_name_value;
+	private EditText fans_description;
+	private RelativeLayout rl_fans_group,rl_consult_record;
+	private TextView patient_group_value;
+	private TextView consult_record_count;
+	private TextView consult_record;
+	private LinearLayout ll_remark_info;
+	private long categoryId;
+	private String categoryName;
+	private int patient_sex;//患者性别
+	
+	//private MyFansListDto global_FansDetail;
+	private String openId;
+	
+	private UserInformationDtoModel globalUserInformationDtoModel;
+	private String patienNnickName;
+	private RelativeLayout fans_wechat_info_layout;
+
+	
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_fans_detail_info);
+		
+		initView();
+		initData();
+		initListener();
+		registerUpdateStatusReceiver();
+	}
+	
+	
+
+	@Override
+	protected void initView() {
+		mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.user_info, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+	                getResources().getColor(R.color.titlebar_bg));
+		fans_header_img = (ImageView) findViewById(R.id.fans_header_img);
+		//consult_count = (TextView) findViewById(R.id.consult_count);
+		fans_name = (TextView) findViewById(R.id.fans_name);
+		fans_sex_and_age = (TextView) findViewById(R.id.fans_sex_and_age);
+		focus_time = (TextView) findViewById(R.id.focus_time);
+		focus_type = (TextView) findViewById(R.id.focus_type);
+		remark_name_value = (EditText) findViewById(R.id.remark_name_value);
+		fans_description = (EditText) findViewById(R.id.fans_description);
+		patient_group_value = (TextView) findViewById(R.id.patient_group_value);
+		rl_fans_group = (RelativeLayout) findViewById(R.id.rl_fans_group);
+		rl_consult_record = (RelativeLayout) findViewById(R.id.rl_consult_record);
+		consult_record_count = (TextView) findViewById(R.id.consult_record_count);
+		consult_record = (TextView) findViewById(R.id.consult_record);
+		fans_wechat_info_layout = (RelativeLayout) findViewById(R.id.fans_wechat_info_layout);
+		ll_remark_info = (LinearLayout) findViewById(R.id.ll_remark_info);
+	}
+	
+	private void initData(){
+		openId = getIntent().getExtras().getString(IntentTools.EXTRA_OPEN_ID);
+		if(TextUtils.isEmpty(openId))
+			openId = "";
+		startFindUserInfoRequest(openId);
+/*		if(global_FansDetail==null && !TextUtils.isEmpty(openId)){
+			startFindUserInfoRequest(openId);
+		}else{
+			openId = global_FansDetail.getOpenId();
+			showViewContent();
+			getConsultRecordByOpenIdInit();
+		}*/
+	}
+	
+	private void showViewContent(UserInformationDtoModel userInformationDtoModel){
+		if(null==userInformationDtoModel)
+			return;
+		ImageLoaderHelper.getInstance(this).displayImage(userInformationDtoModel.getHeadimgurl(), fans_header_img,R.drawable.bank_owener_default_header);
+		fans_name.setText(StringUtils.getReplaceHighLightTag(userInformationDtoModel.getNicknameStr()));
+		//拼接粉丝年龄和性别字符串
+		StringBuffer sb = new StringBuffer();
+		if(AppConstants.SEX_MALE==userInformationDtoModel.getSex()){
+			sb.append(getString(R.string.male));
+			consult_record.setText(R.string.his_consult_record);
+		}else if(AppConstants.SEX_FEMALE==userInformationDtoModel.getSex()){
+			sb.append(getString(R.string.female));
+			consult_record.setText(R.string.her_consult_record);
+		}else{
+			sb.append(getString(R.string.unknow));
+			consult_record.setText(R.string.his_consult_record);
+		}
+		if(!TextUtils.isEmpty(userInformationDtoModel.getAge())){
+			sb.append(" "+userInformationDtoModel.getAge()+getString(R.string.age));
+		}
+		//显示粉丝年龄和性别
+		fans_sex_and_age.setText(sb.toString());
+		//显示关注时间
+		if(TextUtils.isEmpty(userInformationDtoModel.getFocusTime())){
+			//关注时间为空
+			focus_time.setVisibility(View.GONE);
+		}else{
+			//关注时间不为空
+			focus_time.setText(userInformationDtoModel.getFocusTime());
+		}
+/*		if(AppConstants.FOCUS_CHANNEL_QRCODE==global_FansDetail.getFocusChannel()){
+			focus_type.setText(getString(R.string.focus_soure)+getString(R.string.qrcode));
+		}else if(AppConstants.FOCUS_CHANNEL_PLATFORM_SEARCH==global_FansDetail.getFocusChannel()){
+			focus_type.setText(getString(R.string.focus_soure)+getString(R.string.wechat_public));
+		}else{
+			focus_type.setText(getString(R.string.not_focus));
+		}*/
+		//显示关注渠道（二维码、公众号、未关注）
+		if(TextUtils.isEmpty(userInformationDtoModel.getFocusChannel())){
+			ll_remark_info.setVisibility(View.GONE);
+			focus_type.setText(getString(R.string.not_focus));
+		}else{
+			ll_remark_info.setVisibility(View.VISIBLE);
+			focus_type.setText(userInformationDtoModel.getFocusChannel()+getString(R.string.focus));
+			remark_name_value.setText(TextUtils.isEmpty(userInformationDtoModel.getRemarkName())?"":userInformationDtoModel.getRemarkName());
+			fans_description.setText(TextUtils.isEmpty(userInformationDtoModel.getDescription())?"":userInformationDtoModel.getDescription());
+			patient_group_value.setText(TextUtils.isEmpty(userInformationDtoModel.getCategoryName())?getString(R.string.ungrouped):userInformationDtoModel.getCategoryName());
+		}
+		consult_record_count.setText(userInformationDtoModel.getConsultNub()+"");
+	}
+
+	@Override
+	protected void initListener() {
+		//启动粉丝分组界面
+		rl_fans_group.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(FansDetailInfoActivity.this, FansGroupListActivity.class);
+				intent.putExtra(IntentTools.EXTRA_CATEGORY_ID, categoryId);
+				intent.putExtra(IntentTools.EXTRA_OPEN_ID, openId);
+				startActivity(intent);
+			}
+		});
+		
+		//启动咨询记录界面
+		rl_consult_record.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(FansDetailInfoActivity.this, ConsultRecordActivity.class);
+				intent.putExtra(IntentTools.EXTRA_OPEN_ID, openId);
+				intent.putExtra(IntentTools.EXTRA_PATIENT_SEX, patient_sex);
+				startActivity(intent);
+			}
+		});
+		
+		remark_name_value.setOnFocusChangeListener(new OnFocusChangeListener() {
+			
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				if(!hasFocus){
+					//失去焦点，保存备注名
+					String remarkName = remark_name_value.getText().toString().trim();
+					//没有修改，不做任何处理
+					if(remarkName.equals(globalUserInformationDtoModel.getRemarkName()))
+						return;
+					updateFansRemark(AppConstants.UPDATE_REMARKNAME, remarkName);
+				}
+			}
+		});
+		
+		fans_description.setOnFocusChangeListener(new OnFocusChangeListener() {
+			
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				if(!hasFocus){
+					//失去焦点，保存粉丝描述
+					String description = fans_description.getText().toString().trim();
+					//描述没有修改，不错任何处理
+					if(description.equals(globalUserInformationDtoModel.getDescription()))
+						return;
+					updateFansRemark(AppConstants.UPDATE_DESCRIPTION, description);
+				}
+			}
+		});
+		
+		fans_wechat_info_layout.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				
+			}
+		});
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			finish();
+		}
+	};
+	
+    private void startFindUserInfoRequest(String openID) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		RequestParams params = DataRequestUtils.getFindUserInfoRequestParam(TAG, token, openID);
+		HttpTaskManager.startStringRequest(params,JsonParserFactory.parseBaseModel(UserInformationDtoDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+						   final UserInformationDtoDataModel dataModel = (UserInformationDtoDataModel) resultData;
+                           if(dataModel != null&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+                        	   UserInformationDtoModel userInformationDtoModel = dataModel.getUserInfor();
+                        	   globalUserInformationDtoModel = userInformationDtoModel;
+                        	   if(TextUtils.isEmpty(globalUserInformationDtoModel.getRemarkName()))
+                        		   globalUserInformationDtoModel.setRemarkName("");
+                        	   if(TextUtils.isEmpty(globalUserInformationDtoModel.getDescription()))
+                        		   globalUserInformationDtoModel.setDescription("");
+                        	   if(null!=userInformationDtoModel){
+                        		   categoryId = userInformationDtoModel.getCategoryId()==0?1:userInformationDtoModel.getCategoryId();
+                        		   categoryName = TextUtils.isEmpty(userInformationDtoModel.getCategoryName())?"":userInformationDtoModel.getCategoryName();
+                        		   patient_sex = userInformationDtoModel.getSex();
+                        		   patienNnickName = userInformationDtoModel.getNicknameStr();
+                        	   }
+/*                        	   global_FansDetail = new MyFansListDto();
+                        	   global_FansDetail.setConsultNub(userInformationDtoModel.getConsultNub());
+                        	   if(getString(R.string.qrcode).equals(userInformationDtoModel.getFocusChannel())){
+                        		   //二维码
+                        		   global_FansDetail.setFocusChannel(AppConstants.FOCUS_CHANNEL_QRCODE);
+                        	   }else if(getString(R.string.wechat_public).equals(userInformationDtoModel.getFocusChannel())){
+                        		   //公众账号
+                        		   global_FansDetail.setFocusChannel(AppConstants.FOCUS_CHANNEL_PLATFORM_SEARCH);
+                        	   }else{
+                        		   //未关注
+                        		   global_FansDetail.setFocusChannel(AppConstants.FOCUS_CHANNEL_UNFOCUS);
+                        	   }
+                        	   global_FansDetail.setFocusTime(userInformationDtoModel.getFocusTime());
+                        	   global_FansDetail.setHeadimgurl(userInformationDtoModel.getHeadimgurl());
+                        	   global_FansDetail.setNicknameStr(userInformationDtoModel.getNicknameStr());
+                        	   global_FansDetail.setOpenId(userInformationDtoModel.getOpenId());
+                        	   global_FansDetail.setSex(userInformationDtoModel.getSex());*/
+                        	   showViewContent(userInformationDtoModel);
+                        	   //getConsultRecordByOpenIdInit();
+						   }else if(dataModel!=null && dataModel.getState()==ServerErrorCode.TOKEN_INVALID){
+							   LoginActivity.startActivity(FansDetailInfoActivity.this);
+						   }
+						}else{
+		                    if (resultData == null) {
+		                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+		                    } else {
+		                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+		                    }
+						}
+					}
+				});
+	}
+    
+    /**
+     * 修改粉丝备注名或者描述
+     * @param type
+     * @param description
+     */
+    private void updateFansRemark(final int type,final String description){
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.updateFansRemark(TAG, token, openId, type, description), 
+    			JsonParserFactory.parseBaseModel(BaseModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(ServerErrorCode.STATUS_SUCCESS==resultCode){
+					BaseModel baseModel = (BaseModel) resultData;
+					if(baseModel!=null&&baseModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						if(type==AppConstants.UPDATE_REMARKNAME){
+							//修改的是备注名
+							MyConsultListFragment.isRefresh = true;
+							if(globalUserInformationDtoModel!=null)
+								globalUserInformationDtoModel.setRemarkName(description);
+							//刷新所有显示昵称的地方
+							String updateRemarkName = null;
+							if(StringUtils.isEmpty(description))
+								updateRemarkName = patienNnickName;
+							else
+								updateRemarkName = description;
+							Intent intent = new Intent(AppConstants.ACTION_REFRESH_REMARK_NAME);
+							intent.putExtra(IntentTools.EXTRA_REFRESH_REMARK_NAME, updateRemarkName);
+							LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+						}else if(type==AppConstants.UPDATE_DESCRIPTION){
+							//修改的是描述
+							if(globalUserInformationDtoModel!=null)
+								globalUserInformationDtoModel.setDescription(description);
+						}
+					}else if(baseModel!=null&&baseModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getContext().getApplicationContext());
+					}else if(baseModel==null){
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+			}
+		});
+    }
+    
+    BroadcastReceiver updateFansDetailReceiver = new BroadcastReceiver(){
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			categoryId = intent.getLongExtra(IntentTools.EXTRA_CATEGORY_ID, 1);
+			categoryName = intent.getStringExtra(IntentTools.EXTRA_CATEGORY_NAME);
+			patient_group_value.setText(categoryName);
+		}};
+    
+	private void registerUpdateStatusReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.REFRESH_FANS_INFO_DETAIL);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(updateFansDetailReceiver, myIntentFilter);
+	}
+	
+	private void unRegisterUpdateStatusReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(updateFansDetailReceiver);
+	}
+	
+/*    public static void startActivity(Context context,MyFansListDto myFanListDto) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.startFansDetailInfoActivity(context, myFanListDto));
+    }*/
+    
+    public static void startActivity(Context context,String openid){
+    	if(context == null){
+    		return;
+    	}
+    	context.startActivity(IntentTools.startFansDetailInfoActivityByOpenId(context, openid));
+    }
+    
+    @Override
+    public void finish() {
+    	super.finish();
+		String newRemarkName = remark_name_value.getText().toString().trim();
+		String newDescription = fans_description.getText().toString().trim();
+		if(null==globalUserInformationDtoModel)
+			return;
+		if(!globalUserInformationDtoModel.getRemarkName().equals(newRemarkName))
+			updateFansRemark(AppConstants.UPDATE_REMARKNAME, newRemarkName);
+		if(!globalUserInformationDtoModel.getDescription().equals(newDescription))
+			updateFansRemark(AppConstants.UPDATE_DESCRIPTION, newDescription);
+    }
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		unRegisterUpdateStatusReceiver();
+		HttpTaskManager.stop(TAG);
+	}
+}

@@ -1,0 +1,69 @@
+package com.qdoc.client.ui.view;
+
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.ArticleListDto;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.util.TimeUtils;
+
+/**
+ * 微信文章View
+ * @author Antony
+ *create at 2015-08-20
+ */
+public class MobileClinicArticleItem extends LinearLayout {
+	
+	private View convertView;
+	private Context mContext;
+	private ImageView article_icon;
+	private TextView article_title;
+	private TextView article_send_time;
+	private TextView article_read_count;
+	private TextView article_comment_count;
+	private ArticleListDto articleDto;
+
+
+	public MobileClinicArticleItem(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		// TODO Auto-generated constructor stub
+	}
+
+	public MobileClinicArticleItem(Context context,ArticleListDto articleDto) {
+		super(context);
+		this.articleDto = articleDto;
+		this.mContext = context;
+		initView();
+		initData();
+	}
+	
+	private void initView(){
+		convertView = LayoutInflater.from(mContext).inflate(R.layout.mobile_clinic_article_item, null);
+		
+		article_icon = (ImageView) convertView.findViewById(R.id.iv_article_icon);
+		article_title = (TextView) convertView.findViewById(R.id.tv_article_title);
+		article_send_time = (TextView) convertView.findViewById(R.id.tv_time);
+		article_read_count = (TextView) convertView.findViewById(R.id.tv_read_count);
+		article_comment_count = (TextView) convertView.findViewById(R.id.tv_comment_count);
+		this.addView(convertView);
+	}
+	
+	private void initData(){
+		//加载文章图片
+		ImageLoaderHelper.getInstance(mContext).displayImage(articleDto.getArtHeadImgUrl(), article_icon, R.drawable.icon_default);
+		//文章标题
+		article_title.setText(articleDto.getArtTitle());
+		//文章发表时间
+		article_send_time.setText(TimeUtils.friendly_time(articleDto.getArtPublishTime()));
+		//文章阅读数
+		article_read_count.setText(mContext.getString(R.string.read_count)+articleDto.getReadCount());
+		//文章评价数
+		article_comment_count.setText(mContext.getString(R.string.comments)+articleDto.getReviewCount());
+	}
+
+}

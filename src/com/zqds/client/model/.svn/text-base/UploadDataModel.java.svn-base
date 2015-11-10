@@ -1,0 +1,49 @@
+/*
+ * UploadDataModel.java
+ * classes : com.qdoc.client.model.UploadDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-26 下午3:45:58
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.UploadDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-26 下午3:45:58
+ */
+public class UploadDataModel extends AbstractBaseModel {
+
+    private String path;
+    private String realName;
+
+    /**
+     * @return the path
+     */
+    public String getPath() {
+        return path;
+    }
+
+    /**
+     * @param path the path to set
+     */
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    /**
+     * @return the realName
+     */
+    public String getRealName() {
+        return realName;
+    }
+
+    /**
+     * @param realName the realName to set
+     */
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+}

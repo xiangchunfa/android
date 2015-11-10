@@ -1,0 +1,483 @@
+package com.qdoc.client.ui;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.app.ActivityGroup;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.AudioManager;
+import android.media.SoundPool;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.view.KeyEvent;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.download.UpdateManager;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.RegistDeviceDataModel;
+import com.qdoc.client.model.SoftwareUpgradeModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.presenter.MainActivityPresenter;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.Tools;
+import com.tencent.android.tpush.XGPushClickedResult;
+
+@SuppressWarnings("deprecation")
+public class MainActivity extends ActivityGroup {
+
+    /**
+     * TAG
+     */
+    private static final String TAG = "MainActivity";
+
+    /**
+     * 多屏切换组件的适配器
+     */
+    private MainActivityPresenter mPresenter;
+
+    /**
+     * 需要切换的tab
+     */
+    public static final String EXTRA_TAB_INDEX_KEY = "TAB_INDEX_KEY";
+
+    /**
+     * 需要切换的子页面tab
+     */ 
+    public static final String EXTRA_SUBPAGE_TAB_INDEX_KEY = "SUBPAGE_TAB_INDEX_KEY";
+    
+    /**
+     * 两次back之间退出的时间
+     */
+    private long mExitTime = 0l;
+    private static final long EXIT_TIMEOUT = 3000l;
+
+    /**
+     * params
+     */
+    public static final int TAB_INDEX_TAB1_ACTIVITY = 0x00;
+    public static final int TAB_INDEX_TAB2_ACTIVITY = 0x01;
+    public static final int TAB_INDEX_TAB3_ACTIVITY = 0x02;
+    public static final int TAB_INDEX_TAB4_ACTIVITY = 0x03;
+    public static final int TAB_INDEX_TAB5_ACTIVITY = 0x04;
+    
+    /**
+     * 子页面的序号
+     */
+    public static final int TAB_INDEX_HISTORY_CONSULT = 0x00;//历史咨询记录子页面
+    
+	private static final long iDefaultActiveTime = 300000;
+	private long iSleepTime = iDefaultActiveTime;
+	private boolean iRunable = true;
+	
+	private UpdateManager mUpdateManager;
+	public static MainActivity instance;
+	private static boolean isRunning = false;//是否正在调用登录接口
+	
+	private SoundPool mSoundPool;
+    
+	@Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        initView();
+        initData();
+        initListener();
+    }
+
+    public void onResume() {
+        super.onResume();
+        //小红点显示
+        Global.initRedDotHint();
+        //检测版本更新
+    	boolean isCall = PersonalConfig.getString(PersonalConfigKey.EXTAR_VERSION_UPGRADE).equals(DateUtil.getDate("yyyy-MM-dd"));//当天是否调用升级接口
+        if(!isCall && !isRunning){
+        	isRunning = true;
+        	showVersionUpdateDialog();
+        }
+    }
+
+    protected void initView() {
+        mPresenter = new MainActivityPresenter(this);
+    }
+    
+    protected void initData(){
+    	instance = this;
+    	mSoundPool = new SoundPool(1, AudioManager.STREAM_RING, 5);
+    	mSoundPool.load(this, R.raw.ring, 1);
+    	Thread iThread = new Thread(new UpdateStatus());
+		iThread.start();
+		registerUpdateReceiver();
+    }
+    
+    
+    /**
+     * 解析推送的内容，并跳转到不同页面
+     */
+    public void parseContent(XGPushClickedResult click){
+          String customContent = click.getCustomContent();
+          int type = -1;
+          String consultId = "0";
+          String consultOption = "";
+          if (customContent != null && customContent.length() != 0) {
+            try {
+                JSONObject obj = new JSONObject(customContent);
+                // key1为前台配置的key
+                if (!obj.isNull("action")) {
+                    String value = obj.getString("action");
+                    type = Integer.valueOf(value);
+                    if (!obj.isNull("consultId")) {
+                       consultId = obj.getString("consultId");
+                    }
+                    if (!obj.isNull("consultOption")){
+                       consultOption = obj.getString("consultOption");	
+                    }
+                    startAction(type, consultId, consultOption);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }    
+    
+    private void getRegisterDeviceRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        String devicetoken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.getRegisterDeviceRequestParam(TAG, token, devicetoken, AppConstants.DEVICE_TYPE),
+                JsonParserFactory.parseBaseModel(RegistDeviceDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                        } else {
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+         });
+    }
+    
+    
+    protected void initListener() {
+    }
+
+    public void showTabReddotHint(int tab) {
+        switch (tab) {
+            case 0:
+                if (mPresenter != null) {
+                    mPresenter.notifyTab1Update();
+                }
+                break;
+            case 1:
+                if (mPresenter != null) {
+                    mPresenter.notifyTab2Update();
+                }
+                break;
+            case 2:
+                if (mPresenter != null) {
+                    mPresenter.notifyTab3Update();
+                }
+                break;
+            case 3:
+                if (mPresenter != null) {
+                    mPresenter.notifyTab4Update();
+                }
+                break;
+            case 4:
+                if (mPresenter != null) {
+                    mPresenter.notifyTab5Update();
+                }
+                break;
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        // TODO Auto-generated method stub
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (intent.getIntExtra(IntentTools.EXTRA_LAUNCHER_FROM, -1) == AppConstants.XG_PUSH_MESSAGE) {
+            int type = intent.getIntExtra(IntentTools.EXTRA_TYPE ,-1);
+            String consuldId = intent.getStringExtra(IntentTools.EXTRA_CONSULT_ID);
+            String consuldOption = intent.getStringExtra(IntentTools.EXTRA_CONSULT_OPTION);  
+            startAction(type, consuldId, consuldOption);
+        } else {    
+        	handleIntent(intent);
+        }
+    }
+    
+    /**
+     * 根据Action，调整到不同页面
+     * @param type  类型
+     * @param consultId  咨询ID
+     * @param consultOption 咨询操作
+     */
+    public void startAction(int type, String consultId, String consultOption){
+        if (type != -1) {
+           if (type == AppConstants.CONSULT) {//咨询或者咨询单
+               handleIntent(getGotoInent(MainActivity.TAB_INDEX_TAB1_ACTIVITY));
+           } else if (type == AppConstants.MESSAGE) {//消息
+        	   handleIntent(getGotoInent(MainActivity.TAB_INDEX_TAB2_ACTIVITY));
+           } else if (type == AppConstants.GRAB_ORDER) {//抢单
+        	   handleIntent(getGotoInent(MainActivity.TAB_INDEX_TAB3_ACTIVITY));
+           } else if (type == AppConstants.DISCOVER) {//发现
+        	   handleIntent(getGotoInent(MainActivity.TAB_INDEX_TAB4_ACTIVITY));
+           } else if (type == AppConstants.MY) {//我的
+        	   handleIntent(getGotoInent(MainActivity.TAB_INDEX_TAB5_ACTIVITY));
+           } else if (type ==AppConstants.CONSULT_BILL) {//咨询单相关
+        	   if(!StringUtils.isEmpty(consultOption)){
+        		   int mConsultOption = Integer.valueOf(consultOption);
+        		   if (mConsultOption == AppConstants.CONSULTOPTION_ORDER_CONSULT) {//订购咨询
+        			   handleIntent(getGotoInent(MainActivity.TAB_INDEX_TAB1_ACTIVITY));
+        		   } else if (mConsultOption == AppConstants.CONSULTOPTION_CANCEL_CONSULT) {//取消咨询
+        			   ServiceActivity.startActivity(this);
+        		   } else if (mConsultOption == AppConstants.CONSULTOPTION_FINISH_CONSULT) {//完成咨询
+        			   ServiceActivity.startActivity(this);
+        		   } else if (mConsultOption == AppConstants.CONSULTOPTION_EVALUATE_CONSULT) {//评价咨询
+        			   ServiceActivity.startActivity(this);
+        		   }
+        	   }
+           } else if (type == AppConstants.CONSULT_CONTENT) {//咨询内容
+               ConsultDetailActivity.startActivityFromPush(this, consultId, AppConstants.FROM_DETAIL);
+           } else if(type == AppConstants.AUTHENTICATION_SUCCESS) {//认证成功
+               DoctorCertificationActivity.startActivity(this, AppConstants.ANTH_PASS);
+           } else if(type == AppConstants.SERVIER_MSG) {//客服消息
+               ServiceActivity.startActivity(this);
+           }else if(type == AppConstants.FLAG_KINDNESS){//送锦旗
+        	   KindlyFeelingsActivity.startActivity(this, null);
+           }
+        }
+     } 
+    
+    private Intent getGotoInent(int index) {
+		// TODO Auto-generated method stub
+         Intent intent = new Intent();
+         intent.putExtra(MainActivity.EXTRA_TAB_INDEX_KEY, index); 
+    	 return intent;
+	}
+    
+    /**
+     * 通过传递的Intent初始化相应的Ui
+     * 
+     * @param intent
+     */
+    private void handleIntent(Intent intent) {
+        if (intent == null) {
+            LogUtils.e(TAG, "handleIntent intent is null");
+            return;
+        }
+
+        if (intent.hasExtra(EXTRA_TAB_INDEX_KEY)) {
+            setIntent(intent);
+            if (mPresenter != null) {
+                mPresenter.initTabs(intent);
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unRegisterUpdateReceiver();
+    }
+    
+    /**
+     * 定时去请求状态更新接口 
+     */
+	class UpdateStatus implements Runnable{
+		@Override
+		public void run() {
+	        try {
+	        	while(iRunable){ 
+	        	  java.lang.Thread.sleep(iSleepTime);
+	        	  Global.getUpdateStatusRequest();
+	        	} 
+			} catch (Exception e) {
+				 LogUtils.d(TAG, "getUpdateStatusRequest>>"+e.toString());
+			}
+		 }
+	}
+
+    /**
+     * 回到home界面，当前activity不finishO
+     */
+    public void back() {
+        LogUtils.d(TAG, "back=================================");
+        if ((System.currentTimeMillis() - mExitTime) > EXIT_TIMEOUT) {
+            ToastUtils.ToastShort(this, R.string.exit_tips);
+            mExitTime = System.currentTimeMillis();
+        } else {
+            moveTaskToBack(true);
+            ToastUtils.hide();
+            finish();
+        }
+    }
+    
+    /**
+     * 回到home界面
+     */
+    public void home(){
+    	Intent intent = new Intent();  
+    	intent.setAction("android.intent.action.MAIN");  
+    	intent.addCategory(Intent.CATEGORY_HOME);
+    	startActivity(intent);  
+    }
+    
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (KeyEvent.KEYCODE_BACK == event.getKeyCode() && KeyEvent.ACTION_DOWN == event.getAction()) {// 按下back时
+        	home();
+//        	back();
+        	return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    /**
+     * 判断是否显示小红点
+     * 
+     * @param type
+     */
+    private void judgeTabReddotShowOrNot(int type) {
+    	showTabReddotHint(type);
+    }
+
+    public static void startActivity(Context context) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getMainIntent(context));
+    }
+    public static void startActivity(Context context , int type) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getMainIntent(context,type));
+    }
+    
+    public static void startActivityFromActive(Context context, int type) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getMainFromActiveIntent(context, type));
+    }
+
+    public static void startActivityFromPush(Context context, int type, String consultId, String consultOption) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getMainFromPushIntent(context, type, consultId, consultOption));
+    }
+    
+    /**
+     * 打开指定的子页面
+     * @param context
+     * @param type
+     * @param subpage
+     */
+    public static void startActivity(Context context, int type, int subpage) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getMainFromSubpageIntent(context, type, subpage));
+    }
+    
+    /**
+     * 显示版本更新对话框    
+     */
+    private void showVersionUpdateDialog(){
+    	if(Global.APP_VERSION_NAME==null){
+    		Global.APP_VERSION_NAME = Global.getVerName(this);
+    	}
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getUpgradeRequestParam(TAG, AppConstants.ANDROID, Global.APP_VERSION_NAME, AppConstants.VERSION_SCOPE), 
+    			JsonParserFactory.parseBaseModel(SoftwareUpgradeModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final SoftwareUpgradeModel dataModel = (SoftwareUpgradeModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						PersonalConfig.putString(PersonalConfigKey.EXTAR_VERSION_UPGRADE, DateUtil.getDate("yyyy-MM-dd"));
+						PersonalConfig.asyncCommit();
+						isRunning = false;
+						if (dataModel.getNeedUp()) {
+							String oldVersion = PersonalConfig.getString(PersonalConfigKey.EXTAR_VERSION_NAME);
+							String newVersion = dataModel.getDataVersionDto().getDataVersion();
+							//本地忽略升级版本号为空或者本地忽略升级的版本号与后台升级的版本号对比，后台升级版本大于本地版本，则提示下载对话框
+							if(Tools.versionContrast(oldVersion, newVersion)){
+							    //有新版本
+							    mUpdateManager = new UpdateManager(MainActivity.this, true);
+						        mUpdateManager.checkUpdateInfo(dataModel.getDataVersionDto().getDeviceUrl(), 
+														   dataModel.getDataVersionDto().getDataVersion(),
+														   dataModel.getDataVersionDto().getDeviceImprint(),
+														   dataModel.getDataVersionDto().isForcedUpdates());
+							}    
+						}
+					}
+				}
+			}
+		});
+    }
+    
+    private BroadcastReceiver mUpdateReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+				String action = intent.getAction();
+				if (AppConstants.SHOW_CONSULT_REDOT_INTENT_ACTION.equals(action)) {
+					// 刷新数据
+					judgeTabReddotShowOrNot(0);
+				}else if(AppConstants.HIDE_CONSULT_REDOT_INTENT_ACTION.equals(action)){
+					mPresenter.clearTab1Update();  
+				}else if(AppConstants.HIDE_GRAB_BILL_REDOT_INTENT_ACTION.equals(action)){
+					mPresenter.clearTab3Update();
+				}else if(AppConstants.SHOW_TAB_REDDOT_INTENT_ACTION.equals(action)){
+					//账号审核通过后才有小红点和铃声提示
+					if(Global.getUserStatus() == AppConstants.ALL_PERMISSIONS){
+						//有抢单，显示抢单小红点
+						judgeTabReddotShowOrNot(2);
+					}
+				}else if(AppConstants.CONSULT_RING_ACTION.equals(action)){
+					if(Global.getUserStatus() == AppConstants.ALL_PERMISSIONS){
+						//判断是否需要响铃
+						if((!PersonalConfig.hasKey(PersonalConfigKey.EXTAR_CONSULT_RING)) || PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_CONSULT_RING))
+							mSoundPool.play(1, 1, 1, 0, 0, 1);
+						LogUtils.i(TAG, "----MainActivity BroadcastReceiver----------------");
+					}
+				}else if(AppConstants.SHOW_ACTIVITY_REDOT_INTENT_ACTION.equals(action)){
+					judgeTabReddotShowOrNot(3);
+				}
+		}
+	};
+	
+	public void registerUpdateReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.SHOW_TAB_REDDOT_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.HIDE_CONSULT_REDOT_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.HIDE_GRAB_BILL_REDOT_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.SHOW_CONSULT_REDOT_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.CONSULT_RING_ACTION);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(mUpdateReceiver, myIntentFilter);
+	}
+	
+	public void unRegisterUpdateReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(mUpdateReceiver);
+	}
+}

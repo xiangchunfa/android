@@ -1,0 +1,369 @@
+/*
+ * ConsultDtoModel.java
+ * classes : com.qdoc.client.model.ConsultDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-31 下午10:57:24
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+
+/**
+ * com.qdoc.client.model.ConsultDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-31 下午10:57:24
+ */
+public class ConsultDtoModel implements Serializable {
+    private static final long serialVersionUID = 4360574027193144162L;
+    private String acceptTime;
+    private ConsultCaseDtoModel consultCaseDto;
+    private ConsultMsgDtoModel consultMsgDto;
+    private int consultState;
+    private int consultType;
+    private int doctorId;
+    private String doctorName;
+    private int favoritesStatus;
+    private String headImage;
+    private int id;
+    private ArrayList<ImageDtoModel> imageDto;
+    private Object openid;
+    private int readType;
+    private int shareStatus;//该咨询是否分享(0:无 1:已分享)
+    private Object tradeNo;
+    private String uuid;
+    private WuserDtoModel wUserDto;
+    private int consultFee;//咨询费（单位分）
+    private String consultFeeStr;//咨询费（APP端用该字段直接显示，如果咨询费为0，会直接返回“义诊”）
+	//该咨询发送咨询建议时间(未发送为空)
+	private String treatmentTime;
+	//咨询多久后自动关闭，单位小时（目前默认5小时）
+	private Integer openNumber;
+	/**咨询服务状态*/
+	private int consultStateDetail;
+	/**用户评价状态（0未邀请， 1已邀请  2已评价），评价为发送满意度*/
+	private int satisfactionStatus;
+	/**用户发送满意度时间*/
+	private String satisfactionTime;
+	/**是否留言（0未留言， 1已留言）*/
+    private int leaveMessageStatus;
+    
+    
+
+	public int getLeaveMessageStatus() {
+		return leaveMessageStatus;
+	}
+
+	public void setLeaveMessageStatus(int leaveMessageStatus) {
+		this.leaveMessageStatus = leaveMessageStatus;
+	}
+
+	public int getSatisfactionStatus() {
+		return satisfactionStatus;
+	}
+
+	public void setSatisfactionStatus(int satisfactionStatus) {
+		this.satisfactionStatus = satisfactionStatus;
+	}
+
+	public String getSatisfactionTime() {
+		return satisfactionTime;
+	}
+
+	public void setSatisfactionTime(String satisfactionTime) {
+		this.satisfactionTime = satisfactionTime;
+	}
+
+	public int getConsultStateDetail() {
+		return consultStateDetail;
+	}
+
+	public void setConsultStateDetail(int consultStateDetail) {
+		this.consultStateDetail = consultStateDetail;
+	}
+
+	public String getTreatmentTime() {
+		return treatmentTime;
+	}
+
+	public void setTreatmentTime(String treatmentTime) {
+		this.treatmentTime = treatmentTime;
+	}
+
+	public Integer getOpenNumber() {
+		return openNumber;
+	}
+
+	public void setOpenNumber(Integer openNumber) {
+		this.openNumber = openNumber;
+	}
+
+	/**
+     * @return the acceptTime
+     */
+    public String getAcceptTime() {
+        return acceptTime;
+    }
+
+    /**
+     * @param acceptTime the acceptTime to set
+     */
+    public void setAcceptTime(String acceptTime) {
+        this.acceptTime = acceptTime;
+    }
+
+    /**
+     * @return the consultCaseDto
+     */
+    public ConsultCaseDtoModel getConsultCaseDto() {
+        return consultCaseDto;
+    }
+
+    /**
+     * @param consultCaseDto the consultCaseDto to set
+     */
+    public void setConsultCaseDto(ConsultCaseDtoModel consultCaseDto) {
+        this.consultCaseDto = consultCaseDto;
+    }
+
+    /**
+     * @return the consultMsgDto
+     */
+    public ConsultMsgDtoModel getConsultMsgDto() {
+        return consultMsgDto;
+    }
+
+    /**
+     * @param consultMsgDto the consultMsgDto to set
+     */
+    public void setConsultMsgDto(ConsultMsgDtoModel consultMsgDto) {
+        this.consultMsgDto = consultMsgDto;
+    }
+
+    /**
+     * @return the consultState
+     */
+    public int getConsultState() {
+        return consultState;
+    }
+
+    /**
+     * @param consultState the consultState to set
+     */
+    public void setConsultState(int consultState) {
+        this.consultState = consultState;
+    }
+
+    /**
+     * @return the consultType
+     */
+    public int getConsultType() {
+        return consultType;
+    }
+
+    /**
+     * @param consultType the consultType to set
+     */
+    public void setConsultType(int consultType) {
+        this.consultType = consultType;
+    }
+
+    /**
+     * @return the doctorId
+     */
+    public int getDoctorId() {
+        return doctorId;
+    }
+
+    /**
+     * @param doctorId the doctorId to set
+     */
+    public void setDoctorId(int doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    /**
+     * @return the doctorName
+     */
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    /**
+     * @param doctorName the doctorName to set
+     */
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
+
+    /**
+     * @return the favoritesStatus
+     */
+    public int getFavoritesStatus() {
+        return favoritesStatus;
+    }
+
+    /**
+     * @param favoritesStatus the favoritesStatus to set
+     */
+    public void setFavoritesStatus(int favoritesStatus) {
+        this.favoritesStatus = favoritesStatus;
+    }
+
+    /**
+     * @return the headImage
+     */
+    public String getHeadImage() {
+        return headImage;
+    }
+
+    /**
+     * @param headImage the headImage to set
+     */
+    public void setHeadImage(String headImage) {
+        this.headImage = headImage;
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the imageDto
+     */
+    public ArrayList<ImageDtoModel> getImageDto() {
+        return imageDto;
+    }
+
+    /**
+     * @param imageDto the imageDto to set
+     */
+    public void setImageDto(ArrayList<ImageDtoModel> imageDto) {
+        this.imageDto = imageDto;
+    }
+
+    /**
+     * @return the openid
+     */
+    public Object getOpenid() {
+        return openid;
+    }
+
+    /**
+     * @param openid the openid to set
+     */
+    public void setOpenid(Object openid) {
+        this.openid = openid;
+    }
+
+    /**
+     * @return the readType
+     */
+    public int getReadType() {
+        return readType;
+    }
+
+    /**
+     * @param readType the readType to set
+     */
+    public void setReadType(int readType) {
+        this.readType = readType;
+    }
+
+    /**
+     * @return the shareStatus
+     */
+    public int getShareStatus() {
+        return shareStatus;
+    }
+
+    /**
+     * @param shareStatus the shareStatus to set
+     */
+    public void setShareStatus(int shareStatus) {
+        this.shareStatus = shareStatus;
+    }
+
+    /**
+     * @return the tradeNo
+     */
+    public Object getTradeNo() {
+        return tradeNo;
+    }
+
+    /**
+     * @param tradeNo the tradeNo to set
+     */
+    public void setTradeNo(Object tradeNo) {
+        this.tradeNo = tradeNo;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * @return the wUserDto
+     */
+    public WuserDtoModel getwUserDto() {
+        return wUserDto;
+    }
+
+    /**
+     * @param wUserDto the wUserDto to set
+     */
+    public void setwUserDto(WuserDtoModel wUserDto) {
+        this.wUserDto = wUserDto;
+    }
+
+	/**
+	 * @return the consultFee
+	 */
+	public int getConsultFee() {
+		return consultFee;
+	}
+
+	/**
+	 * @param consultFee the consultFee to set
+	 */
+	public void setConsultFee(int consultFee) {
+		this.consultFee = consultFee;
+	}
+
+	/**
+	 * @return the consultFeeStr
+	 */
+	public String getConsultFeeStr() {
+		return consultFeeStr;
+	}
+
+	/**
+	 * @param consultFeeStr the consultFeeStr to set
+	 */
+	public void setConsultFeeStr(String consultFeeStr) {
+		this.consultFeeStr = consultFeeStr;
+	}
+
+}

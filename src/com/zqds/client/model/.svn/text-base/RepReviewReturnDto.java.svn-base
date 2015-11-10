@@ -1,0 +1,90 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class RepReviewReturnDto implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3558835653743844547L;
+
+	private long id;//评论ID（type=0 文章评论ID， type=1或者type=2 评论回复ID）
+	private String revContent;//评论内容
+	private String revTime;//评论时间
+	private String revUserName;//评论用户的名称
+	private String revUserHeadImg;//评论用户的头像
+	private int type;//类型 0文章评论     1评论回复     2评论回复的回复以及下级回复
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+	/**
+	 * @return the revContent
+	 */
+	public String getRevContent() {
+		return revContent;
+	}
+	/**
+	 * @param revContent the revContent to set
+	 */
+	public void setRevContent(String revContent) {
+		this.revContent = revContent;
+	}
+	/**
+	 * @return the revTime
+	 */
+	public String getRevTime() {
+		return revTime;
+	}
+	/**
+	 * @param revTime the revTime to set
+	 */
+	public void setRevTime(String revTime) {
+		this.revTime = revTime;
+	}
+	/**
+	 * @return the revUserName
+	 */
+	public String getRevUserName() {
+		return revUserName;
+	}
+	/**
+	 * @param revUserName the revUserName to set
+	 */
+	public void setRevUserName(String revUserName) {
+		this.revUserName = revUserName;
+	}
+	/**
+	 * @return the revUserHeadImg
+	 */
+	public String getRevUserHeadImg() {
+		return revUserHeadImg;
+	}
+	/**
+	 * @param revUserHeadImg the revUserHeadImg to set
+	 */
+	public void setRevUserHeadImg(String revUserHeadImg) {
+		this.revUserHeadImg = revUserHeadImg;
+	}
+	/**
+	 * @return the type
+	 */
+	public int getType() {
+		return type;
+	}
+	/**
+	 * @param type the type to set
+	 */
+	public void setType(int type) {
+		this.type = type;
+	}
+}

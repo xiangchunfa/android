@@ -1,0 +1,28 @@
+package com.qdoc.client.model;
+
+/**
+ * FileName    : CommonProblemDataModel.java
+ * Description : 获取客服常见问题实体类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-6-8 
+ **/
+public class ShowProblemDataModel extends AbstractBaseModel {
+
+	private static final long serialVersionUID = 1L;
+
+    private String answer;//回答
+
+	public String getAnswer() {
+		return answer;
+	}
+
+	public void setAnswer(String answer) {
+		this.answer = answer;
+	}
+    
+    
+}
+

@@ -1,0 +1,49 @@
+/*
+ * MyConsultListModel.java
+ * classes : com.qdoc.client.model.MyConsultListModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午8:38:20
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.MyConsultListModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午8:38:20
+ */
+public class MyConsultListModel extends AbstractBaseModel {
+
+    private int page;
+    private ConsultModel pager;
+
+    /**
+     * @return the page
+     */
+    public int getPage() {
+        return page;
+    }
+
+    /**
+     * @param page the page to set
+     */
+    public void setPage(int page) {
+        this.page = page;
+    }
+
+    /**
+     * @return the pager
+     */
+    public ConsultModel getPager() {
+        return pager;
+    }
+
+    /**
+     * @param pager the pager to set
+     */
+    public void setPager(ConsultModel pager) {
+        this.pager = pager;
+    }
+
+}

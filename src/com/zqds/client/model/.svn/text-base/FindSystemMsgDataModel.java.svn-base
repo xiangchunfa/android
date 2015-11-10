@@ -1,0 +1,15 @@
+package com.qdoc.client.model;
+
+public class FindSystemMsgDataModel extends AbstractBaseModel{
+	private static final long serialVersionUID = 1L;
+
+	private SystemMessageDto msgDto;
+
+	public SystemMessageDto getMsgDto() {
+		return msgDto;
+	}
+
+	public void setMsgDto(SystemMessageDto msgDto) {
+		this.msgDto = msgDto;
+	}
+}

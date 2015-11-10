@@ -1,0 +1,325 @@
+/*
+ * AboutmeActivity.java
+ * classes : com.qdoc.client.ui.AboutmeActivity
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-11 下午11:27:39
+ */
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import com.qdoc.client.R;
+import com.qdoc.client.ui.fragment.AboutmeFragment;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.ui.AboutmeActivity
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-11 下午11:27:39
+ */
+public class AboutmeActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = AboutmeActivity.class.getSimpleName();
+    
+    public static final String LAUCHERFROM = "laucherfrom";
+    
+    /*
+     * 标识MyWithdrawFragment是否首次加载提现流水记录
+     */
+    //public static boolean isMyWithdrawFirstLoad = true;
+
+    /**
+     * view
+     */
+    private BaseFragment mCurFragment;
+    private BaseFragment mAboutmeFragment;
+    //private BaseFragment mMyInfoFragment;
+    //private BaseFragment mNewMemberFragment;
+    //private BaseFragment mNewMemberDetailFragment;
+    //private BaseFragment mShareFragment;
+    //private BaseFragment mCollectFragment;
+    //private BaseFragment mConsultSettingFragment;
+    //private BaseFragment mBankSelectFragment;
+    //private BaseFragment mBankAccounttEditFragment;//编辑银行账号
+    //private BaseFragment mMyCardFragment;
+    //private BaseFragment mMyConsultListFragment;
+    //private BaseFragment mMyBenefitDetailFragment;//提现fragment
+    //private BaseFragment mMyBenefitBalanceFragment;
+    //private BaseFragment mMemberDetailFragment;
+    //private BaseFragment mMyWithdrawFragment;//提现流水记录Fragment
+
+    private int laucherFrom;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_aboutme);
+
+        LogUtils.d(TAG, TAG+"----------onCreate()------------");
+        parseIntent();
+        initView();
+        initListener();
+    }
+
+    private void parseIntent() {
+        // TODO Auto-generated method stub
+        Bundle cacheBundle = getIntent().getExtras();
+        if (cacheBundle != null) {
+            laucherFrom = cacheBundle.getInt(IntentTools.EXTRA_LAUNCHER_FROM);
+        }
+    }
+      
+    
+    @Override
+    protected void initView() {
+        // TODO Auto-generated method stub
+        mAboutmeFragment = new AboutmeFragment();
+        //mMyInfoFragment = new MyInfoFragment();
+        //mNewMemberFragment = new NewMemberFragment();
+        //mNewMemberDetailFragment = new NewMemberDetailFragment();
+        //mShareFragment = new ShareFragment();
+        //mCollectFragment = new CollectFragment();
+        //mConsultSettingFragment = new ConsultSettingFragment();
+        //mBankSelectFragment = new BankSelectFragment();
+        //mBankAccounttEditFragment = new BankAccountEditFragment();
+        //mMyCardFragment = new MyCardFragment();
+        //mMyConsultListFragment = new MyConsultListFragment();
+        //mMyBenefitDetailFragment = new MyBenefitDetailFragment();
+        //mMyBenefitBalanceFragment = new MyBenefitBalanceFragment();
+        //mMemberDetailFragment = new MemberDetailFragment();
+        //mMyWithdrawFragment = new MyWithdrawFragment();
+
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.fragment_aboutus, mAboutmeFragment, AboutmeFragment.TAG);
+        //ft.add(R.id.fragment_myinfo, mMyInfoFragment, MyInfoFragment.TAG);
+        //ft.add(R.id.fragment_newmember, mNewMemberFragment, NewMemberFragment.TAG);
+        //ft.add(R.id.fragment_newmemberdetail, mNewMemberDetailFragment, NewMemberDetailFragment.TAG);
+        //ft.add(R.id.fragment_share, mShareFragment, ShareFragment.TAG);
+        //ft.add(R.id.fragment_collect, mCollectFragment, CollectFragment.TAG);
+        //ft.add(R.id.fragment_consultsetting, mConsultSettingFragment, ConsultSettingFragment.TAG);
+        //ft.add(R.id.fragment_bankselect, mBankSelectFragment, BankSelectFragment.TAG);
+        //ft.add(R.id.fragment_bankaccountdetail, mBankAccounttEditFragment, BankAccountEditFragment.TAG);
+        //ft.add(R.id.fragment_mycard, mMyCardFragment, MyCardFragment.TAG);
+        //ft.add(R.id.fragment_myconsultlist, mMyConsultListFragment, MyConsultListFragment.TAG);
+        //ft.add(R.id.fragment_mybenefitdetail, mMyBenefitDetailFragment, MyBenefitDetailFragment.TAG);
+        //ft.add(R.id.fragment_mybenefitbalance, mMyBenefitBalanceFragment, MyBenefitBalanceFragment.TAG);
+        //ft.add(R.id.fragment_member, mMemberDetailFragment, MemberDetailFragment.TAG);
+        //ft.add(R.id.fragment_myexchange, mMyWithdrawFragment, MyWithdrawFragment.TAG);
+
+        // 激活入口
+        if (laucherFrom != 0) {
+            //ft.show(mConsultSettingFragment);
+            ft.hide(mAboutmeFragment);
+            //ft.hide(mNewMemberFragment);
+            //ft.hide(mNewMemberDetailFragment);
+            //ft.hide(mShareFragment);
+            //ft.hide(mCollectFragment);
+            //ft.hide(mMyInfoFragment);
+            //ft.hide(mBankSelectFragment);
+            //ft.hide(mBankAccounttEditFragment);
+            //ft.hide(mMyCardFragment);
+            //ft.hide(mMyConsultListFragment);
+            //ft.hide(mMyBenefitDetailFragment);
+            //ft.hide(mMyBenefitBalanceFragment);
+            //ft.hide(mMemberDetailFragment);
+            //ft.hide(mMyWithdrawFragment);
+            ft.commitAllowingStateLoss();
+
+/*            ((ConsultSettingFragment) mConsultSettingFragment).startHttpRequest(laucherFrom);
+            mCurFragment = mConsultSettingFragment;*/
+        } else {
+            ft.show(mAboutmeFragment);
+            //ft.hide(mMyInfoFragment);
+            //ft.hide(mNewMemberFragment);
+            //ft.hide(mNewMemberDetailFragment);
+            //ft.hide(mShareFragment);
+            //ft.hide(mCollectFragment);
+            //ft.hide(mConsultSettingFragment);
+            //ft.hide(mBankSelectFragment);
+            //ft.hide(mBankAccounttEditFragment);
+            //ft.hide(mMyCardFragment);
+            //ft.hide(mMyConsultListFragment);
+            //ft.hide(mMyBenefitDetailFragment);
+            //ft.hide(mMyBenefitBalanceFragment);
+            //ft.hide(mMemberDetailFragment);
+            //ft.hide(mMyWithdrawFragment);
+            ft.commitAllowingStateLoss();
+
+            mCurFragment = mAboutmeFragment;
+        }
+    }
+
+    @Override
+    protected void initListener() {
+        // TODO Auto-generated method stub
+    }
+
+    public void switchContent(BaseFragment from, BaseFragment to) {
+        if (mCurFragment != to) {
+            mCurFragment = to;
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            if (!to.isAdded()) { // 先判断是否被add过
+                transaction.hide(from).add(R.id.fragment_aboutus, to, to.getReqestTag()).commitAllowingStateLoss(); // 隐藏当前的fragment，add下一个到Activity中
+            } else {
+                transaction.hide(from).show(to).commitAllowingStateLoss(); // 隐藏当前的fragment，显示下一个
+            }
+        }
+    }
+
+    public void switchToAboutMeFragment() {
+        switchContent(mCurFragment, mAboutmeFragment);
+//        ((AboutmeFragment)mAboutmeFragment).startHttpRequest();
+    }
+
+/*    public void switchToMyInfoFragment() {
+        switchContent(mCurFragment, mMyInfoFragment);
+
+        ((MyInfoFragment) mMyInfoFragment).startHttpRequest(laucherFrom);
+    }*/
+
+/*    public void switchToMemberFrament() {
+        switchContent(mCurFragment, mMemberDetailFragment);
+    }*/
+
+/*    public void switchToNewMemberFrament() {
+        switchContent(mCurFragment, mNewMemberFragment);
+    }*/
+
+/*    public void switchToNewMemberDetailFrament() {
+        switchContent(mCurFragment, mNewMemberDetailFragment);
+    }*/
+
+/*    public void switchToShareFragment() {
+        switchContent(mCurFragment, mShareFragment);
+
+        ((ShareFragment) mShareFragment).startHttpRequest();
+    }*/
+
+/*    public void switchToCollectFragment() {
+        switchContent(mCurFragment, mCollectFragment);
+
+        ((CollectFragment) mCollectFragment).startHttpRequest();
+    }*/
+
+/*    public void switchToConsultSettingFragment() {
+        switchContent(mCurFragment, mConsultSettingFragment);
+        ((ConsultSettingFragment) mConsultSettingFragment).startHttpRequest(laucherFrom);
+    }*/
+
+/*    public void switchToBankSelectFragment(List<BankDtoModel> bankList,String selectedName,String tag) {
+        switchContent(mCurFragment, mBankSelectFragment);
+        ((BankSelectFragment) mBankSelectFragment).setRequestTAG(tag);
+        ((BankSelectFragment) mBankSelectFragment).setBankList(bankList,selectedName);
+    }*/
+
+/*    public void switchToBankAccountEditFragment() {
+        switchContent(mCurFragment, mBankAccounttEditFragment);
+        ((BankAccountEditFragment) mBankAccounttEditFragment).startHttpRequest();
+    }
+    public void switchToBankAccountEditFragment(BankDtoModel model) {
+        switchContent(mCurFragment, mBankAccounttEditFragment);
+        ((BankAccountEditFragment) mBankAccounttEditFragment).setBankName(model);
+    }*/
+    
+/*    public void switchToMyCardFragment() {
+        switchContent(mCurFragment, mMyCardFragment);
+
+        ((MyCardFragment) mMyCardFragment).startHttpRequest();
+    }*/
+
+/*    public void switchToMyConsultListFragment() {
+        switchContent(mCurFragment, mMyConsultListFragment);
+
+        ((MyConsultListFragment) mMyConsultListFragment).startHttpRequest();
+    }*/
+
+/*    public void switchToMyBenefitDetailFragment(String maxMoney) {
+        switchContent(mCurFragment, mMyBenefitDetailFragment);
+        ((MyBenefitDetailFragment)mMyBenefitDetailFragment).startHttpRequest(maxMoney);
+    }
+    
+    public void switchToMyBenefitDetailFragment() {
+        switchContent(mCurFragment, mMyBenefitDetailFragment);
+    }
+    
+    
+    public void switchToMyBenefitDetailFragment(BankDtoModel model){
+    	switchContent(mCurFragment, mMyBenefitDetailFragment);
+    	((MyBenefitDetailFragment)mMyBenefitDetailFragment).setBankName(model);
+    }*/
+
+/*    public void switchToMyBenefitBalanceFragment(int type) {
+        switchContent(mCurFragment, mMyBenefitBalanceFragment);
+
+        ((MyBenefitBalanceFragment) mMyBenefitBalanceFragment).startHttpRequest(type);
+    }*/
+    
+/*    public void switchToMyWithdrawFragment(){
+    	switchContent(mCurFragment, mMyWithdrawFragment);
+    	((MyWithdrawFragment)mMyWithdrawFragment).startHttpRequest();
+    	//已经加载一次，所以首次加载未false
+    	isMyWithdrawFirstLoad = false;
+    }*/
+
+    public BaseFragment getCurrentFragment(String tag) {
+        return (BaseFragment) getSupportFragmentManager().findFragmentByTag(tag);
+    }
+
+    public static void startActivity(Context context, int from) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getAboutIntent(context, from));
+    }
+    
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+    	super.onSaveInstanceState(outState);
+    	LogUtils.i(TAG, TAG+"-------onSaveInstanceState(outState)-------------");
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        LogUtils.i(TAG, TAG+"-------onDestroy()-------------");
+    }
+    
+    @Override
+    protected void onResume() {
+    	 LogUtils.i(TAG, TAG+"-------onResume()-------------");
+    	super.onResume();
+    	
+    }
+    
+    @Override
+    protected void onPause() {
+    	super.onPause();
+    	 LogUtils.i(TAG, TAG+"-------onPause()-------------");
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+    	 LogUtils.i(TAG, TAG+"-------onStop()-------------");
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    }
+
+	/**
+	 * @return the laucherFrom
+	 */
+	public int getLaucherFrom() {
+		return laucherFrom;
+	}
+}

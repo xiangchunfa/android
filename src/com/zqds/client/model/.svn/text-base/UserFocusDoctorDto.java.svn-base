@@ -1,0 +1,102 @@
+package com.qdoc.client.model;
+
+/**
+ * 用户关注医生对象
+ * @author Administrator
+ *
+ */
+public class UserFocusDoctorDto {
+
+	private long doctorId;//医生编号
+	private WuserDtoModel wUserDto;//关注用户对象
+	private int focusStatus;//关注状态（0 未关注，1 已关注，2 取消关注）
+	private String focusTime;//关注日期
+	private int focusChannel;//关注渠道（0 扫描医生二维码关注，1 通过平台添加关注）
+	private int doctorRead;//是否已读（0 未读，1 已读）
+	private long consultNumber;//粉丝咨询当前医生的咨询数量
+	/**
+	 * @return the doctorId
+	 */
+	public long getDoctorId() {
+		return doctorId;
+	}
+	/**
+	 * @param doctorId the doctorId to set
+	 */
+	public void setDoctorId(long doctorId) {
+		this.doctorId = doctorId;
+	}
+	/**
+	 * @return the wUserDto
+	 */
+	public WuserDtoModel getwUserDto() {
+		return wUserDto;
+	}
+	/**
+	 * @param wUserDto the wUserDto to set
+	 */
+	public void setwUserDto(WuserDtoModel wUserDto) {
+		this.wUserDto = wUserDto;
+	}
+	/**
+	 * @return the focusStatus
+	 */
+	public int getFocusStatus() {
+		return focusStatus;
+	}
+	/**
+	 * @param focusStatus the focusStatus to set
+	 */
+	public void setFocusStatus(int focusStatus) {
+		this.focusStatus = focusStatus;
+	}
+	/**
+	 * @return the focusTime
+	 */
+	public String getFocusTime() {
+		return focusTime;
+	}
+	/**
+	 * @param focusTime the focusTime to set
+	 */
+	public void setFocusTime(String focusTime) {
+		this.focusTime = focusTime;
+	}
+	/**
+	 * @return the focusChannel
+	 */
+	public int getFocusChannel() {
+		return focusChannel;
+	}
+	/**
+	 * @param focusChannel the focusChannel to set
+	 */
+	public void setFocusChannel(int focusChannel) {
+		this.focusChannel = focusChannel;
+	}
+	/**
+	 * @return the doctorRead
+	 */
+	public int getDoctorRead() {
+		return doctorRead;
+	}
+	/**
+	 * @param doctorRead the doctorRead to set
+	 */
+	public void setDoctorRead(int doctorRead) {
+		this.doctorRead = doctorRead;
+	}
+	/**
+	 * @return the consultNumber
+	 */
+	public long getConsultNumber() {
+		return consultNumber;
+	}
+	/**
+	 * @param consultNumber the consultNumber to set
+	 */
+	public void setConsultNumber(long consultNumber) {
+		this.consultNumber = consultNumber;
+	}
+
+}

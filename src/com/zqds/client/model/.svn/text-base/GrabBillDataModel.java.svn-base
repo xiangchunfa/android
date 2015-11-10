@@ -1,0 +1,18 @@
+/*
+ * GrabBillDataModel.java
+ * classes : com.qdoc.client.model.GrabBillDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-26 下午3:45:58
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.GrabBillDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-26 下午3:45:58
+ */
+public class GrabBillDataModel extends AbstractBaseModel {
+
+}

@@ -1,0 +1,117 @@
+package com.qdoc.client.model;
+
+import java.util.List;
+
+public class UserFocusDoctorCategoryDto {
+
+	private long id;//分组编号
+	private long doctorId;//医生编号
+	private String categoryName;//分组名称
+	/**
+	 * 0默认分组_未分组 ，doctorId为空
+	 * 1默认分组_门诊，doctorId为空
+	 * 4医生自定义分组，doctorId不能为空
+	 * 5默认分组_黑名单，doctorId为空
+	 */
+	private int type;//类型
+	private String description;//描述
+	private long fansNubm;//分组粉丝数量
+	private List<UserFocusDoctorDto> userList;//UserFocusDoctorDto集合
+	private boolean isDeleteable;//是否在可编辑状态
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+	/**
+	 * @return the doctorId
+	 */
+	public long getDoctorId() {
+		return doctorId;
+	}
+	/**
+	 * @param doctorId the doctorId to set
+	 */
+	public void setDoctorId(long doctorId) {
+		this.doctorId = doctorId;
+	}
+	/**
+	 * @return the categoryName
+	 */
+	public String getCategoryName() {
+		return categoryName;
+	}
+	/**
+	 * @param categoryName the categoryName to set
+	 */
+	public void setCategoryName(String categoryName) {
+		this.categoryName = categoryName;
+	}
+	/**
+	 * @return the type
+	 */
+	public int getType() {
+		return type;
+	}
+	/**
+	 * @param type the type to set
+	 */
+	public void setType(int type) {
+		this.type = type;
+	}
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	/**
+	 * @return the isDeleteable
+	 */
+	public boolean isDeleteable() {
+		return isDeleteable;
+	}
+	/**
+	 * @param isDeleteable the isDeleteable to set
+	 */
+	public void setDeleteable(boolean isDeleteable) {
+		this.isDeleteable = isDeleteable;
+	}
+	/**
+	 * @return the fansNubm
+	 */
+	public long getFansNubm() {
+		return fansNubm;
+	}
+	/**
+	 * @param fansNubm the fansNubm to set
+	 */
+	public void setFansNubm(long fansNubm) {
+		this.fansNubm = fansNubm;
+	}
+	/**
+	 * @return the userList
+	 */
+	public List<UserFocusDoctorDto> getUserList() {
+		return userList;
+	}
+	/**
+	 * @param userList the userList to set
+	 */
+	public void setUserList(List<UserFocusDoctorDto> userList) {
+		this.userList = userList;
+	}
+}

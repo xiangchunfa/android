@@ -1,0 +1,68 @@
+package com.qdoc.client.model;
+
+/**
+ * 分享我的名片内容实体类
+ * @author antony
+ *create at 2014-12-2 19:54
+ */
+public class ShareCardDataModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7976513449751654016L;
+	
+	private String headimage;//医生头像地址
+	private String shareurl;//分享路径
+	private String conent;//分享内容
+	private String title;//分享标题
+	/**
+	 * @return the headimage
+	 */
+	public String getHeadimage() {
+		return headimage;
+	}
+	/**
+	 * @param headimage the headimage to set
+	 */
+	public void setHeadimage(String headimage) {
+		this.headimage = headimage;
+	}
+	/**
+	 * @return the shareurl
+	 */
+	public String getShareurl() {
+		return shareurl;
+	}
+	/**
+	 * @param shareurl the shareurl to set
+	 */
+	public void setShareurl(String shareurl) {
+		this.shareurl = shareurl;
+	}
+	/**
+	 * @return the conent
+	 */
+	public String getConent() {
+		return conent;
+	}
+	/**
+	 * @param conent the conent to set
+	 */
+	public void setConent(String conent) {
+		this.conent = conent;
+	}
+	/**
+	 * @return the title
+	 */
+	public String getTitle() {
+		return title;
+	}
+	/**
+	 * @param title the title to set
+	 */
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+}

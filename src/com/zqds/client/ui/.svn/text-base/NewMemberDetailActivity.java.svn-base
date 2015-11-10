@@ -1,0 +1,52 @@
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+
+import com.qdoc.client.R;
+import com.qdoc.client.ui.fragment.NewMemberDetailFragment;
+import com.qdoc.client.util.IntentTools;
+
+public class NewMemberDetailActivity extends BaseActivity {
+	
+	public static final String TAG = NewMemberDetailActivity.class.getSimpleName();
+	
+	private NewMemberDetailFragment mNewMemberDetailActivity;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_newmemberdetail);
+		
+		parsonIntent();
+		initView();
+		initListener();
+	}
+
+	private void parsonIntent() {
+		Bundle cacheBundle = getIntent().getExtras();
+		mNewMemberDetailActivity = NewMemberDetailFragment.newInstance(cacheBundle);
+	}
+
+	@Override
+	protected void initView() {
+		FragmentManager fm = getSupportFragmentManager();
+		FragmentTransaction ft = fm.beginTransaction();
+		ft.add(R.id.fragment_newmemberdetail, mNewMemberDetailActivity, NewMemberDetailFragment.TAG);
+		ft.commitAllowingStateLoss();
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+
+	}
+
+	public static void startActivity(Context context){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startNewMemberDetailActivity(context));
+	}
+}

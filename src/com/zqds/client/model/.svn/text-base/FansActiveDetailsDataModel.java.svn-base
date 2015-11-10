@@ -1,0 +1,101 @@
+/*
+ * consultDtoDataModel.java
+ * classes : com.qdoc.client.model.consultDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-31 下午10:49:21
+ */
+package com.qdoc.client.model;
+
+import java.util.List;
+
+/**
+ * com.qdoc.client.model.consultDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-31 下午10:49:21
+ */
+public class FansActiveDetailsDataModel extends AbstractBaseModel {
+
+	private static final long serialVersionUID = 1L;
+	private List<AttatchDtoModel> attatchDtos;//活动说明List
+     private long fansCurrent;//今日新增粉丝
+     private long currentIncome;//今日收益
+     private long fansSum;//总新增粉丝
+     private int cardImprint;//加印名片状态
+     private int sumIncome;//活动总收益
+	/**
+	 * @return the cardImprint
+	 */
+	public int getCardImprint() {
+		return cardImprint;
+	}
+	/**
+	 * @param cardImprint the cardImprint to set
+	 */
+	public void setCardImprint(int cardImprint) {
+		this.cardImprint = cardImprint;
+	}
+	/**
+	 * @return the attatchDtos
+	 */
+	public List<AttatchDtoModel> getAttatchDtos() {
+		return attatchDtos;
+	}
+	/**
+	 * @param attatchDtos the attatchDtos to set
+	 */
+	public void setAttatchDtos(List<AttatchDtoModel> attatchDtos) {
+		this.attatchDtos = attatchDtos;
+	}
+	/**
+	 * @return the fansCurrent
+	 */
+	public long getFansCurrent() {
+		return fansCurrent;
+	}
+	/**
+	 * @param fansCurrent the fansCurrent to set
+	 */
+	public void setFansCurrent(long fansCurrent) {
+		this.fansCurrent = fansCurrent;
+	}
+	/**
+	 * @return the currentIncome
+	 */
+	public long getCurrentIncome() {
+		return currentIncome;
+	}
+	/**
+	 * @param currentIncome the currentIncome to set
+	 */
+	public void setCurrentIncome(long currentIncome) {
+		this.currentIncome = currentIncome;
+	}
+	/**
+	 * @return the fansSum
+	 */
+	public long getFansSum() {
+		return fansSum;
+	}
+	/**
+	 * @param fansSum the fansSum to set
+	 */
+	public void setFansSum(long fansSum) {
+		this.fansSum = fansSum;
+	}
+	/**
+	 * @return the sumIncome
+	 */
+	public int getSumIncome() {
+		return sumIncome;
+	}
+	/**
+	 * @param sumIncome the sumIncome to set
+	 */
+	public void setSumIncome(int sumIncome) {
+		this.sumIncome = sumIncome;
+	}
+	
+	
+}

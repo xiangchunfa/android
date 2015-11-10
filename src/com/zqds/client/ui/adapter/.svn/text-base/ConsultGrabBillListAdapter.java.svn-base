@@ -1,0 +1,292 @@
+/*
+ * ConsultGrabBillListAdapter.java
+ * classes : com.qdoc.client.ui.adapter.ConsultGrabBillListAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午1:56:20
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.content.Context;
+import android.content.res.Resources;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.FastConsultDtoModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.StringUtils;
+
+/**
+ * com.qdoc.client.ui.adapter.ConsultGrabBillListAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午1:56:20
+ */
+public class ConsultGrabBillListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = ConsultGrabBillListAdapter.class.getSimpleName();
+
+    /**
+     * view
+     */
+    public static final int BUTTON_CONSULT = 0x00;
+    public static final int BUTTON_GRAB = 0x01;
+    public static final int BUTTON_VOL = 0x02;
+    private final LayoutInflater mInflater;
+    private ArrayList<FastConsultDtoModel> mElementsList;
+    private SteadyGridViewAdapter mGridViewAdapter;
+    private GrabItemOnclickListener mListener;
+    private Context mContext;
+    private boolean isCheckChanged;
+    private Resources res;
+
+    public ConsultGrabBillListAdapter(Context context, GrabItemOnclickListener listener) {
+        mContext = context;
+        res = context.getResources();
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mListener = listener;
+        mElementsList = new ArrayList<FastConsultDtoModel>();
+        mElementsList.add(new FastConsultDtoModel());
+    }
+
+    public void addListData(ArrayList<FastConsultDtoModel> elementsList) {
+        mElementsList.clear();
+        mElementsList.addAll(elementsList);
+        notifyDataSetChanged();
+    }
+    
+    public List<FastConsultDtoModel> refreshListData(int position) {
+        mElementsList.remove(position);
+        notifyDataSetChanged();
+        return mElementsList;
+    }
+    
+    public void addMoreListData(ArrayList<FastConsultDtoModel> elementsList) {
+        mElementsList.addAll(elementsList);
+        notifyDataSetChanged();
+    }
+
+    public void clearListData() {
+        mElementsList.clear();
+        mElementsList = null;
+    }
+
+    @Override
+    public int getCount() {
+        // TODO Auto-generated method stub
+        return ListUtils.isEmpty(mElementsList) ? 0 : mElementsList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        // TODO Auto-generated method stub
+        if (!ListUtils.isEmpty(mElementsList)) {
+            int size = mElementsList.size();
+            return mElementsList.get(position % size);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public long getItemId(int position) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public View getView(final int position, View convertView, ViewGroup parent) {
+        // TODO Auto-generated method stub
+        ViewHolder holder = null;
+        if (convertView == null) {
+            holder = new ViewHolder();
+            convertView = mInflater.inflate(R.layout.listitem_consult_grablist, null);
+            holder.btn_grab = (TextView) convertView.findViewById(R.id.btn_grab);
+            holder.tv_departments = (TextView) convertView.findViewById(R.id.tv_departments);
+            holder.tv_price = (TextView) convertView.findViewById(R.id.tv_price);
+            holder.tv_time = (TextView) convertView.findViewById(R.id.tv_time);
+//            holder.tv_sex = (TextView) convertView.findViewById(R.id.tv_sex);
+//            holder.tv_age = (TextView) convertView.findViewById(R.id.tv_age);
+            holder.tv_symptom = (TextView) convertView.findViewById(R.id.tv_symptom);
+            holder.v_hide = convertView.findViewById(R.id.v_hide);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+        final FastConsultDtoModel model = mElementsList.get(position);
+        if (model != null) {
+       	     if(model.getGrabStateStr()!=null)
+       	    	 //显示抢单状态
+		         holder.btn_grab.setText(model.getGrabStateStr());
+		     else
+			     holder.btn_grab.setText("");
+        	 if(model.getGrabState() == AppConstants.CONSULT_SINGLE_CANCELED){
+        		 //显示抢单按钮背景色
+        		 holder.btn_grab.setBackgroundResource(R.drawable.shape_rounded_f3f4f4);
+        		 holder.btn_grab.setTextColor(mContext.getResources().getColor(R.color.c_797c7d));
+        	 }else if(model.getGrabState() == AppConstants.CONSULT_SINGLE_CAN_ROB){
+        		 holder.btn_grab.setBackgroundResource(R.drawable.shape_rounded_red);
+        		 holder.btn_grab.setTextColor(mContext.getResources().getColor(R.color.white));
+        	 }else if(model.getGrabState() == AppConstants.CONSULT_SINGLE_GRABBED){
+        		 holder.btn_grab.setBackgroundResource(R.drawable.shape_rounded_f3f4f4);
+        		 holder.btn_grab.setTextColor(mContext.getResources().getColor(R.color.c_797c7d));
+        	 }
+        	 if(!StringUtils.isEmpty(model.getMedicalClassStr())){
+        		 //显示科室
+        		 holder.tv_departments.setText(model.getMedicalClassStr());
+        		 holder.tv_departments.setVisibility(View.VISIBLE);
+        	 }else{
+        		 holder.tv_departments.setVisibility(View.GONE);
+        	 }
+        	 if(model.getConsultFee() > 0 ){
+        		 holder.tv_price.setBackgroundResource(R.drawable.shape_rounded_red);
+//        		 holder.tv_price.setPaddingRelative(start, top, end, bottom)
+         		 holder.tv_price.setTextColor(res.getColor(R.color.white));
+         		 holder.tv_price.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+        		 if(model.getConsultFeeStr() != null){
+             		//显示价格
+             		 holder.tv_price.setText(model.getConsultFeeStr());
+             	 }else{
+             		 holder.tv_price.setText("");
+             	 }
+        	 }else{
+        		 holder.tv_price.setBackgroundResource(0);
+        		 holder.tv_price.setCompoundDrawablesWithIntrinsicBounds(R.drawable.red_star, 0, 0, 0); 
+        		 holder.tv_price.setText(mContext.getResources().getString(R.string.free_diagnosis));
+        		 holder.tv_price.setTextColor(res.getColor(R.color.black));
+        	 }
+        	
+        	 if(model.getCreateTime() != null){
+         		//显示时间
+         		 holder.tv_time.setText(model.getCreateTime());
+         	 }else{ 
+         		 holder.tv_time.setText("");
+         	 }
+        	 String info = "";
+        	 if(model.getSexDes() != null){
+          		 //显示性别
+          		 info = model.getSexDes();
+          	 }
+             //显示年龄
+        	 if(model.getAge()>0){
+        		 info += " "+res.getString(R.string.comma_age, (int)(Math.round(model.getAge())))+ "  ";
+        	 }else{
+        		 info += " ";
+        	 }
+             if(model.getCaseDescription() != null){
+            	 //显示症状
+            	 info += model.getCaseDescription();
+             }
+             holder.tv_symptom.setText(info);
+             if(position == mElementsList.size()-1){
+            	 holder.v_hide.setVisibility(View.VISIBLE);
+             }else{
+            	 holder.v_hide.setVisibility(View.GONE);
+             }
+           	  // 头像/名字
+//            if (model.getwUserDto() != null) {
+//                ImageLoaderHelper.getInstance().displayImage(model.getwUserDto().getHeadimgurl(),
+//                        holder.icon_UserHeadUrl);
+//                if ((model.getConsultCaseDto() != null) && (!TextUtils.isEmpty(model.getConsultCaseDto().getName()))) {
+//                    holder.nicknameStr.setText(model.getConsultCaseDto().getName());
+//                } else {
+//                    holder.nicknameStr.setText("暂无数据");
+//                }
+//            }
+//            // 名字/性别/年龄
+//            if (model.getConsultCaseDto() != null) {
+//                String age = TextUtils.isEmpty(model.getConsultCaseDto().getAge()) ? "" : model.getConsultCaseDto()
+//                        .getAge();
+//                holder.user_detail.setText(mContext.getResources()
+//                        .getString(
+//                                R.string.consult_patientname,
+//                                model.getConsultCaseDto().getName() + " " + (model.getConsultCaseDto().getSexDes())
+//                                        + " " + age));
+//            }
+//            // 咨询时间
+//            holder.consult_time.setText(model.getAcceptTime());
+//            // 咨询方式
+//            if (model.getConsultType() == 0) {
+//                ViewUtils.setVisibility(holder.consult_type, View.INVISIBLE);
+//            } else {
+//                holder.consult_type.setText(model.getConsultFeeStr());
+//                ViewUtils.setVisibility(holder.consult_type, View.VISIBLE);
+//            }
+//
+//            convertView.setOnClickListener(new OnClickListener() {
+//
+//                @Override
+//                public void onClick(View v) {
+//                    // TODO Auto-generated method stub
+//                    if (mListener != null) {
+//                        mListener.onButtonClick(BUTTON_CONSULT, model, position);
+//                    }
+//                }
+//            });
+//
+//            if(Global.mUserStatus == AppConstants.LIMITED_PERMISSIONS){
+//            	holder.btn_grab.setEnabled(false);//受限模式下，抢单按钮不可点击
+//			}else{
+//				holder.btn_grab.setEnabled(true);
+//			}
+            /**
+             * 设置抢单状态 
+             */
+            if(model.getGrabState() == AppConstants.CONSULT_SINGLE_CAN_ROB){
+            	 holder.btn_grab.setEnabled(true); 
+            	 holder.btn_grab.setOnClickListener(new OnClickListener() {
+
+                       @Override
+                       public void onClick(View v) {
+                           if (mListener != null) {
+                               mListener.onButtonClick(BUTTON_GRAB, model, position);
+                           }
+                       }
+                   });
+        	}else{
+        		  holder.btn_grab.setEnabled(false);
+        	}
+         
+
+        }
+        return convertView;
+    }
+
+    private class ViewHolder {
+        private TextView btn_grab;
+    	private TextView tv_departments;
+        private TextView tv_price;
+        private TextView tv_time;
+//        private TextView tv_sex;
+//        private TextView tv_age;
+        private TextView tv_symptom;
+        private View v_hide;
+//        private WeakReference<SteadyGridViewAdapter> mReference;
+//
+//        public void setAdapter(SteadyGridViewAdapter adapter) {
+//            mReference = new WeakReference<SteadyGridViewAdapter>(adapter);
+//            gridview.setAdapter(mReference.get());
+//        }
+//
+//        public void setListData(ElementsModel model) {
+//            if ((mReference != null) && (mReference.get() != null)) {
+//                SteadyGridViewAdapter adapter = mReference.get();
+//                adapter.addListData(model.getImageDto());
+//            }
+//        }
+    }
+
+    public interface GrabItemOnclickListener {
+        public void onButtonClick(int type, Object obj,int position);
+    }
+
+}

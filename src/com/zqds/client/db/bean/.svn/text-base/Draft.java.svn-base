@@ -1,0 +1,30 @@
+package com.qdoc.client.db.bean;
+/**
+ * FileName    : Draft.java
+ * Description : 草稿类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-7-30
+ **/
+public class Draft {
+    
+	private String draft_text;//草稿
+    private String consult_id;//咨询ID
+    
+	public String getDraft_text() {
+		return draft_text;
+	}
+	public void setDraft_text(String draft_text) {
+		this.draft_text = draft_text;
+	}
+	public String getConsult_id() {
+		return consult_id;
+	}
+	public void setConsult_id(String consult_id) {
+		this.consult_id = consult_id;
+	}
+    
+    
+}

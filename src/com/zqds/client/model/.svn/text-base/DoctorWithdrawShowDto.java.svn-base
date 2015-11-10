@@ -1,0 +1,108 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * create at 2014-11-6 18:30
+ * @author antony
+ *医生提现相关的个人信息 （例如一些银行卡、手续费和到账时间）
+ */
+public class DoctorWithdrawShowDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8012625638277595020L;
+
+	private String doctorName;//持卡人（暂时还没加，新版加上）
+	private String accountNo;//银行卡号
+	private String bankName;//开户银行
+	private String toAccount;//到账时间
+	private String feeNum;//手续费
+	private String feeLimit;//需要手续费的界限
+	private String remind;//温馨提示
+	/**
+	 * @return the doctorName
+	 */
+	public String getDoctorName() {
+		return doctorName;
+	}
+	/**
+	 * @param doctorName the doctorName to set
+	 */
+	public void setDoctorName(String doctorName) {
+		this.doctorName = doctorName;
+	}
+	/**
+	 * @return the accountNo
+	 */
+	public String getAccountNo() {
+		return accountNo;
+	}
+	/**
+	 * @param accountNo the accountNo to set
+	 */
+	public void setAccountNo(String accountNo) {
+		this.accountNo = accountNo;
+	}
+	/**
+	 * @return the bankName
+	 */
+	public String getBankName() {
+		return bankName;
+	}
+	/**
+	 * @param bankName the bankName to set
+	 */
+	public void setBankName(String bankName) {
+		this.bankName = bankName;
+	}
+	/**
+	 * @return the toAccount
+	 */
+	public String getToAccount() {
+		return toAccount;
+	}
+	/**
+	 * @param toAccount the toAccount to set
+	 */
+	public void setToAccount(String toAccount) {
+		this.toAccount = toAccount;
+	}
+	/**
+	 * @return the feeNum
+	 */
+	public String getFeeNum() {
+		return feeNum;
+	}
+	/**
+	 * @param feeNum the feeNum to set
+	 */
+	public void setFeeNum(String feeNum) {
+		this.feeNum = feeNum;
+	}
+	/**
+	 * @return the feeLimit
+	 */
+	public String getFeeLimit() {
+		return feeLimit;
+	}
+	/**
+	 * @param feeLimit the feeLimit to set
+	 */
+	public void setFeeLimit(String feeLimit) {
+		this.feeLimit = feeLimit;
+	}
+	/**
+	 * @return the remind
+	 */
+	public String getRemind() {
+		return remind;
+	}
+	/**
+	 * @param remind the remind to set
+	 */
+	public void setRemind(String remind) {
+		this.remind = remind;
+	}
+}

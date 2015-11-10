@@ -1,0 +1,55 @@
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import com.qdoc.client.R;
+import com.qdoc.client.ui.fragment.MyWithdrawFragment;
+import com.qdoc.client.util.IntentTools;
+
+public class MyWithdrawActivity extends BaseActivity {
+	
+	/**
+	 * 
+	 */
+	public static final String TAG = MyWithdrawActivity.class.getSimpleName();
+	
+	private MyWithdrawFragment myWithdrawFragment;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_withdraw);
+		
+		parseIntent();
+		initView();
+		
+	}
+	
+    private void parseIntent() {
+        Bundle cacheBundle = getIntent().getExtras();
+        myWithdrawFragment = MyWithdrawFragment.getNewInstance(cacheBundle);
+    }
+
+	@Override
+	protected void initView() {
+		FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.fragment_withdraw, myWithdrawFragment, MyWithdrawFragment.TAG);
+        ft.commitAllowingStateLoss();
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+
+	}
+	
+	public static void startActivity(Context context){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startMyWithdrawActivity(context));
+	}
+
+}

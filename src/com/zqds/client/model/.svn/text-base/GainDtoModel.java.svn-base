@@ -1,0 +1,138 @@
+/*
+ * GainDtoModel.java
+ * classes : com.qdoc.client.model.GainDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-21 下午10:54:12
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.GainDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-21 下午10:54:12
+ */
+public class GainDtoModel {
+    private double balance;
+    private int doctorId;
+    private String freeze;
+    private int id;
+    private double revenue;
+    private int uuid;
+    private double totalFinance;
+    private double bufferFinance;
+
+    /**
+     * @return the balance
+     */
+    public double getBalance() {
+        return balance;
+    }
+
+    /**
+     * @param balance the balance to set
+     */
+    public void setBalance(int balance) {
+        this.balance = balance;
+    }
+
+    /**
+     * @return the doctorId
+     */
+    public int getDoctorId() {
+        return doctorId;
+    }
+
+    /**
+     * @param doctorId the doctorId to set
+     */
+    public void setDoctorId(int doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    /**
+     * @return the freeze
+     */
+    public String getFreeze() {
+        return freeze;
+    }
+
+    /**
+     * @param freeze the freeze to set
+     */
+    public void setFreeze(String freeze) {
+        this.freeze = freeze;
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the revenue
+     */
+    public double getRevenue() {
+        return revenue;
+    }
+
+    /**
+     * @param revenue the revenue to set
+     */
+    public void setRevenue(int revenue) {
+        this.revenue = revenue;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public int getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(int uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * @return the totalFinance
+     */
+    public double getTotalFinance() {
+        return totalFinance;
+    }
+
+    /**
+     * @param totalFinance the totalFinance to set
+     */
+    public void setTotalFinance(long totalFinance) {
+        this.totalFinance = totalFinance;
+    }
+
+    /**
+     * @return the bufferFinance
+     */
+    public double getBufferFinance() {
+        return bufferFinance;
+    }
+
+    /**
+     * @param bufferFinance the bufferFinance to set
+     */
+    public void setBufferFinance(long bufferFinance) {
+        this.bufferFinance = bufferFinance;
+    }
+
+}

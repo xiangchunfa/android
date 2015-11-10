@@ -1,0 +1,301 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ConsultModel;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.MyConsultListModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.AboutmeActivity;
+import com.qdoc.client.ui.UserInfoActivity;
+import com.qdoc.client.ui.adapter.MyNewMemberListAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class OneWeekLaterAttentionFragment extends BaseFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = OneWeekLaterAttentionFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private PullRefreshView mListView;
+    private PullListMaskController mViewController;
+
+    /**
+     * params
+     */
+    private ArrayList<ElementsModel> elementsList = new ArrayList<ElementsModel>();
+    private MyNewMemberListAdapter mAdapter;
+    private int pageIndex = 1;
+    private static final int PAGE_SIZE = 20;
+
+    public static OneWeekLaterAttentionFragment newInstance(Bundle bundle) {
+        final OneWeekLaterAttentionFragment fragment = new OneWeekLaterAttentionFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_newmember_oneweeklater, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+        mAdapter = new MyNewMemberListAdapter(getContext());
+        mListView.setAdapter(mAdapter);
+
+        startHttpRequest();
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mListView = (PullRefreshView) view.findViewById(R.id.listView);
+
+        // 自定义emptyview
+        ErrorMaskView maskView = (ErrorMaskView) view.findViewById(R.id.maskView);
+        mViewController = new PullListMaskController(mListView, maskView);
+        mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+    }
+
+    protected void initListener() {
+        mViewController.setOnRetryClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                startMyFocusListInitRequest();
+            }
+        });
+        mViewController.setOnRefreshListener(new OnRefreshListener() {
+
+            @Override
+            public void onRefresh() {
+                // TODO Auto-generated method stub
+                startMyFocusListRefreshRequest();
+            }
+        });
+        mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+
+            @Override
+            public void onClickFootView() {
+                // TODO Auto-generated method stub
+                startMyFocusListLoadMoreRequest();
+            }
+        });
+        mListView.setOnItemClickListener(new OnItemClickListener() {
+
+ 			@Override
+ 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+ 				ElementsModel model = (ElementsModel) parent.getAdapter().getItem(
+ 						position);
+ 		        UserInfoActivity.startActivity(getActivity(), model.getwUserDto().getOpenId());	    
+ 			}
+ 		     
+         });
+    }
+
+    public void startHttpRequest() {
+        startMyFocusListInitRequest();
+    }
+
+    private void startMyFocusListInitRequest() {
+        pageIndex = 1;
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getFocusDoctorListRequestParam(TAG, token,
+                AppConstants.FOCUS_BEFORE_WEEK, pageIndex, PAGE_SIZE), JsonParserFactory
+                .parseBaseModel(MyConsultListModel.class), new IResultReceiver() {
+
+            @Override
+            public void onReceiveResult(int resultCode, Object resultData) {
+                // TODO Auto-generated method stub
+                if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                    final MyConsultListModel dataModel = (MyConsultListModel) resultData;
+                    if ((dataModel != null) && (dataModel.getPager() != null)) {
+                        ConsultModel pager = dataModel.getPager();
+                        elementsList.clear();
+                        elementsList = pager.getElements();
+
+                        if (ListUtils.isEmpty(elementsList)) {
+                            mViewController.showViewStatus(ListViewState.EMPTY_BLANK,"暂无关注粉丝，请点击刷新");
+                        } else {
+                            mAdapter.addListData(elementsList);
+                            mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+                        }
+                    } else {
+                        mViewController.showViewStatus(ListViewState.EMPTY_BLANK,"暂无关注粉丝，请点击刷新");
+                    }
+                } else {
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+                }
+                LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+            }
+        });
+    }
+
+    private void startMyFocusListRefreshRequest() {
+        pageIndex = 1;
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getFocusDoctorListRequestParam(TAG, token,
+                AppConstants.FOCUS_BEFORE_WEEK, pageIndex, PAGE_SIZE), JsonParserFactory
+                .parseBaseModel(MyConsultListModel.class), new IResultReceiver() {
+
+            @Override
+            public void onReceiveResult(int resultCode, Object resultData) {
+                // TODO Auto-generated method stub
+                if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                    final MyConsultListModel dataModel = (MyConsultListModel) resultData;
+                    if ((dataModel != null) && (dataModel.getPager() != null)) {
+                        ConsultModel pager = dataModel.getPager();
+                        elementsList.clear();
+                        elementsList = pager.getElements();
+
+                        if (ListUtils.isEmpty(elementsList)) {
+                            mViewController.showViewStatus(ListViewState.EMPTY_BLANK);
+                        } else {
+                            mAdapter.addListData(elementsList);
+                            mViewController.showViewStatus(ListViewState.LIST_REFRESH_COMPLETE);
+                        }
+                    } else {
+                        mViewController.showViewStatus(ListViewState.EMPTY_BLANK);
+                    }
+                } else {
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+                }
+                LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+            }
+        });
+    }
+
+    private void startMyFocusListLoadMoreRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getFocusDoctorListRequestParam(TAG, token,
+                AppConstants.FOCUS_BEFORE_WEEK, ++pageIndex, PAGE_SIZE), JsonParserFactory
+                .parseBaseModel(MyConsultListModel.class), new IResultReceiver() {
+
+            @Override
+            public void onReceiveResult(int resultCode, Object resultData) {
+                // TODO Auto-generated method stub
+                if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                    final MyConsultListModel dataModel = (MyConsultListModel) resultData;
+                    if ((dataModel != null) && (dataModel.getPager() != null)) {
+                        ConsultModel pager = dataModel.getPager();
+                        if (ListUtils.isEmpty(pager.getElements())) {
+                            mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+                        } else {
+                            mAdapter.addMoreListData(pager.getElements());
+                            mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+                        }
+                    } else {
+                        mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+                    }
+                } else {
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.LIST_RETRY);
+                }
+                LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+            }
+        });
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            AboutmeActivity activity = (AboutmeActivity) getActivity();
+            if (activity == null) {
+                return;
+            }
+
+            activity.switchToAboutMeFragment();
+        }
+    };
+
+    OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+
+        }
+    };
+
+    public void onDestroy() {
+        super.onDestroy();
+
+        // reset
+        pageIndex = 1;
+
+        HttpTaskManager.stop(TAG);
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+
+}

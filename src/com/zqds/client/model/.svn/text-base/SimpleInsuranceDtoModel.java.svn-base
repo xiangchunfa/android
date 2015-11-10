@@ -1,0 +1,119 @@
+/*
+ * ConsultDtoModel.java
+ * classes : com.qdoc.client.model.ConsultDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-31 下午10:57:24
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * com.qdoc.client.model.ConsultDtoModel
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-29 下午11:57:24
+ */
+public class SimpleInsuranceDtoModel implements Serializable {
+    private static final long serialVersionUID = 4360574027193144162L;
+    private String packageName;
+    private String packageInfo;
+    private String packageTel;
+    private String insuredName;
+    private String insuredCardNo;
+    private String insuredTel;
+    private String lproductId;
+    private String aproductId;
+    private String linsuredNo;
+    private String ainsuredNo;
+    private String insuredStart;
+    private String insuredEnd;
+    private int status;
+	public String getPackageName() {
+		return packageName;
+	}
+	public void setPackageName(String packageName) {
+		this.packageName = packageName;
+	}
+	public String getPackageInfo() {
+		return packageInfo;
+	}
+	public void setPackageInfo(String packageInfo) {
+		this.packageInfo = packageInfo;
+	}
+	public String getPackageTel() {
+		return packageTel;
+	}
+	public void setPackageTel(String packageTel) {
+		this.packageTel = packageTel;
+	}
+	public String getInsuredName() {
+		return insuredName;
+	}
+	public void setInsuredName(String insuredName) {
+		this.insuredName = insuredName;
+	}
+	public String getInsuredCardNo() {
+		return insuredCardNo;
+	}
+	public void setInsuredCardNo(String insuredCardNo) {
+		this.insuredCardNo = insuredCardNo;
+	}
+	public String getInsuredTel() {
+		return insuredTel;
+	}
+	public void setInsuredTel(String insuredTel) {
+		this.insuredTel = insuredTel;
+	}
+	public String getLproductId() {
+		return lproductId;
+	}
+	public void setLproductId(String lproductId) {
+		this.lproductId = lproductId;
+	}
+	public String getAproductId() {
+		return aproductId;
+	}
+	public void setAproductId(String aproductId) {
+		this.aproductId = aproductId;
+	}
+	public String getLinsuredNo() {
+		return linsuredNo;
+	}
+	public void setLinsuredNo(String linsuredNo) {
+		this.linsuredNo = linsuredNo;
+	}
+	public String getAinsuredNo() {
+		return ainsuredNo;
+	}
+	public void setAinsuredNo(String ainsuredNo) {
+		this.ainsuredNo = ainsuredNo;
+	}
+    
+	public String getInsuredStart() {
+		return insuredStart;
+	}
+	public void setInsuredStart(String insuredStart) {
+		this.insuredStart = insuredStart;
+	}
+	public String getInsuredEnd() {
+		return insuredEnd;
+	}
+	public void setInsuredEnd(String insuredEnd) {
+		this.insuredEnd = insuredEnd;
+	}
+	public int getStatus() {
+		return status;
+	}
+	public void setStatus(int status) {
+		this.status = status;
+	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+
+    
+    
+    
+}

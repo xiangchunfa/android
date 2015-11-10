@@ -1,0 +1,432 @@
+/*
+ * DoctorModel.java
+ * classes : com.qdoc.client.model.DoctorModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-22 下午11:00:35
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * com.qdoc.client.model.DoctorModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-22 下午11:00:35
+ */
+public class DoctorModel implements Serializable{
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 9065751909422851707L;
+	
+	private String birthday;
+    private boolean certificationStatus;
+    private String city;
+    private int departId;
+    private String departName;
+    private int dictinoaryId;
+    private String dictinoaryName;
+    private String doctorName;
+    private String headImage;
+    private int hospitalId;
+    private String hospitalName;
+    private int id;
+    private String introduction;
+    private String loginName;
+    private String professional;
+    private String qzCode;
+    private String qzCodeUrl;
+    private Integer sex;
+    private String telphone;
+    private String token;
+    private String realHeadImage;
+    private int doctorCertificationStatus;//认证状态
+    private String positionName;//职务
+    private long positionId;//职务ID
+    private String backgroundImage;//移动诊所背景图片
+    private int freeClinic;//是否义诊 0：不是  1：是
+    private int starLevel;//星级
+
+
+	/**
+     * @return the realHeadImage
+     */
+    public String getRealHeadImage() {
+        return realHeadImage;
+    }
+
+    /**
+     * @param realHeadImage the realHeadImage to set
+     */
+    public void setRealHeadImage(String realHeadImage) {
+        this.realHeadImage = realHeadImage;
+    }
+
+    /**
+     * @return the birthday
+     */
+    public String getBirthday() {
+        return birthday;
+    }
+
+    /**
+     * @param birthday the birthday to set
+     */
+    public void setBirthday(String birthday) {
+        this.birthday = birthday;
+    }
+
+    /**
+     * @return the certificationStatus
+     */
+    public boolean isCertificationStatus() {
+        return certificationStatus;
+    }
+
+    /**
+     * @param certificationStatus the certificationStatus to set
+     */
+    public void setCertificationStatus(boolean certificationStatus) {
+        this.certificationStatus = certificationStatus;
+    }
+
+    /**
+     * @return the city
+     */
+    public String getCity() {
+        return city;
+    }
+
+    /**
+     * @param city the city to set
+     */
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    /**
+     * @return the departId
+     */
+    public int getDepartId() {
+        return departId;
+    }
+
+    /**
+     * @param departId the departId to set
+     */
+    public void setDepartId(int departId) {
+        this.departId = departId;
+    }
+
+    /**
+     * @return the departName
+     */
+    public String getDepartName() {
+        return departName;
+    }
+
+    /**
+     * @param departName the departName to set
+     */
+    public void setDepartName(String departName) {
+        this.departName = departName;
+    }
+
+    /**
+     * @return the dictinoaryId
+     */
+    public int getDictinoaryId() {
+        return dictinoaryId;
+    }
+
+    /**
+     * @param dictinoaryId the dictinoaryId to set
+     */
+    public void setDictinoaryId(int dictinoaryId) {
+        this.dictinoaryId = dictinoaryId;
+    }
+
+    /**
+     * @return the dictinoaryName
+     */
+    public String getDictinoaryName() {
+        return dictinoaryName;
+    }
+
+    /**
+     * @param dictinoaryName the dictinoaryName to set
+     */
+    public void setDictinoaryName(String dictinoaryName) {
+        this.dictinoaryName = dictinoaryName;
+    }
+
+    /**
+     * @return the doctorName
+     */
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    /**
+     * @param doctorName the doctorName to set
+     */
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
+
+    /**
+     * @return the headImage
+     */
+    public String getHeadImage() {
+        return headImage;
+    }
+
+    /**
+     * @param headImage the headImage to set
+     */
+    public void setHeadImage(String headImage) {
+        this.headImage = headImage;
+    }
+
+    /**
+     * @return the hospitalId
+     */
+    public int getHospitalId() {
+        return hospitalId;
+    }
+
+    /**
+     * @param hospitalId the hospitalId to set
+     */
+    public void setHospitalId(int hospitalId) {
+        this.hospitalId = hospitalId;
+    }
+
+    /**
+     * @return the hospitalName
+     */
+    public String getHospitalName() {
+        return hospitalName;
+    }
+
+    /**
+     * @param hospitalName the hospitalName to set
+     */
+    public void setHospitalName(String hospitalName) {
+        this.hospitalName = hospitalName;
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the introduction
+     */
+    public String getIntroduction() {
+        return introduction;
+    }
+
+    /**
+     * @param introduction the introduction to set
+     */
+    public void setIntroduction(String introduction) {
+        this.introduction = introduction;
+    }
+
+    /**
+     * @return the loginName
+     */
+    public String getLoginName() {
+        return loginName;
+    }
+
+    /**
+     * @param loginName the loginName to set
+     */
+    public void setLoginName(String loginName) {
+        this.loginName = loginName;
+    }
+
+    /**
+     * @return the professional
+     */
+    public String getProfessional() {
+        return professional;
+    }
+
+    /**
+     * @param professional the professional to set
+     */
+    public void setProfessional(String professional) {
+        this.professional = professional;
+    }
+
+    /**
+     * @return the qzCode
+     */
+    public String getQzCode() {
+        return qzCode;
+    }
+
+    /**
+     * @param qzCode the qzCode to set
+     */
+    public void setQzCode(String qzCode) {
+        this.qzCode = qzCode;
+    }
+
+    /**
+     * @return the qzCodeUrl
+     */
+    public String getQzCodeUrl() {
+        return qzCodeUrl;
+    }
+
+    /**
+     * @param qzCodeUrl the qzCodeUrl to set
+     */
+    public void setQzCodeUrl(String qzCodeUrl) {
+        this.qzCodeUrl = qzCodeUrl;
+    }
+
+     
+
+    /**
+	 * @return the sex
+	 */
+	public Integer getSex() {
+		return sex;
+	}
+
+	/**
+	 * @param sex the sex to set
+	 */
+	public void setSex(Integer sex) {
+		this.sex = sex;
+	}
+
+	/**
+     * @return the telphone
+     */
+    public String getTelphone() {
+        return telphone;
+    }
+
+    /**
+     * @param telphone the telphone to set
+     */
+    public void setTelphone(String telphone) {
+        this.telphone = telphone;
+    }
+
+    /**
+     * @return the token
+     */
+    public String getToken() {
+        return token;
+    }
+
+    /**
+     * @param token the token to set
+     */
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+	/**
+	 * @return the doctorCertificationStatus
+	 */
+	public int getDoctorCertificationStatus() {
+		return doctorCertificationStatus;
+	}
+
+	/**
+	 * @param doctorCertificationStatus the doctorCertificationStatus to set
+	 */
+	public void setDoctorCertificationStatus(int doctorCertificationStatus) {
+		this.doctorCertificationStatus = doctorCertificationStatus;
+	}
+
+	/**
+	 * @return the positionName
+	 */
+	public String getPositionName() {
+		return positionName;
+	}
+
+	/**
+	 * @param positionName the positionName to set
+	 */
+	public void setPositionName(String positionName) {
+		this.positionName = positionName;
+	}
+
+	/**
+	 * @return the positionId
+	 */
+	public long getPositionId() {
+		return positionId;
+	}
+
+	/**
+	 * @param positionId the positionId to set
+	 */
+	public void setPositionId(long positionId) {
+		this.positionId = positionId;
+	}
+
+	/**
+	 * @return the backgroundImage
+	 */
+	public String getBackgroundImage() {
+		return backgroundImage;
+	}
+
+	/**
+	 * @param backgroundImage the backgroundImage to set
+	 */
+	public void setBackgroundImage(String backgroundImage) {
+		this.backgroundImage = backgroundImage;
+	}
+
+	/**
+	 * @return the freeClinic
+	 */
+	public int getFreeClinic() {
+		return freeClinic;
+	}
+
+	/**
+	 * @param freeClinic the freeClinic to set
+	 */
+	public void setFreeClinic(int freeClinic) {
+		this.freeClinic = freeClinic;
+	}
+
+	/**
+	 * @return the starLevel
+	 */
+	public int getStarLevel() {
+		return starLevel;
+	}
+
+	/**
+	 * @param starLevel the starLevel to set
+	 */
+	public void setStarLevel(int starLevel) {
+		this.starLevel = starLevel;
+	}
+}

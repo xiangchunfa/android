@@ -1,0 +1,213 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ 
+package com.qdoc.client.ui.fragment;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BankDtoDataModel;
+import com.qdoc.client.model.BankDtoModel;
+import com.qdoc.client.ui.AboutmeActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.DESEncryptUtils;
+import com.qdoc.client.util.LogUtils;
+
+*//**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ *//*
+public class BankAccountFragment extends BaseFragment implements OnClickListener {
+    *//**
+     * TAG
+     *//*
+    public static final String TAG = BankAccountFragment.class.getSimpleName();
+
+    *//**
+     * view
+     *//*
+    private TitleBar mTitleBar;
+    private TextView tv_account;
+    private TextView tv_certid;
+    private TextView tv_banknum;
+    private TextView tv_bank;
+    private TextView tv_bankadd;
+    private TextView tv_bankdot;
+
+    *//**
+     * params
+     *//*
+    private BankDtoModel mBankDtoModel;
+
+    public static BankAccountFragment newInstance(Bundle bundle) {
+        final BankAccountFragment fragment = new BankAccountFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_bankaccount, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfoWithRightText(R.string.aboutus_bank, R.drawable.icon_back, R.string.aboutus_consult_edit,
+                actionBarLeftBtnListener, actionBarRightBtnListener, getResources().getColor(R.color.titlebar_bg));
+
+        tv_account = (TextView) view.findViewById(R.id.tv_account);
+        tv_certid = (TextView) view.findViewById(R.id.tv_certid);
+        tv_banknum = (TextView) view.findViewById(R.id.tv_banknum);
+        tv_bank = (TextView) view.findViewById(R.id.tv_bank);
+        tv_bankadd = (TextView) view.findViewById(R.id.tv_bankadd);
+        tv_bankdot = (TextView) view.findViewById(R.id.tv_bankdot);
+    }
+
+    protected void initListener() {
+
+    }
+
+    public void startHttpRequest() {
+        getShowBankInfoRequest();
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            AboutmeActivity activity = (AboutmeActivity) getActivity();
+            if (activity == null) {
+                return;
+            }
+
+            activity.switchToAboutMeFragment();
+        }
+    };
+
+    OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            AboutmeActivity activity = (AboutmeActivity) getActivity();
+            if (activity == null) {
+                return;
+            }
+
+            activity.switchToBankAccountEditFragment();
+
+            BankAccountEditFragment fragment = (BankAccountEditFragment) activity
+                    .getCurrentFragment(BankAccountEditFragment.TAG);
+            if (fragment == null) {
+                return;
+            }
+           if(mBankDtoModel!=null)
+             fragment.showBankInfo(mBankDtoModel);
+        }
+    };
+
+    public void onDestroy() {
+        super.onDestroy();
+
+        HttpTaskManager.stop(TAG);
+    }
+
+    @Override
+    public void onClick(View view) {
+    }
+
+    private void getShowBankInfoRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+
+        HttpTaskManager.startStringRequest(DataRequestUtils.getShowBankInfoequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(BankDtoDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final BankDtoDataModel dataModel = (BankDtoDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+
+                            if ((dataModel != null) && (dataModel.getBankDto() != null)) {
+                                BankDtoModel bankDto = dataModel.getBankDto();
+                                try {
+                                    tv_account.setText(TextUtils.isEmpty(bankDto.getName()) ? "" : DESEncryptUtils
+                                            .decryption(bankDto.getName()));
+
+                                    tv_certid.setText(TextUtils.isEmpty(bankDto.getIdCard()) ? "" : DESEncryptUtils
+                                            .decryption(bankDto.getIdCard()));
+                                    tv_banknum.setText(TextUtils.isEmpty(bankDto.getAccountNo()) ? "" : DESEncryptUtils
+                                            .decryption(bankDto.getAccountNo()));
+                                    tv_bank.setText(TextUtils.isEmpty(bankDto.getBankName()) ? "" : DESEncryptUtils
+                                            .decryption(bankDto.getBankName()));
+                                    tv_bankadd.setText(TextUtils.isEmpty(bankDto.getAddress()) ? "" : DESEncryptUtils
+                                            .decryption(bankDto.getAddress()));
+                                    tv_bankdot.setText(String.valueOf(bankDto.getId()));
+                                } catch (Exception e) {
+                                    // TODO Auto-generated catch block
+                                    LogUtils.e(TAG, "exception break out!!!", e);
+                                }
+                                mBankDtoModel = bankDto;
+                            } else {
+                            }
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}
+                        } else {
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+}
+*/

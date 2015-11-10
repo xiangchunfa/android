@@ -1,0 +1,36 @@
+/*
+ * BankDtoDataModel.java
+ * classes : com.qdoc.client.model.BankDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 上午12:20:32
+ */
+package com.qdoc.client.model;
+
+
+/**
+ * com.qdoc.client.model.ImprintCardDataModel
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-11-12 上午15:31:32
+ */
+public class ImprintCardDataModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private String resultMsg;
+	/**
+	 * @return the resultMsg
+	 */
+	public String getResultMsg() {
+		return resultMsg;
+	}
+	/**
+	 * @param resultMsg the resultMsg to set
+	 */
+	public void setResultMsg(String resultMsg) {
+		this.resultMsg = resultMsg;
+	}
+}

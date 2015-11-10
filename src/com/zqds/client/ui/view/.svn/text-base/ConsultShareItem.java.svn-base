@@ -1,0 +1,54 @@
+package com.qdoc.client.ui.view;
+
+import android.content.Context;
+import android.text.TextUtils;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.ConsultShareListDto;
+
+/**
+ * 就医分享Item View
+ * @author Antony
+ * create at 2015-08-21 16:01
+ */
+public class ConsultShareItem extends RelativeLayout {
+	
+	private TextView consult_question;
+	private TextView consult_answer;
+	private View convertView;
+	private Context mContext;
+	
+	private ConsultShareListDto consultShareDto;
+	
+	public ConsultShareItem(Context context, AttributeSet attrs) {
+		super(context, attrs);
+	}
+
+	public ConsultShareItem(Context context,ConsultShareListDto consultShareDto) {
+		super(context);
+		this.consultShareDto = consultShareDto;
+		mContext = context;
+		initView();
+		initData();
+	}
+
+	private void initView() {
+		convertView = LayoutInflater.from(mContext).inflate(R.layout.consult_share_list_item, null);
+		consult_question = (TextView) convertView.findViewById(R.id.tv_consult_question);
+		consult_answer = (TextView) convertView.findViewById(R.id.tv_consult_answer);
+		addView(convertView);
+	}
+	
+	private void initData(){
+		String question = consultShareDto.getDescription()+"("+consultShareDto.getSex()+"， "+consultShareDto.getAge()+mContext.getString(R.string.age)+")";
+		consult_question.setText(question);
+		String diagnosis = TextUtils.isEmpty(consultShareDto.getDiagnosis())?"":consultShareDto.getDiagnosis()+"， ";
+		String cureAdvise = TextUtils.isEmpty(consultShareDto.getCureAdvise())?"":consultShareDto.getCureAdvise();
+		consult_answer.setText(diagnosis+cureAdvise);
+	}
+
+}

@@ -1,0 +1,125 @@
+/*
+ * ConsultListFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultListFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:03
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.ui.InsuranceDetailActivity;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.InsuranceDetailzFragment
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-29 上午2:00:03
+ */
+public class GetTeaFragment extends BaseFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = GetTeaFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private PullListMaskController mViewController;
+    private TextView tvTitle;
+    private TextView tvUserAgreement;
+    private TextView tvContent;
+    private TextView tvInSure;
+    private EditText etIdNumber;
+    private FrameLayout flyDesc;
+    private TextView tvDescShort;
+    private TextView tvDescLong;
+	private ImageButton btMore;
+	private CheckBox cbCheck;
+    /**
+     * PARAMS
+     */
+	private boolean isInit = false;
+	private boolean isShowShortText = true;
+	
+    public static GetTeaFragment newInstance(Bundle bundle) {
+        final GetTeaFragment fragment = new GetTeaFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_insurance_no_get, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+//    	startShowInsuranceRequest();
+
+      
+    }
+
+    private void initView(View view) {
+
+    }
+
+    protected void initListener() {
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            final InsuranceDetailActivity activity = (InsuranceDetailActivity) getActivity();
+            if (activity == null) {
+                LogUtils.d(TAG, "msgActivity == null!!!!");
+                return;
+            }
+            activity.finish();
+        }
+    };
+   
+  
+
+    public void onDestroy() {
+        super.onDestroy();
+        HttpTaskManager.stop(TAG);
+    }
+
+    /**
+     * @return
+     * @see com.qdoc.client.ui.fragment.BaseFragment#getReqestTag()
+     */
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+
+}

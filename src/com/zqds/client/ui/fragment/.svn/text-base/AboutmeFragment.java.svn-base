@@ -1,0 +1,729 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RatingBar;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.ShareService;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BankDtoDataModel;
+import com.qdoc.client.model.DoctorCardDataModel;
+import com.qdoc.client.model.DoctorDataModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.DoctorShareDataModel;
+import com.qdoc.client.model.HomeDtoDataModel;
+import com.qdoc.client.model.HomeDtoModel;
+import com.qdoc.client.model.SoftwareUpgradeModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.AboutmeActivity;
+import com.qdoc.client.ui.BankAccountEditActivitiy;
+import com.qdoc.client.ui.BindingCardSuccessActivity;
+import com.qdoc.client.ui.ConsultSettingActivity;
+import com.qdoc.client.ui.DynamicNoticeActivity;
+import com.qdoc.client.ui.KindlyFeelingsActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MemberDetailActivity;
+import com.qdoc.client.ui.MyBenefitActivity;
+import com.qdoc.client.ui.MyCardActivity;
+import com.qdoc.client.ui.MyConsultListActivity;
+import com.qdoc.client.ui.MyInfoActivity;
+import com.qdoc.client.ui.MyMobileClinicActivity;
+import com.qdoc.client.ui.SatisfactionActivity;
+import com.qdoc.client.ui.ServiceActivity;
+import com.qdoc.client.ui.SystemSettingActivity;
+import com.qdoc.client.ui.dialog.ErWeiMaDlg;
+import com.qdoc.client.ui.dialog.SingleHintDlg;
+import com.qdoc.client.ui.widget.APPRegisterGuide;
+import com.qdoc.client.ui.widget.BackgroundRegisterGuide;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class AboutmeFragment extends BaseFragment implements OnClickListener {
+	/**
+	 * TAG
+	 */
+	public static final String TAG = AboutmeFragment.class.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private ImageView icon_head;
+	private ImageView icon_certificationStatus;//认证状态标识图标
+	private ImageView icon_certification_red_dot;//未认证红点图标
+	private TextView tv_certification_text;//未认证红色提示文案
+	private ImageView iv_setting_red_dot;
+	private TextView docName;
+	private TextView docFrom;
+	private RelativeLayout rl_doc_startlevel;//医生星级布局
+	private RatingBar rb_doc_startlevel;//医生星级
+	private TextView tv_favorable_comment;
+	private TextView member_size;
+	private TextView consultsize;
+	private TextView benefitsize;
+	private RelativeLayout favorable_comment_layout;
+	private RelativeLayout member_size_layout;
+	private RelativeLayout consultsize_layout;
+	private RelativeLayout benefitsize_layout;
+	private LinearLayout consult_layout;
+	private TextView tv_mycard;
+	private TextView tv_mobile_clinics;// 邀请好友关注
+	private TextView tv_doctor_share;// 医生推荐
+	private TextView tv_dynamic_notice;//我的说说
+	private RelativeLayout rly_kindly_feelings;
+	private ImageView iv_kindly_red_dot;
+	private APPRegisterGuide app_register_guide;
+	private BackgroundRegisterGuide bg_register_guide;
+	private TextView tv_doc_level;
+	private ImageView erweima;
+	private RelativeLayout rly_xiaoke;
+	private ErWeiMaDlg erWeiMaDlg;
+	//客服信息未读条数
+	public static int unReadServerMsgCount=0;
+	//显示客服消息提示
+	private ImageView iv_xiaoke_red_dot;
+	//设置头像的linearLayout
+	private LinearLayout ll_set_head_image;
+    private RelativeLayout rly_setting;
+
+	/**
+	 * params
+	 */
+	// 医生是否获取失败
+	public static boolean getDoctorInfo = true;
+	private DoctorModel doctorDto;// 医生对象
+
+	public static AboutmeFragment newInstance(Bundle bundle) {
+		final AboutmeFragment fragment = new AboutmeFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+		super.onCreate(savedInstanceState);
+		registerUpdateReceiver();
+	}
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_aboutme2, container, false);
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		initView(view);
+		initListener();
+		initParams();
+	}
+
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onActivityCreated(savedInstanceState);
+	}
+
+	private void initParams() {
+	}
+
+	private void checkNewImageNeedVisible() {
+		if(null == Global.APP_VERSION_NAME)
+			Global.inits(getContext());
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getUpgradeRequestParam(TAG, AppConstants.ANDROID,
+						Global.APP_VERSION_NAME, AppConstants.NEW_VERSION),
+				JsonParserFactory.parseBaseModel(SoftwareUpgradeModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final SoftwareUpgradeModel dataModel = (SoftwareUpgradeModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if (dataModel.getNeedUp()) {
+									iv_setting_red_dot.setVisibility(View.VISIBLE);
+								} else {
+									iv_setting_red_dot.setVisibility(View.GONE);
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+							if(null!=dataModel.getDataVersionDto())
+								PersonalConfig.putString(PersonalConfigKey.EXTAR_ROMATE_VERSION_NAME, dataModel.getDataVersionDto().getDataVersion());
+							PersonalConfig.putString(PersonalConfigKey.EXTAR_UPGRADE_DAY_ABOUTMEFRAGMENT, DateUtil.getDate("yyyy-MM-dd"));
+							PersonalConfig.asyncCommit();
+						}
+					}
+				});
+	}
+
+	@SuppressLint("CutPasteId")
+	private void initView(View view) {
+		ll_set_head_image=(LinearLayout) view.findViewById(R.id.ll_set_head_image);
+		erweima = (ImageView) view.findViewById(R.id.iv_erweima);
+		rly_xiaoke = (RelativeLayout) view.findViewById(R.id.rly_xiaoke);
+		iv_xiaoke_red_dot = (ImageView) view.findViewById(R.id.iv_xiaoke_red_dot);
+		icon_head = (ImageView) view.findViewById(R.id.icon_head);
+		icon_certificationStatus = (ImageView) view.findViewById(R.id.icon_certificationStatus);
+		icon_certification_red_dot = (ImageView) view.findViewById(R.id.icon_certification_red_dot);
+		tv_certification_text = (TextView) view.findViewById(R.id.tv_certification_text);
+		iv_setting_red_dot = (ImageView) view.findViewById(R.id.iv_setting_red_dot);
+		docName = (TextView) view.findViewById(R.id.nickname);
+		tv_doc_level = (TextView) view.findViewById(R.id.tv_doc_level);
+		docFrom = (TextView) view.findViewById(R.id.from);
+		rl_doc_startlevel = (RelativeLayout) view.findViewById(R.id.rl_doc_startlevel);
+		rb_doc_startlevel = (RatingBar) view.findViewById(R.id.rb_doc_startlevel);
+		tv_favorable_comment = (TextView) view.findViewById(R.id.tv_favorable_comment);
+		member_size = (TextView) view.findViewById(R.id.member_size);
+		consultsize = (TextView) view.findViewById(R.id.consultsize);
+		benefitsize = (TextView) view.findViewById(R.id.benefitsize);
+		app_register_guide = (APPRegisterGuide) view.findViewById(R.id.app_register_guide);
+		bg_register_guide = (BackgroundRegisterGuide) view.findViewById(R.id.bg_register_guide);
+		favorable_comment_layout = (RelativeLayout) view.findViewById(R.id.favorable_comment_layout);
+		member_size_layout = (RelativeLayout) view.findViewById(R.id.member_size_layout);
+		consultsize_layout = (RelativeLayout) view.findViewById(R.id.consultsize_layout);
+		benefitsize_layout = (RelativeLayout) view.findViewById(R.id.benefitsize_layout);
+		consult_layout = (LinearLayout) view.findViewById(R.id.consult_layout);
+		tv_mycard = (TextView) view.findViewById(R.id.tv_mycard);
+		tv_mobile_clinics = (TextView) view.findViewById(R.id.tv_mobile_clinics);
+		tv_doctor_share = (TextView) view.findViewById(R.id.tv_doctor_share);
+		tv_dynamic_notice = (TextView) view.findViewById(R.id.tv_dynamic_notice);
+		rly_kindly_feelings = (RelativeLayout) view.findViewById(R.id.rly_kindly_feelings);
+		iv_kindly_red_dot = (ImageView) view.findViewById(R.id.iv_kindly_red_dot);
+		rly_setting = (RelativeLayout) view.findViewById(R.id.rly_setting);
+		if (!PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_ME_APP_REGISTER_GUIDE, true)) {
+			app_register_guide.setView(icon_head, consult_layout);
+			app_register_guide.showFirstGuide();
+			PersonalConfig.putBoolean(PersonalConfigKey.EXTAR_ME_APP_REGISTER_GUIDE, true);
+			PersonalConfig.asyncCommit();
+		} else if (!PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_ME_BACKGROUND_REGISTER_GUIDE, true)) {
+		    bg_register_guide.setView(icon_head, tv_mycard);
+			bg_register_guide.showFirstGuide();
+			PersonalConfig.putBoolean(PersonalConfigKey.EXTAR_ME_BACKGROUND_REGISTER_GUIDE, true);
+			PersonalConfig.asyncCommit();
+		}
+	}
+
+	@Override
+	public void onPause() {
+		super.onPause();
+	}
+
+	protected void initListener() {
+		ll_set_head_image.setOnClickListener(this);
+		erweima.setOnClickListener(this);
+		rl_doc_startlevel.setOnClickListener(this);
+		favorable_comment_layout.setOnClickListener(this);
+		member_size_layout.setOnClickListener(this);
+		consultsize_layout.setOnClickListener(this);
+		benefitsize_layout.setOnClickListener(this);
+		tv_mobile_clinics.setOnClickListener(this);
+		rly_setting.setOnClickListener(this);
+		iv_setting_red_dot.setOnClickListener(this);
+		tv_mycard.setOnClickListener(this);
+		tv_doctor_share.setOnClickListener(this);
+		tv_dynamic_notice.setOnClickListener(this);
+		rly_kindly_feelings.setOnClickListener(this);
+		rly_xiaoke.setOnClickListener(this);
+
+	}
+
+	OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			AboutmeActivity activity = (AboutmeActivity) getActivity();
+			if (activity == null) {
+				return;
+			}
+			ConsultSettingActivity.startActivity(activity, activity.getLaucherFrom());
+		}
+	};
+
+	public void onDestroy() {
+		super.onDestroy();
+		unRegisterUpdateReceiver();
+		HttpTaskManager.stop(TAG);
+	}
+
+	@Override
+	public void onClick(View view) {
+		AboutmeActivity activity = (AboutmeActivity) getActivity();
+		if (activity == null) {
+			return;
+		}
+
+		switch (view.getId()) {
+		  case R.id.iv_erweima: {// 点击获取二维码
+				showErWeima();
+			break;
+		  }
+		  case R.id.rl_doc_startlevel:
+			  if(null != doctorDto)
+				  showDocStarLevelDialog(doctorDto.getStarLevel());
+			  break;
+		case R.id.ll_set_head_image: {
+			MyInfoActivity.startActivity(activity, activity.getLaucherFrom());
+			break;
+		}
+		case R.id.consult_layout: { // 咨询设置
+			ConsultSettingActivity.startActivity(activity,activity.getLaucherFrom());
+			break;
+		}
+		case R.id.bank_layout: {// 银行账户
+			// 请求医生银行信息接口，看是否已经绑定银行卡信息
+			getShowBankInfoRequest();
+			break;
+		}
+		case R.id.tv_mycard: {// 我的名片
+			MyCardActivity.startActivity(activity);
+			break;
+		}
+		case R.id.favorable_comment_layout://好评率
+			SatisfactionActivity.startActivity(getContext(), tv_favorable_comment.getText().toString().trim());
+			break;
+		case R.id.member_size_layout:// 粉丝数
+			MemberDetailActivity.startActivity(activity);
+			break;
+		case R.id.consultsize_layout:// 咨询数
+			MyConsultListActivity.startActivity(activity,AboutmeFragment.TAG);
+			break;
+		case R.id.benefitsize_layout:// 收益
+			MyBenefitActivity.startActivity(activity, doctorDto);
+			break;
+		case R.id.tv_mobile_clinics:// 我的移动诊所
+			if (Global.getUserStatus() == AppConstants.LIMITED_PERMISSIONS) {
+				ToastUtils.ToastShort(getActivity(),
+						R.string.open_my_mobile_clinic_no_audit);
+			} else {
+				MyMobileClinicActivity.startActivity(getActivity(), doctorDto);
+			}
+			break;
+		case R.id.tv_doctor_share:// 推荐医生加入
+			if (Global.getUserStatus() == AppConstants.LIMITED_PERMISSIONS) {
+				ToastUtils.ToastShort(getActivity(),
+						R.string.invite_friend_no_audit);
+			} else {
+				getDoctorShareRequest();
+			}
+			break;
+		case R.id.rly_kindly_feelings:
+			KindlyFeelingsActivity.startActivity(getContext(),doctorDto);
+			iv_kindly_red_dot.setVisibility(View.INVISIBLE);
+			break;
+		case R.id.tv_dynamic_notice:
+			if(Global.getUserStatus() == AppConstants.LIMITED_PERMISSIONS)
+				ToastUtils.ToastShort(getActivity(), R.string.edit_dynamic_notice_no_audit);
+			else
+				startActivity(new Intent(getContext(), DynamicNoticeActivity.class));
+			break;
+		case R.id.rly_xiaoke:
+			//跳转客服信息详细内容页，清空未读条数
+			unReadServerMsgCount=0;
+			iv_xiaoke_red_dot.setVisibility(View.GONE);
+			ServiceActivity.startActivity(getActivity(), doctorDto);
+			break;
+		case R.id.rly_setting:
+			SystemSettingActivity.startActivity(getActivity(), doctorDto, activity.getLaucherFrom());
+			break;
+		}
+	}
+
+	/**
+	 * 获取医生信息
+	 */
+	private void getDoctorInfoRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.getDocInfoRequestParam(TAG, token),
+				JsonParserFactory.parseBaseModel(DoctorDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final DoctorDataModel dataModel = (DoctorDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if ((dataModel != null) && (dataModel.getDoctorDto() != null)) {
+									getDoctorInfo = false;
+									doctorDto = dataModel.getDoctorDto();
+									docName.setText(doctorDto.getDoctorName());
+									StringBuffer sb = new StringBuffer();
+									if(!TextUtils.isEmpty(doctorDto.getDictinoaryName()))
+										sb.append(doctorDto.getDictinoaryName());
+									if(!TextUtils.isEmpty(doctorDto.getPositionName()))
+										sb.append(" | "+doctorDto.getPositionName());
+									tv_doc_level.setText(sb.toString());
+									if (!TextUtils.isEmpty(doctorDto.getHospitalName()))
+										docFrom.setText(doctorDto.getHospitalName());
+									int startLevel = doctorDto.getStarLevel()<4&&doctorDto.getStarLevel()>0?3:doctorDto.getStarLevel();
+									rb_doc_startlevel.setRating(startLevel);
+									if(doctorDto.getDoctorCertificationStatus()==AppConstants.CERTIFICATE_STATE_SUCCESS){
+										icon_certificationStatus.setImageResource(R.drawable.certificate_on);
+										icon_certification_red_dot.setVisibility(View.GONE);
+										tv_certification_text.setVisibility(View.GONE);
+									}else{
+										icon_certificationStatus.setImageResource(R.drawable.certificate_off);
+										icon_certification_red_dot.setVisibility(View.VISIBLE);
+										tv_certification_text.setVisibility(View.VISIBLE);
+									}
+									ImageLoaderHelper.getInstance(getActivity()).displayImage(doctorDto.getRealHeadImage(),icon_head,R.drawable.myinfo_head_default);
+								} else {
+
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+						}
+					}
+				});
+	}
+
+	private void getMyHomeRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.getMyHomeRequestParam(TAG, token),
+				JsonParserFactory.parseBaseModel(HomeDtoDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final HomeDtoDataModel dataModel = (HomeDtoDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if ((dataModel != null)
+										&& (dataModel.getHomeDto() != null)) {
+									HomeDtoModel doctorDto = dataModel.getHomeDto();
+									tv_favorable_comment.setText(TextUtils.isEmpty(doctorDto.getSatisfaction())?"0":doctorDto.getSatisfaction()+"%");
+									member_size.setText(String.valueOf(doctorDto.getAllUser()));
+									consultsize.setText(String.valueOf(doctorDto.getConsult()));
+									benefitsize.setText(doctorDto.getRevenue());
+								} else {
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+						}
+						LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+					}
+				});
+	}
+
+	/**
+	 * 医生分享邀请
+	 * 
+	 * @return void
+	 */
+	private void getDoctorShareRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.getShowShareRequestParam(TAG, token),
+				JsonParserFactory.parseBaseModel(DoctorShareDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final DoctorShareDataModel dataModel = (DoctorShareDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								ShareService share = new ShareService(
+										getActivity());
+								String shareContent = dataModel.getConent();
+								share.configUMShare(getActivity(),shareContent, dataModel.getTitle(),dataModel.getHeadimage(),dataModel.getShareurl());
+								share.openShareBoard();
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										(String) resultData);
+							}
+						}
+					}
+				});
+	}
+
+	public void registerUpdateReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.HEADIMAGE_UPDATE_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.UPDATE_CONTACT_SERVER_RAD_DOT);
+		myIntentFilter.addAction(AppConstants.PUSH_FLAG_KINDNESS_ACTION);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance())
+				.registerReceiver(mUpdateReceiver, myIntentFilter);
+	}
+
+	public void unRegisterUpdateReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance())
+				.unregisterReceiver(mUpdateReceiver);
+	}
+
+	private BroadcastReceiver mUpdateReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if (AppConstants.HEADIMAGE_UPDATE_INTENT_ACTION.equals(action)) {
+				// 开始上传
+				getDoctorInfoRequest();
+			}else if(AppConstants.UPDATE_CONTACT_SERVER_RAD_DOT.equals(action)){
+				//联系客服相关内容
+				unReadServerMsgCount++;
+				iv_xiaoke_red_dot.setVisibility(View.VISIBLE);
+//				if(unReadServerMsgCount>9)
+//					tv_server_msg_unread_count.setText("9+");
+//				else
+//					tv_server_msg_unread_count.setText(unReadServerMsgCount+"");
+			}else if(AppConstants.PUSH_FLAG_KINDNESS_ACTION.equals(action)){
+				iv_kindly_red_dot.setVisibility(View.VISIBLE);
+			}
+		}
+	};
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+	@Override
+	public void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+		LogUtils.d(TAG, "----------AboutmeFragment onResume()---------");
+		
+		if (Global.getUserStatus() ==AppConstants.ALL_PERMISSIONS) {
+			erweima.setVisibility(View.VISIBLE);
+		}
+		Global.updateStatus();
+		getMyHomeRequest();
+		if (getDoctorInfo)
+			getDoctorInfoRequest();
+		//我的界面获取焦点，根据未读条数显示红点
+		if(unReadServerMsgCount==0){
+			iv_xiaoke_red_dot.setVisibility(View.GONE);
+		}else{
+			iv_xiaoke_red_dot.setVisibility(View.VISIBLE);
+//			iv_xiaoke_red_dot.setText(unReadServerMsgCount+"");
+		}
+		boolean isCall = PersonalConfig.getString(PersonalConfigKey.EXTAR_UPGRADE_DAY_ABOUTMEFRAGMENT).equals(DateUtil.getDate("yyyy-MM-dd"));//当天是否调用过app日志接口
+		if(!isCall){
+			checkNewImageNeedVisible();
+		}else{
+			if(null == Global.APP_VERSION_NAME)
+				Global.inits(getContext());
+			int remote_versionName = getVername(PersonalConfig.getString(PersonalConfigKey.EXTAR_ROMATE_VERSION_NAME));
+			int local_versionName = getVername(Global.APP_VERSION_NAME);
+			if(remote_versionName>local_versionName){
+				iv_setting_red_dot.setVisibility(View.VISIBLE);
+			}else{
+				iv_setting_red_dot.setVisibility(View.GONE);
+			}
+		}
+			
+	}
+	
+	private int getVername(String vername){
+		int int_versionName = 0;
+		if(TextUtils.isEmpty(vername))
+			return int_versionName;
+		String[] vernameStrs = vername.split("\\.");
+		int lenth = vernameStrs.length;
+		if(lenth!=3)
+			return int_versionName;
+		int_versionName = Integer.parseInt(vernameStrs[2])+Integer.parseInt(vernameStrs[1])*100+Integer.parseInt(vernameStrs[0])*10000;
+		return int_versionName;
+	}
+
+	/**
+	 * 获取医生银行卡信息
+	 */
+	private void getShowBankInfoRequest() {
+		// 判断网络是否可用
+		if (!NetworkUtils.isOnline(QdocApplication.getInstance())) {
+			ToastUtils.ToastShort(getContext(), R.string.network_unavaible);
+			return;
+		}
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		Global.progressDialog = ProgressDialog.show(getActivity(), null,getActivity().getString(R.string.loading), true, true);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.getShowBankInfoequestParam(TAG, token),
+				JsonParserFactory.parseBaseModel(BankDtoDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						Global.progressDialog.dismiss();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final BankDtoDataModel dataModel = (BankDtoDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if (!TextUtils.isEmpty(dataModel.getBankInfo().getAccountNo()) && !TextUtils.isEmpty(dataModel.getBankInfo().getBankName())) {
+									// 已经绑定银行卡
+									BindingCardSuccessActivity.startActivity(getContext(), dataModel, doctorDto);
+								} else {
+									// 没有绑定银行卡
+									BankAccountEditActivitiy.startActivity(getActivity(),dataModel, doctorDto);
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							} else {
+								ToastUtils.ToastShort(getContext(),dataModel.getErrorMsg());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+						LogUtils.d(TAG, "resultCode::: " + resultCode+ "resultData ::: " + resultData);
+					}
+				});
+	}
+
+	// 展示二维码
+	private void showErWeima() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		Global.progressDialog = ProgressDialog.show(getActivity(), null, null,true, true);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.getMyCradRequestParam(TAG, token),
+				JsonParserFactory.parseBaseModel(DoctorCardDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final DoctorCardDataModel dataModel = (DoctorCardDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if ((dataModel != null) && (dataModel.getDoctorCard() != null)) {
+									erWeiMaDlg = new ErWeiMaDlg(getActivity(), dataModel);
+									erWeiMaDlg.show();
+								} else {
+									
+								}
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+						LogUtils.d(TAG, "resultCode::: " + resultCode+ "resultData ::: " + resultData);
+					}
+				});
+
+	}
+	
+	/**
+	 * 展示医生星级对话框
+	 * @param starLevel
+	 */
+	private void showDocStarLevelDialog(int starLevel){
+		String content = null;
+		if(starLevel<4)
+			content = getString(R.string.little_than_four_tips);
+		else if(starLevel==4)
+			content = getString(R.string.startlevel_equal_four_tips);
+		else if(starLevel>4)
+			content = getString(R.string.bigger_than_four_tips);
+		new SingleHintDlg(getContext(), content, getString(R.string.dialog_hint_title), getString(R.string.button_good), new SingleHintDlg.OnDialogclickListener() {
+			
+			@Override
+			public void onButtonClick(int type, Dialog dialog) {
+				dialog.dismiss();
+			}
+		}, R.layout.dialog_star_level_tips, true).show();
+	}
+
+	@Override
+	public void onAttach(Activity activity) {
+		// TODO Auto-generated method stub
+		super.onAttach(activity);
+	}
+
+	@Override
+	public void onDestroyView() {
+		// TODO Auto-generated method stub
+		super.onDestroyView();
+	}
+
+	@Override
+	public void onDetach() {
+		// TODO Auto-generated method stub
+		super.onDetach();
+	}
+
+	@Override
+	public void onStart() {
+		// TODO Auto-generated method stub
+		super.onStart();
+	}
+	
+
+	@Override
+	public void onStop() {
+		// TODO Auto-generated method stub
+		super.onStop();
+	}
+}

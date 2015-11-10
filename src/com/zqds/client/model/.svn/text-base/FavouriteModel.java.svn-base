@@ -1,0 +1,32 @@
+/*
+ * FavouriteModel.java
+ * classes : com.qdoc.client.model.FavouriteModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午4:05:04
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.FavouriteModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午4:05:04
+ */
+public class FavouriteModel extends AbstractBaseModel {
+    private ConsultFavoritesDtoModel consultFavoritesDto;
+
+    /**
+     * @return the consultFavoritesDto
+     */
+    public ConsultFavoritesDtoModel getConsultFavoritesDto() {
+        return consultFavoritesDto;
+    }
+
+    /**
+     * @param consultFavoritesDto the consultFavoritesDto to set
+     */
+    public void setConsultFavoritesDto(ConsultFavoritesDtoModel consultFavoritesDto) {
+        this.consultFavoritesDto = consultFavoritesDto;
+    }
+}

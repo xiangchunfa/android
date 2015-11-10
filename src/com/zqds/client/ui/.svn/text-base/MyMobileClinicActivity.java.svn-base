@@ -1,0 +1,645 @@
+package com.qdoc.client.ui;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import org.json.JSONException;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RatingBar;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.RequestParams;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.http.client.HttpRequest;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.ShareService;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.ShareCardDataModel;
+import com.qdoc.client.model.UploadDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.adapter.BasePagerAdapter;
+import com.qdoc.client.ui.fragment.AboutmeFragment;
+import com.qdoc.client.ui.fragment.ChooseImageDialogFragment;
+import com.qdoc.client.ui.fragment.ChooseImageDialogFragment.OnDialogclickListener;
+import com.qdoc.client.ui.fragment.DoctorDynamicFragment;
+import com.qdoc.client.ui.fragment.MyMobileClinicFragment;
+import com.qdoc.client.ui.fragment.PatientEvaluateFragment;
+import com.qdoc.client.ui.view.CircularImage;
+import com.qdoc.client.ui.view.DragTopLayout;
+import com.qdoc.client.ui.view.MyViewPager;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.BitmapUtils;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.UploadImageUtil;
+
+import de.greenrobot.event.EventBus;
+
+/**
+ * FileName : MyMobileClinicActivity.java 
+ * Description : 医生动态类
+ * 
+ * @Copyright : Keai Software Co.,Ltd.Rights Reserved
+ * @Company : 可爱医生网络技术有限公司
+ * @author : 向春发
+ * @version : 1.0 
+ * Create Date : 2015-8-11
+ **/
+public class MyMobileClinicActivity extends BaseActivity implements
+		OnClickListener {
+
+	/**
+	 * TAG
+	 */
+	public static final String TAG = MyMobileClinicActivity.class
+			.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private Button btn_1;
+	private Button btn_2;
+	private Button btn_3;
+	private LinearLayout lyTitle;
+	private MyViewPager myPagerTab;
+	private TitleBar mTitleBar;
+	private TextView tv_nickname;
+	private TextView tv_departments;
+	private TextView tv_doctor_title;
+	private TextView tv_position_name;
+	private TextView tv_hospital_name;
+	private CircularImage ci_icon_head;
+	private TextView tv_dress_up;// 装扮
+	private ImageView iv_mobile_clinics_bg;
+	private RatingBar rb_doc_startlevel;// 医生星级
+    private View v_hint_1;
+    private View v_hint_2;
+    private View v_hint_3;
+    private DragTopLayout dragLayout;
+    private RelativeLayout rl_share_mobile_clinic_layout;//分享移动诊所
+    
+	/**
+	 * params
+	 */
+	ArrayList<String> itemList = new ArrayList<String>();
+	private DoctorModel doctorDto;// 医生对象
+	private BasePagerAdapter mPagerAdapter;
+	public MyMobileClinicFragment mMyMobileClinicFragment;
+	private ShareCardDataModel mShareCardDataModel;
+	private static final String CLINIC_BACKGROUD_FILE_NAME = "clinic_backgroud.jpg";
+	private static final String IMAGE_UNSPECIFIED = "image/*";
+	private boolean isDefault = true;// 是否为默认装扮
+    private static final int REQUEST_CAMERA = 30;// 拍照
+    private static final int REQUEST_GALLERY = 31;// 相册
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_mobile_clinics);
+		initView();
+		initData();
+		initListener();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		EventBus.getDefault().register(this);
+	}
+
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			finish();
+		}
+	};
+	
+	public void onEvent(Boolean b){
+	    dragLayout.setTouchMode(b);
+	}
+	
+	protected void initView() {
+		mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+    	mTitleBar.setTitleInfo(R.string.my_mobile_clinic, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+		tv_nickname = (TextView) findViewById(R.id.tv_nickname);
+		tv_departments = (TextView) findViewById(R.id.tv_departments);
+		tv_doctor_title = (TextView) findViewById(R.id.tv_doctor_title);
+		tv_position_name = (TextView) findViewById(R.id.tv_position_name);
+		tv_hospital_name = (TextView) findViewById(R.id.tv_hospital_name);
+		ci_icon_head = (CircularImage) findViewById(R.id.ci_icon_head);
+		tv_dress_up = (TextView) findViewById(R.id.tv_dress_up);
+		iv_mobile_clinics_bg = (ImageView) findViewById(R.id.iv_mobile_clinics_bg);
+		rb_doc_startlevel = (RatingBar) findViewById(R.id.rb_doc_startlevel);
+		dragLayout = (DragTopLayout) findViewById(R.id.drag_layout);
+		rl_share_mobile_clinic_layout = (RelativeLayout) findViewById(R.id.rl_share_mobile_clinic_layout);
+
+		doctorDto = (DoctorModel) getIntent().getSerializableExtra(IntentTools.EXTRA_DOCTOR_INFO);
+		Bundle bundle = new Bundle();
+		bundle.putSerializable(IntentTools.EXTRA_DOCTOR_INFO, doctorDto);
+		initTabViewPager(bundle);
+	}
+	
+	class DirectWebViewClient extends WebViewClient {
+		@Override
+		public boolean shouldOverrideUrlLoading(WebView view, String url) {
+			return true;
+		}
+	}
+
+	private void initData() {
+		getShareCardRequest();
+		setView();
+	}
+
+	protected void initListener() {
+		tv_dress_up.setOnClickListener(this);
+		rl_share_mobile_clinic_layout.setOnClickListener(this);
+	
+	}
+
+	public static void startActivity(Context context, DoctorModel doctorDto) {
+		if (context == null)
+			return;
+		context.startActivity(IntentTools.startMyMobileClinicActivity(context, doctorDto));
+	}
+
+	/**
+	 * 初始化页签
+	 */
+	private void initTabViewPager(Bundle bundle) {
+		myPagerTab = (MyViewPager) findViewById(R.id.vp_my);
+		lyTitle = (LinearLayout) findViewById(R.id.ly_title);
+		v_hint_1 = findViewById(R.id.v_hint_1);
+		v_hint_2 = findViewById(R.id.v_hint_2);
+		v_hint_3 = findViewById(R.id.v_hint_3);
+		btn_1 = (Button) findViewById(R.id.btn_1);
+		btn_2 = (Button) findViewById(R.id.btn_2);
+		btn_3 = (Button) findViewById(R.id.btn_3);
+        v_hint_1.setBackgroundColor(getResources().getColor(R.color.c_ff3742));
+		btn_1.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_selected));
+		lyTitle.setVisibility(View.VISIBLE);
+		mPagerAdapter = new BasePagerAdapter(this);
+		myPagerTab.setAdapter(mPagerAdapter);
+		myPagerTab.removeAllViews();
+		mMyMobileClinicFragment = MyMobileClinicFragment.newInstance(bundle);
+		mPagerAdapter.addTab(mMyMobileClinicFragment);
+		mPagerAdapter.addTab(PatientEvaluateFragment.newInstance(bundle));
+		mPagerAdapter.addTab(DoctorDynamicFragment.newInstance(bundle));
+		btn_1.setText(getString(R.string.doctor_synopsis));
+		btn_2.setText(getString(R.string.patient_evaluate));
+		btn_3.setText(getString(R.string.doctor_dynamic));
+		btn_1.setOnClickListener(mainViewPageClickListener);
+		btn_2.setOnClickListener(mainViewPageClickListener);
+		btn_3.setOnClickListener(mainViewPageClickListener);
+		myPagerTab.setOnPageChangeListener(new OnPageChangeListener() {
+
+			@Override
+			public void onPageSelected(int position) {
+				btn_1.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_normal));
+				btn_2.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_normal));
+				btn_3.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_normal));
+				v_hint_1.setBackgroundColor(0);
+				v_hint_2.setBackgroundColor(0);;
+				v_hint_3.setBackgroundColor(0);;
+				switch (position) {
+				case 0:
+					btn_1.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_selected));
+					v_hint_1.setBackgroundColor(getResources().getColor(R.color.c_ff3742));
+					break;
+				case 1:
+					btn_2.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_selected));
+					v_hint_2.setBackgroundColor(getResources().getColor(R.color.c_ff3742));
+					break;
+				case 2:
+					btn_3.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_selected));
+					v_hint_3.setBackgroundColor(getResources().getColor(R.color.c_ff3742));
+					break;
+				}
+			}
+
+			@Override
+			public void onPageScrolled(int position, float positionOffset,
+					int positionOffsetPixels) {
+			}
+
+			@Override
+			public void onPageScrollStateChanged(int state) {
+			}
+		});
+	}
+
+	OnClickListener mainViewPageClickListener = new OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			TextView clickTextView = (TextView) v;
+			if (clickTextView == btn_1) {
+				myPagerTab.setCurrentItem(0);
+			} else if (clickTextView == btn_2) {
+				myPagerTab.setCurrentItem(1);
+			} else if (clickTextView == btn_3) {
+				myPagerTab.setCurrentItem(2);
+			}
+		}
+	};
+
+	/**
+	 * 获取医生名片分享的内容
+	 * 
+	 * @return void
+	 */
+	private void getShareCardRequest() {
+		Global.progressDialog = ProgressDialog.show(this, null, getString(R.string.loading), true, true);
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.getShareCardInfoParam(TAG, token),
+				JsonParserFactory.parseBaseModel(ShareCardDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final ShareCardDataModel dataModel = (ShareCardDataModel) resultData;
+							if (null != dataModel) {
+								if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+									mShareCardDataModel = dataModel;
+								} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+									LoginActivity.startActivity(MyMobileClinicActivity.this);
+								} else {
+									ToastUtils.ToastShort(MyMobileClinicActivity.this, dataModel.getErrorMsg());
+								}
+							}
+						} else {
+							if (null == resultData) {
+								ToastUtils.ToastShort(MyMobileClinicActivity.this,R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(MyMobileClinicActivity.this,(String) resultData);
+							}
+						}
+						Global.progressDialog.dismiss();
+					}
+				});
+	}
+
+	public void setView() {
+		if (doctorDto == null) {
+			return;
+		}
+		if (!StringUtils.isEmpty(doctorDto.getDoctorName())) {
+			tv_nickname.setText(doctorDto.getDoctorName());
+		}
+		if (!StringUtils.isEmpty(doctorDto.getHospitalName())) {
+			tv_hospital_name.setText(doctorDto.getHospitalName());
+		}
+		if (!StringUtils.isEmpty(doctorDto.getDepartName())) {
+			tv_departments.setText(doctorDto.getDepartName());
+		}
+		if (!StringUtils.isEmpty(doctorDto.getDictinoaryName())) {
+			tv_doctor_title.setText(doctorDto.getDictinoaryName());
+		}
+		if (!StringUtils.isEmpty(doctorDto.getPositionName())) {
+			tv_position_name.setText(" | "+doctorDto.getPositionName());
+		}
+		int startLevel = doctorDto.getStarLevel() < 4
+				&& doctorDto.getStarLevel() > 0 ? 3 : doctorDto.getStarLevel();
+		rb_doc_startlevel.setRating(startLevel);
+		if (!AppConstants.BACKGROUND_DEFAULT_IMAGE.equals(getFileName(doctorDto.getBackgroundImage()))) {
+			isDefault = false;
+			tv_dress_up.setText(getString(R.string.recover_bg));
+		} else {
+			isDefault = true;
+			tv_dress_up.setText(getString(R.string.dress_up_bg));
+		}
+		ImageLoaderHelper.getInstance(this).displayImage(doctorDto.getBackgroundImage(), iv_mobile_clinics_bg,
+				R.drawable.mobile_clinics_bg);
+		ImageLoaderHelper.getInstance(this).displayImage(doctorDto.getRealHeadImage(), ci_icon_head,
+				R.drawable.myinfo_head_default);
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.tv_dress_up:
+			if (!isDefault) {
+				saveBackground("", "", false);
+			} else {
+				if (mMyMobileClinicFragment == null) {
+					return;
+				}
+				FragmentManager fm = mMyMobileClinicFragment.getFragmentManager();
+				ChooseImageDialogFragment chooseDialog = new ChooseImageDialogFragment(
+						new OnDialogclickListener() {
+							@Override
+							public void onButtonClick(int type,
+									DialogFragment dialog) {
+								switch (type) {
+								case AppConstants.CAMERA:
+									chooseCamera();
+									dialog.dismiss();
+									break;
+
+								case AppConstants.PHOTO_ALBUM:
+									chooseLocalImage();
+									dialog.dismiss();
+									break;
+								}
+							}
+						});
+				chooseDialog.show(fm, ChooseImageDialogFragment.TAG);
+			}
+			break;
+		case R.id.rl_share_mobile_clinic_layout:
+			shareCartToFriend(mShareCardDataModel);
+			break;
+		}
+
+	}
+
+	 /**
+     * 
+     * @param path :服务器图片存放路径
+     * @param filePath :手机图片存放路径
+     * @param isDialogShow :对话框是否显示
+     */
+    
+    private void saveBackground(final String path, final String filePath, final boolean isDialogShow) {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.saveBackground(TAG, token, path),
+                JsonParserFactory.parseBaseModel(BaseModel.class), new IResultReceiver() {
+
+        	        @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+        	        	if(isDialogShow){
+        	        		 Global.progressDialog.dismiss();  
+        	        	}
+                    	if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final BaseModel dataModel = (BaseModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	AboutmeFragment.getDoctorInfo = true;
+                            	
+                            	if (!StringUtils.isEmpty(filePath)){
+//                            		try {
+//										iv_mobile_clinics_bg.setImageBitmap(BitmapUtils.getBitmap(filePath));
+//									} catch (FileNotFoundException e) {
+//										e.printStackTrace();
+//									}
+                            		tv_dress_up.setText(getString(R.string.recover_bg));
+                            		ToastUtils.ToastShort(MyMobileClinicActivity.this, R.string.bg_upload_success);
+                            		isDefault = false;
+                            	} else {
+                            		iv_mobile_clinics_bg.setImageResource(R.drawable.mobile_clinics_bg);
+                            		ToastUtils.ToastShort(MyMobileClinicActivity.this, R.string.bg_recover_default);
+                            		tv_dress_up.setText(getString(R.string.dress_up_bg));
+                            		isDefault = true;
+                            	}
+                            } else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+                                LoginActivity.startActivity(MyMobileClinicActivity.this);
+      					    } else {
+      					    	ToastUtils.ToastShort(MyMobileClinicActivity.this,dataModel.getErrorMsg());
+      					    }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(MyMobileClinicActivity.this, R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(MyMobileClinicActivity.this, (String) resultData);
+                            }
+                        }
+                    }
+                });
+    }
+    
+    /**
+     * @param filePath :图片在手机的存储路径
+     */
+    private void uploadLocalImageFile(final String filePath) {
+        final String uploadUrl = DataRequestUtils.getUploadUrl();
+        final String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        String mFileName = getAvatarFile(filePath).getAbsolutePath();
+        String type = "background";
+        RequestParams params = new RequestParams();
+        params.addQueryStringParameter("token", token);
+        params.addQueryStringParameter("fileType", type);
+        params.addBodyParameter("file", new File(mFileName));
+        //上传过程显示进度条
+        Global.progressDialog = ProgressDialog.show(this, null, this.getString(R.string.upload_ing), true, true);
+        HttpUtils http = new HttpUtils();
+        http.send(HttpRequest.HttpMethod.POST, uploadUrl, params, new RequestCallBack<String>() {
+
+            @Override
+            public void onStart() {
+                LogUtils.d(TAG, "conn...");
+            }
+
+            @Override
+            public void onLoading(long total, long current, boolean isUploading) {
+                if (isUploading) {
+                    LogUtils.d(TAG, "upload: " + current + "/" + total);
+                } else {
+                    LogUtils.d(TAG, "reply: " + current + "/" + total);
+                }
+            }
+
+            @Override
+            public void onSuccess(ResponseInfo<String> responseInfo) {
+                LogUtils.d(TAG, "reply: " + responseInfo.result);
+                UploadDataModel uploadModel = null;
+                try {
+                    uploadModel = JsonParserFactory.parseStringJson(UploadDataModel.class, responseInfo.result);
+                } catch (JSONException e) {
+                    // TODO Auto-generated catch block
+                    LogUtils.e(TAG, "exception break out!!!", e);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    LogUtils.e(TAG, "exception break out!!!", e);
+                } catch (Exception e) {
+					// TODO Auto-generated catch block
+                	LogUtils.e(TAG, "exception break out!!!", e);
+				} finally {
+                    if (uploadModel == null) {
+                        LogUtils.e(TAG, "uploadLocalVoiceFile uploadModel == null");
+                        return;
+                    }
+                    if(uploadModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                        LoginActivity.startActivity(MyMobileClinicActivity.this);
+  					}
+                    LogUtils.e(TAG, "uploadLocalVoiceFile uploadModel == " + responseInfo);
+                    String content = uploadModel.getPath() + uploadModel.getRealName();
+                    // 通知server
+                    saveBackground(content, filePath, true);
+                }
+            }
+
+            @Override
+            public void onFailure(HttpException error, String msg) {
+                LogUtils.d(TAG, error.getExceptionCode() + ":" + msg);
+            }
+        });
+    }
+    
+    /**
+	   * 获取本地图片
+	   */
+	  private void chooseLocalImage() {
+	        Intent intent = new Intent(Intent.ACTION_PICK, null);
+	        intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, IMAGE_UNSPECIFIED);
+	        startActivityForResult(intent, REQUEST_GALLERY);
+	  }
+	    
+	  private void chooseCamera() {
+	        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+	        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), CLINIC_BACKGROUD_FILE_NAME)));
+	        startActivityForResult(intent, REQUEST_CAMERA);
+	  }
+	  
+	  @Override
+	  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		    if (resultCode != Activity.RESULT_OK) {
+				return;
+			}
+	        switch (requestCode) {
+	            case REQUEST_CAMERA:// 拍照
+	                // 设置文件保存路径
+                  File picture = new File(Environment.getExternalStorageDirectory() + File.separator + CLINIC_BACKGROUD_FILE_NAME);
+              	Uri uri = Uri.fromFile(picture);
+              	showResizeCameraImageNoCrop(iv_mobile_clinics_bg, uri, CLINIC_BACKGROUD_FILE_NAME);
+	                break;
+	            case REQUEST_GALLERY:
+	                if (data == null) {
+	                    return;
+	                }
+	                showResizeLocalImageNoCrop(iv_mobile_clinics_bg, data.getData(), CLINIC_BACKGROUD_FILE_NAME);
+	                break;
+	        }
+	        super.onActivityResult(requestCode, resultCode, data);
+	   }
+	  
+	  /**
+	     * 图片要先缩放(本地图片)
+	     * @param uri
+	     * @param fileName
+	     */
+	    public void showResizeLocalImageNoCrop(ImageView iv, Uri uri, String fileName){
+	      	 String path = new UploadImageUtil(this).getLocalImagePath(this, uri);
+	    	 Bitmap bm = null;
+		     try {
+				bm = BitmapUtils.getBitmap(path);
+				iv.setImageBitmap(bm);
+				String fileNameTemp = BitmapUtils.saveBitmap(this, fileName, bm);
+            uploadLocalImageFile(fileNameTemp);
+			 } catch (FileNotFoundException e) {
+				e.printStackTrace();
+			 } catch (IOException e) {
+				e.printStackTrace();
+			}
+	    }
+	    
+		/**
+		 * 图片要先缩放(拍照)
+		 * @param uri
+		 * @param fileName
+		 */
+		private void showResizeCameraImageNoCrop(ImageView iv, Uri uri,String fileName){
+			ContentResolver resolver = getContentResolver();
+			// 使用ContentProvider通过URI获取原始图片
+			try {
+				Bitmap photo = MediaStore.Images.Media.getBitmap(resolver,uri);
+				if (photo != null) {
+					// 为防止原始图片过大导致内存溢出，这里先缩小原图显示，然后释放原始Bitmap占用的内存
+					Bitmap smallBitmap = BitmapUtils.zoomBitmap(photo,photo.getWidth() / 5, photo.getHeight()/ 5);
+					if(photo!=null)
+						photo.recycle();
+					//先显示上传的图片
+					iv.setImageBitmap(smallBitmap);
+					String fileNameTemp = BitmapUtils.saveBitmap(this, fileName, smallBitmap);
+	                uploadLocalImageFile(fileNameTemp);
+				}
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}catch (OutOfMemoryError e) {
+				ToastUtils.ToastShort(this, "图片过大！");
+			}
+		}
+	    
+	    private File getAvatarFile(String fileName) {
+	        File file = this.getFilesDir();
+	        String path = file.getAbsolutePath();
+	        return new File(path + File.separator + fileName);
+	    }
+	
+	    /**
+		 * 获取URL的文件名
+		 */
+		public String getFileName(String url){
+			 if(StringUtils.isEmpty(url)){
+				 return AppConstants.BACKGROUND_DEFAULT_IMAGE;
+			 }
+			 int index1 = url.lastIndexOf("/");
+			 String str = url.substring(index1+1);
+			 return str;
+		}
+	    
+	    /**
+		 * 分享操作
+		 * @param shareCardDataModel 
+		 */
+		private void shareCartToFriend(ShareCardDataModel shareCardDataModel){
+			if(null != shareCardDataModel){
+				ShareService share = new ShareService(this);
+				String shareContent = shareCardDataModel.getConent();
+				String imageURL = shareCardDataModel.getHeadimage();
+				share.configUMShare(this,shareContent,shareCardDataModel.getTitle(),imageURL,shareCardDataModel.getShareurl());
+				share.openShareBoard();
+			}else{
+				ToastUtils.ToastShort(this, R.string.network_exception_try_again_later);
+			}
+		}
+
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		EventBus.getDefault().unregister(this);
+	}
+
+}

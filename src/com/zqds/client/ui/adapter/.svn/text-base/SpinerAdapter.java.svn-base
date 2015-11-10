@@ -1,0 +1,118 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.qdoc.client.R;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.fragment.ConsultSettingFragment;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.View.OnClickListener;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+public class SpinerAdapter<T> extends BaseAdapter {
+
+	public static interface IOnItemSelectListener {
+		public void onItemClick(TextView textView, String str,int index,int type);
+	};
+
+	private Context mContext;
+	private List<T> mObjects = new ArrayList<T>();
+	private int mSelectItem = 0;
+	private LayoutInflater mInflater;
+    private ItemOnclickListener mListener;
+    
+	public SpinerAdapter(Context context,List<T> list,ItemOnclickListener mListener) {
+		init(context);
+		this.mObjects=list;
+		this.mListener=mListener;
+	}
+
+	public void setmSelectItem(int mSelectItem) {
+		this.mSelectItem = mSelectItem;
+	}
+
+	public void refreshData(List<T> list, int selIndex) {
+		mObjects = list;
+		if (selIndex < 0) {
+			selIndex = 0;
+		}
+		if (selIndex >= mObjects.size()) {
+			selIndex = mObjects.size() - 1;
+		}
+		mSelectItem = selIndex;
+	}
+
+	private void init(Context context) {
+		mContext = context;
+		mInflater = (LayoutInflater) context
+				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+	}
+
+	@Override
+	public int getCount() {
+		return mObjects.size();
+	}
+
+	@Override
+	public Object getItem(int pos) {
+		return mObjects.get(pos).toString();
+	}
+
+	@Override
+	public long getItemId(int pos) {
+		return pos;
+	}
+
+	@Override
+	public View getView(int pos, View convertView, ViewGroup arg2) {
+		ViewHolder viewHolder;
+
+		if (convertView == null) {
+			convertView = mInflater.inflate(R.layout.spiner_item_layout, null);
+			viewHolder = new ViewHolder();
+			viewHolder.mTextView = (TextView) convertView
+					.findViewById(R.id.textView);
+			viewHolder.mImageView = (ImageView) convertView.
+					findViewById(R.id.imageView);
+			convertView.setTag(viewHolder);
+		} else {
+			viewHolder = (ViewHolder) convertView.getTag();
+		}
+		Object item = getItem(pos);
+		viewHolder.mTextView.setText(item.toString());
+		if (mSelectItem == pos){
+            viewHolder.mImageView.setImageResource(R.drawable.selected);
+		}
+		else{
+			viewHolder.mImageView.setImageResource(0);
+		}
+//		//列表最后一个元素是自定义
+//		if(pos==mObjects.size()-1){
+//                 convertView.setOnClickListener(new OnClickListener() {
+//				
+//				@Override
+//				public void onClick(View arg0) {
+//					// TODO Auto-generated method stub
+//					mListener.onButtonClick(AppConstants.BUTTON_CUSTOM, null, null, null);
+//				}
+//			});
+//		}
+		return convertView;
+	}
+     
+    public interface ItemOnclickListener {
+        public void onButtonClick(int type, Object obj, View view1, View view2);
+    }
+	
+	public static class ViewHolder {
+		public TextView mTextView;
+		public ImageView mImageView;
+	}
+}

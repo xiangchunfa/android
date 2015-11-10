@@ -1,0 +1,289 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.os.Build;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.VerifyUtil;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.LoginModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.SystemBarTintManager;
+import com.qdoc.client.ui.ForgetPwdActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.EncodeUtils;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.SystemBarUtil;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.LoginFragment
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-18 上午9:24:13
+ */
+public class ChangeDeviceFragment extends BaseFragment implements
+		OnClickListener {
+	/**
+	 * TAG
+	 */
+	public static final String TAG = ChangeDeviceFragment.class
+			.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private EditText edtPwd;
+	private Button btnLogin;
+
+	private TitleBar mTitleBar;
+	private TextView tvForgetPwd;
+
+	/**
+	 * params
+	 */
+	private static final int MESSAGE_SUCCESS = 0x01;
+	private static final int MESSAGE_FAIL = 0x02;
+
+	public static ChangeDeviceFragment newInstance(Bundle bundle) {
+		final ChangeDeviceFragment fragment = new ChangeDeviceFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		LogUtils.i(TAG, "onCreate");
+		super.onCreate(savedInstanceState);
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		LogUtils.i(TAG, "onCreateView");
+		return inflater.inflate(R.layout.fragment_verify_account, container, false);
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		LogUtils.i(TAG, "onViewCreated");
+		initView(view);
+		initListener();
+		initParams();
+	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+		
+		SystemBarUtil.setSystemStatusBar(false, 0, getActivity());
+	}
+
+	private void initParams() {
+
+	}
+
+	private void initView(View view) {
+		// TODO Auto-generated method stub
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.verify_account, R.drawable.icon_back,
+				0, actionBarLeftBtnListener, null,
+				getResources().getColor(R.color.titlebar_bg));
+		edtPwd = (EditText) view.findViewById(R.id.et_password);
+		btnLogin = (Button) view.findViewById(R.id.login_btn);
+		tvForgetPwd = (TextView) view.findViewById(R.id.forget_pwd);
+	}
+
+	protected void initListener() {
+		btnLogin.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				String password = edtPwd.getText().toString();
+				if (!VerifyUtil.verifyPassword(getActivity(), password)) {
+					return;
+				}
+				try {
+					startLoginRequest(password);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					LogUtils.e(TAG, "startLoginRequest exception break out!!!",
+							e);
+				}
+			}
+		});
+		tvForgetPwd.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				ForgetPwdActivity.startActivity(getActivity());
+			}
+		});
+	}
+
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			// TODO Auto-generated method stub
+			LoginActivity activity = (LoginActivity) getActivity();
+			if (activity == null) {
+				return;
+			}
+			activity.removeContent(TAG);
+		}
+	};
+
+	private void startLoginRequest(String password) {
+		Global.progressDialog = ProgressDialog.show(getActivity(), null,
+		    		  getActivity().getString(R.string.load_data), true,
+						true);
+		String devicetoken = PersonalConfig
+				.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+		final String accountName = PersonalConfig
+				.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+		if(Global.APP_VERSION_NAME==null)
+			Global.APP_VERSION_NAME = Global.getVerName(getContext());
+		if(Global.OS_VERSION==null)
+			Global.OS_VERSION = Global.getOSVersion();
+		if(Global.PHONE_MODEL==null)
+			Global.PHONE_MODEL = Global.getPhoneModel();
+		RequestParams params = DataRequestUtils.getLoginRequestParam(TAG,
+				accountName, password, AppConstants.ANDROID, devicetoken,
+				AppConstants.MODEL_CHANGE_DEVICES,Global.APP_VERSION_NAME,Global.OS_VERSION,Global.PHONE_MODEL);
+		HttpTaskManager.startStringRequest(params,
+				JsonParserFactory.parseBaseModel(LoginModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						Global.progressDialog.dismiss();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final LoginModel dataModel = (LoginModel) resultData;
+							if ((dataModel != null)&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS&&(!TextUtils.isEmpty(dataModel.getToken()))) {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										R.string.login_success);
+
+								// 先清除再保存TOKEN数据
+								if (PersonalConfig
+										.hasKey(PersonalConfigKey.EXTRA_TOKEN)) {
+									PersonalConfig
+											.remove(PersonalConfigKey.EXTRA_TOKEN);
+								}
+								PersonalConfig.putString(
+										PersonalConfigKey.EXTRA_TOKEN,
+										dataModel.getToken());
+								PersonalConfig.putString(
+										PersonalConfigKey.EXTRA_ACCOUNT_HINT,
+										accountName);
+								PersonalConfig.asyncCommit();
+
+								// 读取token
+								String token = PersonalConfig
+										.getString(PersonalConfigKey.EXTRA_TOKEN);
+						        Global.loginSuccess(dataModel.getUserStatus(),false,accountName,dataModel.getDoctorCertificationStatus());
+								// 跳转
+								MainActivity.startActivity(getContext());
+								getActivity().finish();
+							} else {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(), dataModel
+										.getErrorMsg());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(),
+										(String) resultData);
+							}
+						}
+					}
+				});
+	}
+
+	public void onDestroy() {
+		LogUtils.i(TAG, "onDestroy");
+		super.onDestroy();
+	}
+     
+	@Override
+	public void onDestroyView() {
+		// TODO Auto-generated method stub
+		LogUtils.i(TAG, "onDestroyView");
+		super.onDestroyView();
+	}
+	
+	@Override
+	public void onAttach(Activity activity) {
+		// TODO Auto-generated method stub
+		LogUtils.i(TAG, "onAttach");
+		super.onAttach(activity);
+	}
+	
+	@Override
+	public void onDetach() {
+		// TODO Auto-generated method stub
+		LogUtils.i(TAG, "onDetach");
+		super.onDetach();
+	}
+	
+	public static void startActivity(Context context) {
+		context.startActivity(IntentTools.getLoginIntent(context));
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		
+		}
+
+	}
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

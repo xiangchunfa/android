@@ -1,0 +1,77 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class AboutUsInfoDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3989942556185811318L;
+	
+	private String title;//标题
+	private String instruction;//简介 
+	private String serviceTel;//客服电话号码 
+	private String qq_code;//可爱医生QQ群
+	private long id;
+	/**
+	 * @return the title
+	 */
+	public String getTitle() {
+		return title;
+	}
+	/**
+	 * @param title the title to set
+	 */
+	public void setTitle(String title) {
+		this.title = title;
+	}
+	/**
+	 * @return the instruction
+	 */
+	public String getInstruction() {
+		return instruction;
+	}
+	/**
+	 * @param instruction the instruction to set
+	 */
+	public void setInstruction(String instruction) {
+		this.instruction = instruction;
+	}
+	/**
+	 * @return the serviceTel
+	 */
+	public String getServiceTel() {
+		return serviceTel;
+	}
+	/**
+	 * @param serviceTel the serviceTel to set
+	 */
+	public void setServiceTel(String serviceTel) {
+		this.serviceTel = serviceTel;
+	}
+	/**
+	 * @return the qq_code
+	 */
+	public String getQq_code() {
+		return qq_code;
+	}
+	/**
+	 * @param qq_code the qq_code to set
+	 */
+	public void setQq_code(String qq_code) {
+		this.qq_code = qq_code;
+	}
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+}

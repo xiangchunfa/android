@@ -1,0 +1,301 @@
+package com.qdoc.client.ui.view;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.util.AttributeSet;
+import android.view.GestureDetector;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.ui.fragment.ConsultDetailFragment;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.Tools;
+
+public class MyPageTab extends ViewPager {
+	FragmentActivity mActivity; // 上下文
+	ConsultDetailFragment instance;
+	GestureDetector detector;
+	List<Item> mItemIists; //视图组
+	List<String> mTitles;//标题
+	int oldIndex = 0;
+	int curIndex = 0;
+	int oldIndex2 = 0;
+	int curIndex2 = 0;
+	OnViewPageChangeListener mListener;
+
+	public MyPageTab(Context context, AttributeSet attrs) {
+		super(context, attrs);
+	}
+	
+	public List<Item> getmItemIists() {
+		return mItemIists;
+	}
+
+	public void setmItemIists(List<Item> mItemIists) {
+		this.mItemIists = mItemIists;
+	}
+
+	/**
+	 * 
+     * @param mainActivity 显示页签的主界面	  
+	 * @param itemLists Fragment列表, 不能为null ,最少一个Fragment
+	 * @param titles  页签标题
+	 * @param ovalLayout 页签标题容器,可为空,LinearLayout类型
+	 * @param focusedId tab标题视图选中时的背景
+	 * @param normalId tab标题视图正常时背景
+	 * @param lineColor 分隔线的颜色
+	 * @param focusTextColor 按下文本的颜色
+	 * @param normalTextColor  标准文本的颜色
+	 */
+	public void initTabView(FragmentActivity mainActivity, List<Item> itemLists,
+			List<String> titles, LinearLayout ovalLayout, int focusedId, int normalId, int lineColor,int focusTextColor,int normalTextColor,int btTextSize) {
+		mActivity = mainActivity;
+		mItemIists = itemLists;
+		mTitles = titles;
+		// 设置页签标题
+		setTabTitleLayout(ovalLayout, titles,focusedId,normalId,lineColor,focusTextColor,normalTextColor,btTextSize);
+		this.setAdapter(new PagerAdapter(mainActivity, itemLists));// 设置适配器
+	}
+	
+	/**
+	 * 
+     * @param mainActivity 显示页签的主界面	  
+	 * @param itemLists Fragment列表, 不能为null ,最少一个Fragment
+	 * @param titles  页签标题
+	 * @param ovalLayout 页签标题容器,可为空,LinearLayout类型
+	 * @param focusedId tab标题视图选中时的背景
+	 * @param normalId tab标题视图正常时背景
+	 * @param lineColor 分隔线的颜色
+	 * @param focusTextColor 按下文本的颜色
+	 * @param normalTextColor  标准文本的颜色
+	 * @param listener 页面切换监听
+	 */
+	public void initTabView(FragmentActivity mainActivity, List<Item> itemLists,
+			List<String> titles, LinearLayout ovalLayout, int focusedId, int normalId, int lineColor,int focusTextColor,int normalTextColor,int btTextSize,OnViewPageChangeListener listener) {
+		mActivity = mainActivity;
+		mItemIists = itemLists;
+		mTitles = titles;
+		mListener = listener;
+		// 设置页签标题
+		setTabTitleLayout(ovalLayout, titles,focusedId,normalId,lineColor,focusTextColor,normalTextColor,btTextSize);
+		this.setAdapter(new PagerAdapter(mainActivity, itemLists));// 设置适配器
+	}
+	
+
+	/**
+	 * 设置tab标题以及滑动分页 
+	 * @param ovalLayout
+	 * @param ovalLayoutItemId
+	 * @param titles
+	 * @param focusedId
+	 * @param normalId
+	 */
+	private void setTabTitleLayout(final LinearLayout ovalLayout, List<String> titles, final int focusedId, final int normalId, int lineColor,final int focuseTextColor,final int normalTextColor,int btTextSizeRes) {
+		if (ovalLayout != null) {
+//			for(String title:titles){
+//				LogUtils.i("info","title="+title);
+//			}
+			LayoutInflater mInflater=(LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			for (int i = 0; i < mItemIists.size(); i++) {				
+				final int index = i * 2;
+				View convertView = mInflater.inflate(R.layout.btn_test, null);
+				TextView btn = (TextView) convertView.findViewById(R.id.tv_test);
+//				TextView btn = new TextView(mActivity);
+//				btn.setId(ovalLayoutItemId);
+				btn.setText("11111");
+				LogUtils.i("info","text="+btn.getText().toString());
+				//float titleSize=getContext().getResources().getDimension(R.dimen.text_size_large);
+				float titleSize=getContext().getResources().getDimension(btTextSizeRes);
+				btn.setTextSize(Global.px2sp(20));
+				btn.setBackgroundColor(getContext().getResources().getColor(R.color.red));
+				btn.setGravity(Gravity.CENTER);
+				btn.setTextColor(getResources().getColor(R.color.black));
+//				if(i==0)
+//					btn.setTextColor(getResources().getColor(focuseTextColor));
+//				else
+//					btn.setTextColor(getResources().getColorStateList(normalTextColor));
+//				btn.setBackgroundResource(normalId);
+				btn.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 1.0f));  
+				btn.setOnClickListener(new OnClickListener() {
+
+					@Override
+					public void onClick(View v) {
+						curIndex2 = index;
+						//取消选中
+//						ovalLayout.getChildAt(oldIndex2).setBackgroundResource(normalId);
+//						((Button)ovalLayout.getChildAt(oldIndex2)).setTextColor(getResources().getColor(normalTextColor));
+//						//选中
+//						ovalLayout.getChildAt(curIndex2).setBackgroundResource(focusedId);
+//						((Button)ovalLayout.getChildAt(curIndex2)).setTextColor(getResources().getColor(focuseTextColor));
+						setCurView(index/2);
+						oldIndex2 = curIndex2;
+					}
+				});
+				ovalLayout.addView(btn);
+				LogUtils.i("info", "mItemIists");
+                if(i < mItemIists.size()-1){
+				  View line = new View(mActivity);
+				  line.setBackgroundColor(getResources().getColor(lineColor));
+				  line.setLayoutParams(new LinearLayout.LayoutParams(Tools.convertDIP2PX(getContext(), 1), Tools.convertDIP2PX(getContext(), 30)));
+				  ovalLayout.addView(line);
+                }  
+			}
+			
+			//选中第一个
+//			ovalLayout.getChildAt(0).setBackgroundResource(focusedId);
+			
+			this.setOnPageChangeListener(new OnPageChangeListener() {
+				public void onPageSelected(int i) { 
+					curIndex = i * 2;
+					//取消选中
+//					ovalLayout.getChildAt(oldIndex).setBackgroundResource(normalId);
+//					((Button)ovalLayout.getChildAt(oldIndex)).setTextColor(getResources().getColor(normalTextColor));
+//					//选中
+//					ovalLayout.getChildAt(curIndex).setBackgroundResource(focusedId);
+//					((Button)ovalLayout.getChildAt(curIndex)).setTextColor(getResources().getColor(focuseTextColor));
+					oldIndex = curIndex;
+					if(mListener != null)
+					   mListener.onButtonClick(i);
+				}
+
+				public void onPageScrolled(int arg0, float arg1, int arg2) {
+				}
+
+				public void onPageScrollStateChanged(int arg0) {
+				}
+			});
+		}
+	}
+	
+	  public interface OnViewPageChangeListener {
+	        public void onButtonClick(int selected);
+	  }
+
+	/**
+	 * 设置当前页
+	 * @param position
+	 */
+	private void setCurView(int position) {
+		if (position < 0 || position >= mItemIists.size()) {
+			return;
+		}
+//		Log.v("position", position+"");
+		this.setCurrentItem(position);
+	}
+
+	/**
+	 * 取得当前选中下标
+	 * @return
+	 */
+	public int getCurIndex() {
+		return curIndex;
+	}
+
+	public class PagerAdapter extends FragmentPagerAdapter {
+
+		private final Context mContext;
+	    private final ArrayList<TabInfo> mTabs = new ArrayList<TabInfo>();
+
+	    final class TabInfo {
+
+	        private final Class<?> mClss;
+	        private final Bundle mArgs;
+
+	        TabInfo(Class<?> aClass, Bundle args) {
+	            mClss = aClass;
+	            mArgs = args;
+	        }
+	    }
+
+	    public PagerAdapter(FragmentActivity activity, List<Item> items) {
+	        super(activity.getSupportFragmentManager());
+	        mContext = activity;
+	        initTab(items);
+	    }
+
+	    @Override
+	    public int getCount() {
+	        return mTabs.size();
+	    }
+
+	    @Override
+	    public Fragment getItem(int position) {
+	        TabInfo info = mTabs.get(position);
+	        return Fragment.instantiate(mContext, info.mClss.getName(), info.mArgs);
+	    }
+
+	    public void addTab(Class<?> clss, Bundle args) {
+	        TabInfo info = new TabInfo(clss, args);
+	        mTabs.add(info);
+	        notifyDataSetChanged();
+	    }
+	    
+	    public void initTab(List<Item> items) {
+	    	for(Item item:items){
+	    		TabInfo info = new TabInfo(item.getCls(), item.getArg());
+	   	        mTabs.add(info);
+	    	}
+	    }
+	}
+	
+	   public static class Item {
+		  private Class<?> cls;
+		  private Bundle arg;
+		   
+		   public Item(Class<?> cls, Bundle arg) {
+               this.cls = cls;
+               this.arg = arg;
+		   }
+
+		public Class<?> getCls() {
+			return cls;
+		}
+
+		public void setCls(Class<?> cls) {
+			this.cls = cls;
+		}
+
+		public Bundle getArg() {
+			return arg;
+		}
+
+		public void setArg(Bundle arg) {
+			this.arg = arg;
+		}
+	}
+	   
+	public ConsultDetailFragment getInstance() {
+		return instance;
+	}
+
+	public void setInstance(ConsultDetailFragment instance) {
+		this.instance = instance;
+	}
+
+	public GestureDetector getDetector() {
+		return detector;
+	}
+
+	public void setDetector(GestureDetector detector) {
+		this.detector = detector;
+	}
+	
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+	    	if(instance != null && instance.isShowVocie())
+	    	    instance.recordManager.onTouchEvent(mActivity,event);
+	    	return super.onTouchEvent(event);
+	}
+}
+	

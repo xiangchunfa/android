@@ -1,0 +1,34 @@
+package com.qdoc.client.model;
+
+import java.util.List;
+
+/**
+ * FileName    : GetSystemMsgsDataModel.java
+ * Description : 系统消息实体类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2014-10-29 
+ **/
+public class GetSystemMsgsDataModel extends AbstractBaseModel {
+
+	private static final long serialVersionUID = 1L;
+	
+	private List<SystemMessageDto> list;//返回客户服务消息列表
+	private boolean ifNextPage;//判断是否有下一页记录，true为有，false没有
+	public List<SystemMessageDto> getList() {
+		return list;
+	}
+	public void setList(List<SystemMessageDto> list) {
+		this.list = list;
+	}
+	public boolean isIfNextPage() {
+		return ifNextPage;
+	}
+	public void setIfNextPage(boolean ifNextPage) {
+		this.ifNextPage = ifNextPage;
+	}
+    
+	
+}

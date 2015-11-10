@@ -1,0 +1,299 @@
+/*
+ * ConsultCaseDtoModel.java
+ * classes : com.qdoc.client.model.ConsultCaseDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:04:33
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.model.ConsultCaseDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:04:33
+ */
+public class ConsultCaseDtoModel implements Serializable, Cloneable {
+    private static final String TAG = "ConsultCaseDtoModel";
+    private static final long serialVersionUID = -2806814082277654591L;
+
+    private String age;
+    private boolean anonymity;
+    private ConsultDtoModel consultDto;
+    private String description;
+    private String diseaseCode;
+    private String diseaseName;
+    private String diseaseTypeCode;
+    private String diseaseTypeName;
+    private int id;
+    private int medicalClassCode;
+    private String medicalClassName;
+    private String name;
+    private int sex;
+    private String sexDes;
+    private String uuid;
+    private int departId;
+    private int diseaseId;
+    private String createTime;
+    
+    public ConsultDtoModel getConsultDto() {
+		return consultDto;
+	}
+
+	public void setConsultDto(ConsultDtoModel consultDto) {
+		this.consultDto = consultDto;
+	}
+
+	/**
+     * @return the age
+     */
+    public String getAge() {
+        return age;
+    }
+
+    /**
+     * @param age the age to set
+     */
+    public void setAge(String age) {
+        this.age = age;
+    }
+
+    /**
+     * @return the anonymity
+     */
+    public boolean getAnonymity() {
+        return anonymity;
+    }
+
+    /**
+     * @param anonymity the anonymity to set
+     */
+    public void setAnonymity(boolean anonymity) {
+        this.anonymity = anonymity;
+    }
+
+    /**
+     * @return the departId
+     */
+    public int getDepartId() {
+        return departId;
+    }
+
+    /**
+     * @param departId the departId to set
+     */
+    public void setDepartId(int departId) {
+        this.departId = departId;
+    }
+
+    /**
+     * @return the description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * @param description the description to set
+     */
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /**
+     * @return the diseaseId
+     */
+    public int getDiseaseId() {
+        return diseaseId;
+    }
+
+    /**
+     * @param diseaseId the diseaseId to set
+     */
+    public void setDiseaseId(int diseaseId) {
+        this.diseaseId = diseaseId;
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @param name the name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * @return the sex
+     */
+    public int getSex() {
+        return sex;
+    }
+
+    /**
+     * @param sex the sex to set
+     */
+    public void setSex(int sex) {
+        this.sex = sex;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * @return the createTime
+     */
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    /**
+     * @param createTime the createTime to set
+     */
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    /**
+     * @return the diseaseCode
+     */
+    public String getDiseaseCode() {
+        return diseaseCode;
+    }
+
+    /**
+     * @param diseaseCode the diseaseCode to set
+     */
+    public void setDiseaseCode(String diseaseCode) {
+        this.diseaseCode = diseaseCode;
+    }
+
+    /**
+     * @return the diseaseName
+     */
+    public String getDiseaseName() {
+        return diseaseName;
+    }
+
+    /**
+     * @param diseaseName the diseaseName to set
+     */
+    public void setDiseaseName(String diseaseName) {
+        this.diseaseName = diseaseName;
+    }
+
+    /**
+     * @return the diseaseTypeCode
+     */
+    public String getDiseaseTypeCode() {
+        return diseaseTypeCode;
+    }
+
+    /**
+     * @param diseaseTypeCode the diseaseTypeCode to set
+     */
+    public void setDiseaseTypeCode(String diseaseTypeCode) {
+        this.diseaseTypeCode = diseaseTypeCode;
+    }
+
+    /**
+     * @return the diseaseTypeName
+     */
+    public String getDiseaseTypeName() {
+        return diseaseTypeName;
+    }
+
+    /**
+     * @param diseaseTypeName the diseaseTypeName to set
+     */
+    public void setDiseaseTypeName(String diseaseTypeName) {
+        this.diseaseTypeName = diseaseTypeName;
+    }
+
+    /**
+     * @return the medicalClassCode
+     */
+    public int getMedicalClassCode() {
+        return medicalClassCode;
+    }
+
+    /**
+     * @param medicalClassCode the medicalClassCode to set
+     */
+    public void setMedicalClassCode(int medicalClassCode) {
+        this.medicalClassCode = medicalClassCode;
+    }
+
+    /**
+     * @return the medicalClassName
+     */
+    public String getMedicalClassName() {
+        return medicalClassName;
+    }
+
+    /**
+     * @param medicalClassName the medicalClassName to set
+     */
+    public void setMedicalClassName(String medicalClassName) {
+        this.medicalClassName = medicalClassName;
+    }
+
+    @Override
+    public Object clone() {
+        ConsultCaseDtoModel model = null;
+        try {
+            model = (ConsultCaseDtoModel) super.clone();
+        } catch (CloneNotSupportedException e) {
+            LogUtils.e(TAG, "copy ElementsModel break out exception!", e);
+        }
+        return model;
+    }
+
+    /**
+     * @return the sexDes
+     */
+    public String getSexDes() {
+        return sexDes;
+    }
+
+    /**
+     * @param sexDes the sexDes to set
+     */
+    public void setSexDes(String sexDes) {
+        this.sexDes = sexDes;
+    }
+}

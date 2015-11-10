@@ -1,0 +1,52 @@
+/*
+ * ConsultShareDtoDataModel.java
+ * classes : com.qdoc.client.model.ConsultShareDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-21 下午9:24:06
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.ConsultShareDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-21 下午9:24:06
+ */
+public class ConsultShareDtoDataModel extends AbstractBaseModel {
+
+    private int page;
+
+    /**
+     * ConsultModel
+     */
+    private ConsultModel pager;
+
+    /**
+     * @return the pager
+     */
+    public ConsultModel getPager() {
+        return pager;
+    }
+
+    /**
+     * @param pager the pager to set
+     */
+    public void setPager(ConsultModel pager) {
+        this.pager = pager;
+    }
+
+    /**
+     * @return the page
+     */
+    public int getPage() {
+        return page;
+    }
+
+    /**
+     * @param page the page to set
+     */
+    public void setPage(int page) {
+        this.page = page;
+    }
+}

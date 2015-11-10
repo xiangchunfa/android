@@ -1,0 +1,69 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+/**
+ * 门诊时间基类
+ * @author Administrator
+ *
+ */
+public class OutpatientTimeSettingDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3407390868526087030L;
+
+	
+	private long doctorId;//医生ID
+	private String outpatientAddress;//门诊地址
+	private String outpatientTime;//门诊时间
+	private long id;//ID
+	/**
+	 * @return the doctorId
+	 */
+	public long getDoctorId() {
+		return doctorId;
+	}
+	/**
+	 * @param doctorId the doctorId to set
+	 */
+	public void setDoctorId(long doctorId) {
+		this.doctorId = doctorId;
+	}
+	/**
+	 * @return the outpatientAddress
+	 */
+	public String getOutpatientAddress() {
+		return outpatientAddress;
+	}
+	/**
+	 * @param outpatientAddress the outpatientAddress to set
+	 */
+	public void setOutpatientAddress(String outpatientAddress) {
+		this.outpatientAddress = outpatientAddress;
+	}
+	/**
+	 * @return the outpatientTime
+	 */
+	public String getOutpatientTime() {
+		return outpatientTime;
+	}
+	/**
+	 * @param outpatientTime the outpatientTime to set
+	 */
+	public void setOutpatientTime(String outpatientTime) {
+		this.outpatientTime = outpatientTime;
+	}
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+}

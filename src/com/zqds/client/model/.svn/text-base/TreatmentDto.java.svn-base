@@ -1,0 +1,122 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 诊疗单对象
+ * @author Antony
+ *
+ */
+public class TreatmentDto implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1929431833242053192L;
+
+	private String doctorName;//诊疗单医生名字
+	private String diagnosis;//诊断
+	private String symptom;//症状
+	private String cureAdvise;//治疗建议
+	private String openid;//用户编号
+	private long doctorId;//医生编号
+	private int treatmentStatus;//诊疗单状态（0 存草稿 1 已发送）
+	private long consultId;//咨询服务编号
+	/**
+	 * @return the doctorName
+	 */
+	public String getDoctorName() {
+		return doctorName;
+	}
+	/**
+	 * @param doctorName the doctorName to set
+	 */
+	public void setDoctorName(String doctorName) {
+		this.doctorName = doctorName;
+	}
+	/**
+	 * @return the diagnosis
+	 */
+	public String getDiagnosis() {
+		return diagnosis;
+	}
+	/**
+	 * @param diagnosis the diagnosis to set
+	 */
+	public void setDiagnosis(String diagnosis) {
+		this.diagnosis = diagnosis;
+	}
+	/**
+	 * @return the symptom
+	 */
+	public String getSymptom() {
+		return symptom;
+	}
+	/**
+	 * @param symptom the symptom to set
+	 */
+	public void setSymptom(String symptom) {
+		this.symptom = symptom;
+	}
+	/**
+	 * @return the cureAdvise
+	 */
+	public String getCureAdvise() {
+		return cureAdvise;
+	}
+	/**
+	 * @param cureAdvise the cureAdvise to set
+	 */
+	public void setCureAdvise(String cureAdvise) {
+		this.cureAdvise = cureAdvise;
+	}
+	/**
+	 * @return the openid
+	 */
+	public String getOpenid() {
+		return openid;
+	}
+	/**
+	 * @param openid the openid to set
+	 */
+	public void setOpenid(String openid) {
+		this.openid = openid;
+	}
+	/**
+	 * @return the doctorId
+	 */
+	public long getDoctorId() {
+		return doctorId;
+	}
+	/**
+	 * @param doctorId the doctorId to set
+	 */
+	public void setDoctorId(long doctorId) {
+		this.doctorId = doctorId;
+	}
+	/**
+	 * @return the treatmentStatus
+	 */
+	public int getTreatmentStatus() {
+		return treatmentStatus;
+	}
+	/**
+	 * @param treatmentStatus the treatmentStatus to set
+	 */
+	public void setTreatmentStatus(int treatmentStatus) {
+		this.treatmentStatus = treatmentStatus;
+	}
+	/**
+	 * @return the consultId
+	 */
+	public long getConsultId() {
+		return consultId;
+	}
+	/**
+	 * @param consultId the consultId to set
+	 */
+	public void setConsultId(long consultId) {
+		this.consultId = consultId;
+	}
+
+}

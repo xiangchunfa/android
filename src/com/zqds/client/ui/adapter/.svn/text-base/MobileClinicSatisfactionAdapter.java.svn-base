@@ -1,0 +1,108 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.SatisfactionSurveyListDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+
+import android.content.Context;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.RatingBar;
+import android.widget.TextView;
+
+public class MobileClinicSatisfactionAdapter extends BaseAdapter {
+	
+	private LayoutInflater inflater;
+	private List<SatisfactionSurveyListDto> satisfactionList;
+	private Context mContext;
+	
+	/**
+	 * @param satisfactionList the satisfactionList to set
+	 */
+	public void setSatisfactionList(List<SatisfactionSurveyListDto> satisfactionList) {
+		if(satisfactionList==null)
+			this.satisfactionList = new ArrayList<SatisfactionSurveyListDto>();
+		else
+			this.satisfactionList = satisfactionList;
+	}
+
+	public MobileClinicSatisfactionAdapter(List<SatisfactionSurveyListDto> satisfactionList, Context context) {
+		super();
+		this.inflater = LayoutInflater.from(context);
+		setSatisfactionList(satisfactionList);
+		this.mContext = context;
+	}
+	
+	public void changeData(List<SatisfactionSurveyListDto> satisfactionList){
+		setSatisfactionList(satisfactionList);
+		notifyDataSetChanged();
+	}
+
+
+	@Override
+	public int getCount() {
+		return satisfactionList.size();
+	}
+
+	@Override
+	public Object getItem(int position) {
+		return satisfactionList.get(position);
+	}
+
+	@Override
+	public long getItemId(int position) {
+		return position;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			holder = new ViewHolder();
+			convertView = inflater.inflate(R.layout.mobileclinic_satisfaction_item, null);
+			holder.item_head = (ImageView) convertView.findViewById(R.id.item_head);
+			holder.nickName = (TextView) convertView.findViewById(R.id.tv_praise_nickname);
+			holder.praiseTime = (TextView) convertView.findViewById(R.id.tv_praise_time);
+			holder.rb_praise_level = (RatingBar) convertView.findViewById(R.id.rb_praise_level);
+			holder.praise_message = (TextView) convertView.findViewById(R.id.tv_praise_message);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		SatisfactionSurveyListDto satisfaction = satisfactionList.get(position);
+		ImageLoaderHelper.getInstance(mContext).displayImage(satisfaction.getHeadimgurl(), holder.item_head, R.drawable.myinfo_head_default);
+		holder.nickName.setText(satisfaction.getNicknameStr());
+		holder.praiseTime.setText(satisfaction.getCreatTime());
+		if(AppConstants.SATISFACTION_LEVEL_HIGH==satisfaction.getSynthesisScore()){
+			holder.rb_praise_level.setRating(3);
+		}else if(AppConstants.SATISFACTION_LEVEL_MIDDLE==satisfaction.getSynthesisScore()){
+			holder.rb_praise_level.setRating(2);
+		}else if(AppConstants.SATISFACTION_LEVEL_LOW==satisfaction.getSynthesisScore()){
+			holder.rb_praise_level.setRating(1);
+		}
+		if(TextUtils.isEmpty(satisfaction.getOpinion())){
+			holder.praise_message.setText("");
+			holder.praise_message.setVisibility(View.GONE);
+		}else{
+			holder.praise_message.setText(satisfaction.getOpinion());
+			holder.praise_message.setVisibility(View.VISIBLE);
+		}
+		return convertView;
+	}
+
+	class ViewHolder{
+		ImageView item_head;
+		TextView nickName;
+		TextView praiseTime;
+		RatingBar rb_praise_level;
+		TextView praise_message;
+	}
+}

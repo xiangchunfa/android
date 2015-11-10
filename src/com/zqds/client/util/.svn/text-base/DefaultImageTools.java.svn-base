@@ -1,0 +1,44 @@
+/*
+ * DefaultImageTools.java
+ * classes : com.ledu.ledubuyer.util.DefaultImageTools
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-6-17 下午4:32:25
+ */
+package com.qdoc.client.util;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+
+import com.qdoc.client.R;
+
+/**
+ * com.ledu.ledubuyer.util.DefaultImageTools
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-6-17 下午4:32:25
+ */
+public class DefaultImageTools {
+    /**
+     * TAG
+     */
+    private static final String TAG = DefaultImageTools.class.getSimpleName();
+
+    private static Bitmap mNoticeErrorBitmap;
+    private static Bitmap mNoticeEmptyBitmap;
+
+    public static Bitmap getNoticeErrorBitmap(Context context) {
+        if (mNoticeErrorBitmap == null) {
+            mNoticeErrorBitmap = BitmapUtils.getBitmapFromRes(context, R.drawable.icon_network);
+        }
+        return mNoticeErrorBitmap;
+    }
+
+    public static Bitmap getNoticeEmptyBitmap(Context context) {
+        if (mNoticeEmptyBitmap == null) {
+            mNoticeEmptyBitmap = BitmapUtils.getBitmapFromRes(context, R.drawable.icon_empty);
+        }
+        return mNoticeEmptyBitmap;
+    }
+
+}

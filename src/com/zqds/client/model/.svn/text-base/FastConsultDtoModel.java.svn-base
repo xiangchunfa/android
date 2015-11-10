@@ -1,0 +1,132 @@
+/*
+ * BankDtoModel.java
+ * classes : com.qdoc.client.model.BankDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 上午12:19:03
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * FileName    : FastConsultDtoModel.java
+ * Description : 快捷咨询抢单实体类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-4-10 
+ **/
+public class FastConsultDtoModel implements Serializable{
+
+	private static final long serialVersionUID = -2968058950592688626L;
+	
+	private long consultId;//咨询服务编号
+    private String createTime;//咨询服务发布时间
+    private String tradeNo;//订单交易号
+    private String openId;//用户 openid
+    private int sex;//用户性别
+    private String sexDes;//用户性别名称
+    private double age;//年龄
+    private long doctorId;//医生编号
+    private long medicalClassCode;//科室编号
+    private String medicalClassStr;//科室名称
+    private String caseDescription;//咨询单症状描述
+    private int grabState;//抢单状态
+    private String grabStateStr;//抢单状态描述
+    private String consultFeeStr;//咨询费
+    private int consultFee;//咨询费
+	public long getConsultId() {
+		return consultId;
+	}
+	public void setConsultId(long consultId) {
+		this.consultId = consultId;
+	}
+	public String getCreateTime() {
+		return createTime;
+	}
+	public void setCreateTime(String createTime) {
+		this.createTime = createTime;
+	}
+	public String getTradeNo() {
+		return tradeNo;
+	}
+	public void setTradeNo(String tradeNo) {
+		this.tradeNo = tradeNo;
+	}
+	public String getOpenId() {
+		return openId;
+	}
+	public void setOpenId(String openId) {
+		this.openId = openId;
+	}
+	public int getSex() {
+		return sex;
+	}
+	public void setSex(int sex) {
+		this.sex = sex;
+	}
+	public String getSexDes() {
+		return sexDes;
+	}
+	public void setSexDes(String sexDes) {
+		this.sexDes = sexDes;
+	}
+	public double getAge() {
+		return age;
+	}
+	public void setAge(double age) {
+		this.age = age;
+	}
+	public long getDoctorId() {
+		return doctorId;
+	}
+	public void setDoctorId(long doctorId) {
+		this.doctorId = doctorId;
+	}
+	public long getMedicalClassCode() {
+		return medicalClassCode;
+	}
+	public void setMedicalClassCode(long medicalClassCode) {
+		this.medicalClassCode = medicalClassCode;
+	}
+	public String getMedicalClassStr() {
+		return medicalClassStr;
+	}
+	public void setMedicalClassStr(String medicalClassStr) {
+		this.medicalClassStr = medicalClassStr;
+	}
+	public String getCaseDescription() {
+		return caseDescription;
+	}
+	public void setCaseDescription(String caseDescription) {
+		this.caseDescription = caseDescription;
+	}
+	public int getGrabState() {
+		return grabState;
+	}
+	public void setGrabState(int grabState) {
+		this.grabState = grabState;
+	}
+	public String getGrabStateStr() {
+		return grabStateStr;
+	}
+	public void setGrabStateStr(String grabStateStr) {
+		this.grabStateStr = grabStateStr;
+	}
+	public String getConsultFeeStr() {
+		return consultFeeStr;
+	}
+	public void setConsultFeeStr(String consultFeeStr) {
+		this.consultFeeStr = consultFeeStr;
+	}
+	public int getConsultFee() {
+		return consultFee;
+	}
+	public void setConsultFee(int consultFee) {
+		this.consultFee = consultFee;
+	}
+    
+    
+}

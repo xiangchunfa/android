@@ -1,0 +1,82 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 满意度列表对象
+ * @author Antony
+ *
+ */
+public class SatisfactionSurveyListDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1144244820506396023L;
+
+	private String nicknameStr;//用户昵称
+	private String headimgurl;//用户头像地址
+	private int synthesisScore;//满意度（1：满意  2：一般  3：不满意）
+	private String creatTime;//时间
+	private String opinion;//建议
+	/**
+	 * @return the nicknameStr
+	 */
+	public String getNicknameStr() {
+		return nicknameStr;
+	}
+	/**
+	 * @param nicknameStr the nicknameStr to set
+	 */
+	public void setNicknameStr(String nicknameStr) {
+		this.nicknameStr = nicknameStr;
+	}
+	/**
+	 * @return the headimgurl
+	 */
+	public String getHeadimgurl() {
+		return headimgurl;
+	}
+	/**
+	 * @param headimgurl the headimgurl to set
+	 */
+	public void setHeadimgurl(String headimgurl) {
+		this.headimgurl = headimgurl;
+	}
+	/**
+	 * @return the synthesisScore
+	 */
+	public int getSynthesisScore() {
+		return synthesisScore;
+	}
+	/**
+	 * @param synthesisScore the synthesisScore to set
+	 */
+	public void setSynthesisScore(int synthesisScore) {
+		this.synthesisScore = synthesisScore;
+	}
+	/**
+	 * @return the creatTime
+	 */
+	public String getCreatTime() {
+		return creatTime;
+	}
+	/**
+	 * @param creatTime the creatTime to set
+	 */
+	public void setCreatTime(String creatTime) {
+		this.creatTime = creatTime;
+	}
+	/**
+	 * @return the opinion
+	 */
+	public String getOpinion() {
+		return opinion;
+	}
+	/**
+	 * @param opinion the opinion to set
+	 */
+	public void setOpinion(String opinion) {
+		this.opinion = opinion;
+	}
+}

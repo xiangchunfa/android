@@ -1,0 +1,68 @@
+package com.qdoc.client.ui.view;
+
+import android.content.Context;
+import android.support.v4.view.ViewPager;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+
+import com.qdoc.client.ui.fragment.ConsultDetailFragment;
+
+public class MyViewPager extends ViewPager {
+	ConsultDetailFragment instance;
+	Context mContext;
+	
+	public ConsultDetailFragment getInstance() {
+		return instance;
+	}
+
+	public void setInstance(ConsultDetailFragment instance) {
+		this.instance = instance;
+	}
+
+	public MyViewPager(Context context) {
+		super(context);
+		mContext = context;
+	}
+	
+	public MyViewPager(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		mContext = context;
+	}
+	
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		if (instance != null && instance.isShowVocie())
+			instance.recordManager.onTouchEvent(mContext, event);
+		if (getIsCanScroll()) 
+			return false;
+		else
+			return super.onTouchEvent(event);
+	}
+	
+	@Override
+	public boolean onInterceptTouchEvent(MotionEvent arg0) {
+		if (getIsCanScroll()) 
+			return false;
+		else
+			return super.onInterceptTouchEvent(arg0);
+	}
+
+	
+	/**
+	 * 是否可以滚动
+	 * @return
+	 */
+	public boolean getIsCanScroll() {
+		if (instance == null) {
+			return false;
+		}
+		boolean gv_more_show = instance.getGv_more()!=null&&instance.getGv_more().getVisibility() == View.VISIBLE;
+		boolean lly_face_show = instance.getLly_face()!=null&&instance.getLly_face().getVisibility()==View.VISIBLE;
+		if(gv_more_show || lly_face_show) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+}

@@ -1,0 +1,258 @@
+/*
+ * ShareDialogFragment.java
+ * classes : com.qdoc.client.ui.fragment.ShareDialogFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-18 上午2:31:20
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.ConsultDtoModel;
+import com.qdoc.client.model.LeaveMessageDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.view.CircularImage;
+import com.qdoc.client.ui.view.MyEditText;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * FileName    : LeaveMessageFragment.java
+ * Description : 留言类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-9-1 
+ **/
+public class LeaveMessageFragment extends BaseFragment implements OnClickListener {
+    /**M
+     * TAG
+     */
+    public static final String TAG = LeaveMessageFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private MyEditText met_input_leave_message;
+    private TextView tv_send;
+    private TitleBar titlebar;
+    private RelativeLayout rly_check_leave_message;
+    private LinearLayout lly_send_leave_message;
+    private TextView tv_leave_message;
+    private CircularImage icon_userheadurl_list;
+    
+    /**
+     * params
+     */ 
+    private long consultID;
+    /**是否留言（0未留言， 1已留言）*/
+    private int leaveMessageStatus;
+    /**咨询服务对象*/
+    private ConsultDtoModel mConsultDto;
+    /**医生头像URL*/
+    private String mHeadImage;
+    
+	public static LeaveMessageFragment newInstance(Bundle bundle) {
+        final LeaveMessageFragment fragment = new LeaveMessageFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_leave_message, container, false);
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        parseIntent(); 
+        initView(view);
+        initParams();
+        initListener();
+    }
+
+    private void parseIntent() {
+    	mConsultDto = (ConsultDtoModel) getArguments().getSerializable(IntentTools.EXTRA_CONSULT_MODEL);
+    	consultID = getArguments().getLong(IntentTools.EXTRA_CONSULT_ID);
+    	if (mConsultDto == null) {
+    		ToastUtils.ToastLong(getActivity(), R.string.server_exception);
+    		return;
+    	}
+    	mHeadImage = mConsultDto.getHeadImage();
+    	leaveMessageStatus = mConsultDto.getLeaveMessageStatus();
+    }
+    
+	private void initParams() {
+		 if (leaveMessageStatus == AppConstants.LEAVE_MESSAGE_NO) {
+	        	lly_send_leave_message.setVisibility(View.VISIBLE);
+	        	rly_check_leave_message.setVisibility(View.GONE);
+	        	titlebar.setTitleInfo(R.string.str_send_advice,
+	    				R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+	    				getResources().getColor(R.color.titlebar_bg));
+	        } else if (leaveMessageStatus == AppConstants.LEAVE_MESSAGE_ALREADY) {
+	        	lly_send_leave_message.setVisibility(View.GONE);
+	        	rly_check_leave_message.setVisibility(View.VISIBLE);
+	        	titlebar.setTitleInfo(R.string.str_check_advice,
+	    				R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+	    				getResources().getColor(R.color.titlebar_bg));
+	        	startShowLeaveMessageRequest(consultID);
+	        }
+	}
+
+    private void initView(View view) {
+    	tv_send = (TextView) view.findViewById(R.id.tv_send);
+        met_input_leave_message = (MyEditText) view.findViewById(R.id.met_input_leave_message);
+        met_input_leave_message.getEt_input().setHint(R.string.input_advice);
+        lly_send_leave_message = (LinearLayout) view.findViewById(R.id.lly_send_leave_message);
+        rly_check_leave_message = (RelativeLayout) view.findViewById(R.id.rly_check_leave_message);
+        tv_leave_message = (TextView) view.findViewById(R.id.tv_leave_message);
+        titlebar = (TitleBar) view.findViewById(R.id.titlebar);
+        icon_userheadurl_list = (CircularImage) view.findViewById(R.id.icon_userheadurl_list);
+    }
+
+    private void initListener() {
+    	tv_send.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				startSaveLeaveMessageRequest(consultID);				
+			}
+		});
+    }
+    
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	getActivity().finish();
+        }
+    };
+
+    
+	@Override
+	public void onResume() {
+		super.onResume();
+	}
+	
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+
+	@Override
+	public void onClick(View v) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	/**
+	 * 发送留言
+	 */
+	public void startSaveLeaveMessageRequest(long consultID) {
+		String  content = met_input_leave_message.getEt_input().getText().toString();
+		if (StringUtils.isEmpty(content)) {
+			ToastUtils.ToastLong(getActivity(), R.string.input_advice);
+			return;
+		}
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+	    Global.progressDialog = ProgressDialog.show(getActivity(), null, this.getString(R.string.load_data), true, true);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getSaveLeaveMessage(TAG, token, consultID, content),
+				JsonParserFactory.parseBaseModel(BaseModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						Global.progressDialog.dismiss();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final BaseModel dataModel = (BaseModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+							    ToastUtils.ToastLong(getActivity(), R.string.send_advice_success);
+							    Intent intent = new Intent();
+								intent.putExtra(IntentTools.EXTRA_LEAVE_MESSAGE_STATUS, AppConstants.LEAVE_MESSAGE_ALREADY);
+							    getActivity().setResult(Activity.RESULT_OK, intent);
+							    getActivity().finish();
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+							}
+						} else { 
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+					}
+		});
+	}
+	
+	/**
+	 * 查看留言
+	 */
+	public void startShowLeaveMessageRequest(long consultID) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+	    Global.progressDialog = ProgressDialog.show(getActivity(), null, this.getString(R.string.load_data), true, true);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getShowLeaveMessage(TAG, token, consultID),
+				JsonParserFactory.parseBaseModel(LeaveMessageDataModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,Object resultData) {
+						Global.progressDialog.dismiss();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final LeaveMessageDataModel dataModel = (LeaveMessageDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								tv_leave_message.setText(dataModel.getContent());
+								ImageLoaderHelper.getInstance(getActivity()).displayImage(mHeadImage, icon_userheadurl_list, R.drawable.bank_owener_default_header);
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else { 
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+					}
+		});
+	}
+	
+}

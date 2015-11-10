@@ -1,0 +1,134 @@
+package com.qdoc.client.ui;
+
+import android.annotation.SuppressLint;
+import android.os.Bundle;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.adapter.PagerAdapter;
+import com.qdoc.client.ui.fragment.MyArticleFragment;
+import com.qdoc.client.ui.view.MyViewPager;
+import com.qdoc.client.ui.widget.TitleBar;
+
+/**
+ * create at 2015-04-09 17:35
+ * @author Antony
+ * 我的文章界面(Activity)
+ *
+ */
+public class MyArticleActivity extends BaseActivity {
+	
+	private TitleBar mTitleBar;
+	private LinearLayout lyTitle;//选项卡父布局
+	private View bottom_height_layout;
+    private Button btn_1;//我的文章
+    private Button btn_2;//我的收藏
+	private MyViewPager myPagerTab;
+	private PagerAdapter mPagerAdapter;
+    
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_infomation);
+		
+		initView();
+		initListener();
+	}
+
+	@Override
+	protected void initView() {
+		mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.my_article, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+		lyTitle = (LinearLayout) findViewById(R.id.ly_title);
+		myPagerTab = (MyViewPager) findViewById(R.id.vp_my);
+		bottom_height_layout = findViewById(R.id.bottom_height_layout);
+		bottom_height_layout.setVisibility(View.GONE);
+		initTabViewPager();
+	}
+	
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+           finish();
+        }
+    };
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+
+	}
+	
+	/**
+	 * 初始化页签
+	 */
+	private void initTabViewPager() {
+		btn_1 = (Button) findViewById(R.id.btn_1);
+		btn_2 = (Button) findViewById(R.id.btn_2);
+		//ANDY 临时修改
+		mPagerAdapter = new PagerAdapter(this);
+		//热门推荐的Bundle
+		Bundle cacheBundle_article = new Bundle();
+		cacheBundle_article.putInt(AppConstants.MY_ARTICLE_KEY, AppConstants.MY_ARTICLE_VALUE);
+		mPagerAdapter.addTab(MyArticleFragment.class, cacheBundle_article);
+		//可爱订阅的Bundle
+		Bundle cacheBundle_collection = new Bundle();
+		cacheBundle_collection.putInt(AppConstants.MY_ARTICLE_KEY, AppConstants.MY_COLLECTION_VALUE);
+		mPagerAdapter.addTab(MyArticleFragment.class, cacheBundle_collection);
+		myPagerTab.setAdapter(mPagerAdapter);
+		myPagerTab.setCurrentItem(0);
+		btn_1.setText(getString(R.string.my_article));
+		btn_2.setText(getString(R.string.my_collection));
+		btn_1.setOnClickListener(mainViewPageClickListener);
+		btn_2.setOnClickListener(mainViewPageClickListener);
+		myPagerTab.setOnPageChangeListener(new OnPageChangeListener() {
+
+			@SuppressLint("ResourceAsColor")
+			@Override
+			public void onPageSelected(int position) {
+				btn_1.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_normal));
+				btn_1.setBackgroundResource(R.drawable.recharge_tab_normal); // 删除背景
+				btn_2.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_normal));
+				btn_2.setBackgroundResource(R.drawable.recharge_tab_normal);
+				switch (position) {
+				case 0:
+					btn_1.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_selected));
+					btn_1.setBackgroundResource(R.drawable.recharge_tab_focus);
+					break;
+				case 1:
+					btn_2.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_selected));
+					btn_2.setBackgroundResource(R.drawable.recharge_tab_focus);
+					break;
+				}
+			}
+
+			@Override
+			public void onPageScrolled(int position, float positionOffset,
+					int positionOffsetPixels) {
+			}
+
+			@Override
+			public void onPageScrollStateChanged(int state) {
+			}
+		});
+	}
+	
+	OnClickListener mainViewPageClickListener = new OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			TextView clickTextView = (TextView) v;
+			if (clickTextView == btn_1) {
+				myPagerTab.setCurrentItem(0);
+			} else if (clickTextView == btn_2) {
+				myPagerTab.setCurrentItem(1);
+			} 
+		}
+	};
+
+}

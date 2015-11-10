@@ -1,0 +1,254 @@
+/*
+ * MyInfoEditActivity.java
+ * classes : com.qdoc.client.ui.MyInfoEditActivity
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 上午10:59:26
+ */
+package com.qdoc.client.ui;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
+import android.view.Gravity;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.DoctorDataModel;
+import com.qdoc.client.model.DoctorSingleDataModel;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.fragment.AboutmeFragment;
+import com.qdoc.client.ui.view.CopyPopWindow;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.ViewUtils;
+
+/**
+ * com.qdoc.client.ui.MyInfoEditActivity
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-20 上午10:59:26
+ */
+public class MyInfoEditActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = MyInfoEditActivity.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private EditText edContent;
+    private RelativeLayout edContentLayout;
+    private RelativeLayout sex_maleLayout;
+    private RelativeLayout sex_femaleLayout;
+    private ImageView icon_male;
+    private ImageView icon_female;
+    private TextView tv_case;
+
+    /**
+     * params
+     */
+    private String title;
+    private String content;
+    private int style;
+    private String type;
+    public static final String MALE="男";//男
+    public static final String WOMAN="女";//女
+    private CopyPopWindow popupWindow;
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_myinfo_edit);
+
+        parseIntent();
+        initView();
+        initListener();
+    }
+
+    private void parseIntent() {
+        // TODO Auto-generated method stub
+        Bundle cacheBundle = getIntent().getExtras();
+        if (cacheBundle != null) {
+            title = cacheBundle.getString(IntentTools.EXTRA_INPUT_TITLE);
+            content = cacheBundle.getString(IntentTools.EXTRA_INPUT_CONTENT);
+            style = cacheBundle.getInt(IntentTools.EXTRA_INPUT_STYLE);
+            type = cacheBundle.getString(IntentTools.EXTRA_INPUT_TYPE);
+        }
+    }
+
+    @Override
+    protected void initView() {
+        // TODO Auto-generated method stub
+    	popupWindow = new CopyPopWindow(MyInfoEditActivity.this);
+        mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfoWithRightText(title, R.drawable.icon_back, R.string.aboutus_consult_save,
+                actionBarLeftBtnListener, actionBarRightBtnListener, getResources().getColor(R.color.titlebar_bg));
+        edContent = (EditText) findViewById(R.id.et_content);
+        edContentLayout = (RelativeLayout) findViewById(R.id.input_content);
+        sex_maleLayout = (RelativeLayout) findViewById(R.id.sex_male);
+        sex_femaleLayout = (RelativeLayout) findViewById(R.id.sex_female);
+        icon_male = (ImageView) findViewById(R.id.icon_male);
+        icon_female = (ImageView) findViewById(R.id.icon_female);
+        tv_case = (TextView) findViewById(R.id.tv_case);
+
+        // 性别
+        if (style == 2) {
+            ViewUtils.setVisibility(edContentLayout, View.GONE);
+            ViewUtils.setVisibility(sex_maleLayout, View.VISIBLE);
+            ViewUtils.setVisibility(sex_femaleLayout, View.VISIBLE);
+            ViewUtils.setVisibility(tv_case, View.GONE);
+
+            if (MALE.equals(content)) {
+            	content=AppConstants.MALE;
+                ViewUtils.setVisibility(icon_male, View.VISIBLE);
+                ViewUtils.setVisibility(icon_female, View.INVISIBLE);
+            } else {
+            	content=AppConstants.WOMAN;
+                ViewUtils.setVisibility(icon_female, View.VISIBLE);
+                ViewUtils.setVisibility(icon_male, View.INVISIBLE);
+            }
+        } else {
+            edContent.setText(content);
+            ViewUtils.setVisibility(edContentLayout, View.VISIBLE);
+            ViewUtils.setVisibility(sex_maleLayout, View.GONE);
+            ViewUtils.setVisibility(sex_femaleLayout, View.GONE);
+            ViewUtils.setVisibility(tv_case, View.VISIBLE);
+            if (style == 7) {
+            	tv_case.setText(getResources().getString(R.string.professional_field_case));
+            } else if (style == 9) {
+            	tv_case.setText(getResources().getString(R.string.individual_resume_case));
+            }
+        }
+    }
+
+    @Override
+    protected void initListener() {
+        // TODO Auto-generated method stub
+        sex_maleLayout.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                ViewUtils.setVisibility(icon_male, View.VISIBLE);
+                ViewUtils.setVisibility(icon_female, View.INVISIBLE);
+
+                content = AppConstants.MALE;
+            }
+        });
+        sex_femaleLayout.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                ViewUtils.setVisibility(icon_female, View.VISIBLE);
+                ViewUtils.setVisibility(icon_male, View.INVISIBLE);
+                content = AppConstants.WOMAN;
+            }
+        });
+        tv_case.setOnLongClickListener(new OnLongClickListener() {
+			
+			@Override
+			public boolean onLongClick(View v) {
+				popupWindow.setContent(tv_case.getText().toString());
+				popupWindow.showAsDropDown(tv_case);
+				return false;
+			}
+		});
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            finish();
+        }
+    };
+
+    OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	// 性别
+            if (style == 2) {
+                getSaveSingleMyInfoRequest();
+            } else {
+            	content = edContent.getText().toString();
+                if (TextUtils.isEmpty(content)) {
+                    ToastUtils.ToastShort(getApplicationContext(), "输入内容不能为空");
+                    return;
+                }
+                getSaveSingleMyInfoRequest();
+            }
+        }
+    };
+
+    private void getSaveSingleMyInfoRequest() {
+        LogUtils.d(TAG, "type =========== " + type);
+        LogUtils.d(TAG, "content =========== " + content);
+
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getUpdateMyInfoequestParam(TAG, token, type, content),
+                JsonParserFactory.parseBaseModel(DoctorSingleDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DoctorSingleDataModel dataModel = (DoctorSingleDataModel) resultData;
+                            if (dataModel != null) 
+                            {
+                                Intent intent = new Intent(AppConstants.MYINFO_UPDATE_INTENT_ACTION);
+                                intent.putExtra(IntentTools.EXTRA_INPUT_STYLE, style);
+                                intent.putExtra(IntentTools.EXTRA_INPUT_CONTENT, content);
+                                LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(intent);
+                                if(style == 7 || style == 9){
+                                    AboutmeFragment.getDoctorInfo = true;
+                                }
+                                finish();
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), dataModel.getErrorMsg());
+                            }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+
+    public static void startActivity(Context context, String title, String type, String value, int style) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getMyEditInfoIntent(context, title, type, value, style));
+    }
+}

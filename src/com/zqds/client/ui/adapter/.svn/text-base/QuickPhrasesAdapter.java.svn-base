@@ -1,0 +1,89 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.db.bean.QuickPhrases;
+import com.qdoc.client.model.ElementsModel;
+
+public class QuickPhrasesAdapter extends BaseAdapter {
+	
+	private LayoutInflater inflater;
+	private Context context;
+	private List<QuickPhrases> phraseList;
+
+	/**
+	 * @param articleList the articleList to set
+	 */
+	public void setArticleList(List<QuickPhrases> phraseList) {
+		if(phraseList==null)
+			this.phraseList = new ArrayList<QuickPhrases>();
+		else
+			this.phraseList = phraseList;
+	}
+	
+	public QuickPhrasesAdapter(Context context, List<QuickPhrases> phraseList){
+		this.context = context;
+		inflater = LayoutInflater.from(context);
+		setArticleList(phraseList);
+	}
+	
+	public QuickPhrasesAdapter(Context context){
+		this.context = context;
+		inflater = LayoutInflater.from(context);
+		setArticleList(phraseList);
+	}
+	
+	public void changeData(List<QuickPhrases> phraseList){
+		setArticleList(phraseList);
+		notifyDataSetChanged();
+	}
+
+	public void addMoreListData(List<QuickPhrases> elementsList) {
+		phraseList.addAll(elementsList);
+		notifyDataSetChanged();
+	}
+	
+	@Override
+	public int getCount() {
+		return phraseList.size();
+	}
+
+	@Override
+	public Object getItem(int arg0) {
+		return phraseList.get(arg0);
+	}
+
+	@Override
+	public long getItemId(int position) {
+		return position;
+	}
+
+	@Override
+	public View getView(final int position, View convertView, ViewGroup parent) {
+		QuickPhrases bean = phraseList.get(position);
+		ViewHolder holder = null;
+		if(convertView==null){
+			holder = new ViewHolder();
+			convertView = inflater.inflate(R.layout.listitem_quick_phreses, null);
+			holder.tv_content = (TextView) convertView.findViewById(R.id.tv_content);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		holder.tv_content.setText(bean.getContent());
+		return convertView;
+	}
+
+	class ViewHolder{
+		TextView tv_content;
+	}
+}

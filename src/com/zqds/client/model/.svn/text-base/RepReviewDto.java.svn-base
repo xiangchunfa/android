@@ -1,0 +1,189 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+import java.util.List;
+
+/**
+ * 文章评论类
+ * @author Antony
+ * create at 2015-04-16 17:36
+ *
+ */
+public class RepReviewDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -303487916967189064L;
+
+	private long id;//评论ID
+	private long articleId;//文本ID
+	private String revContent;//评论内容
+	private String revTime;//评论时间
+	private String revIp;//评论Ip
+	private String revUserName;//评论用户的名称
+	private String revUserHeadImg;//评论用户的头像
+	private long userId;//评论用户的ID
+	private int userType;//评论用户的类型  0微信端用户   1医生
+	private int revStatus;//评论状态(0未审核，1审核不通过，2审核通过，3已删除)
+	private long praiseCount;//点赞数
+	private long treadCount;//点踩数
+	private List<RepReviewReplyDto> repReviewReplys;//RepReviewReplyDto对象
+	/**
+	 * @return the id
+	 */
+	public long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
+	}
+	/**
+	 * @return the articleId
+	 */
+	public long getArticleId() {
+		return articleId;
+	}
+	/**
+	 * @param articleId the articleId to set
+	 */
+	public void setArticleId(long articleId) {
+		this.articleId = articleId;
+	}
+	/**
+	 * @return the revContent
+	 */
+	public String getRevContent() {
+		return revContent;
+	}
+	/**
+	 * @param revContent the revContent to set
+	 */
+	public void setRevContent(String revContent) {
+		this.revContent = revContent;
+	}
+	/**
+	 * @return the revTime
+	 */
+	public String getRevTime() {
+		return revTime;
+	}
+	/**
+	 * @param revTime the revTime to set
+	 */
+	public void setRevTime(String revTime) {
+		this.revTime = revTime;
+	}
+	/**
+	 * @return the revIp
+	 */
+	public String getRevIp() {
+		return revIp;
+	}
+	/**
+	 * @param revIp the revIp to set
+	 */
+	public void setRevIp(String revIp) {
+		this.revIp = revIp;
+	}
+	/**
+	 * @return the revUserName
+	 */
+	public String getRevUserName() {
+		return revUserName;
+	}
+	/**
+	 * @param revUserName the revUserName to set
+	 */
+	public void setRevUserName(String revUserName) {
+		this.revUserName = revUserName;
+	}
+	/**
+	 * @return the revUserHeadImg
+	 */
+	public String getRevUserHeadImg() {
+		return revUserHeadImg;
+	}
+	/**
+	 * @param revUserHeadImg the revUserHeadImg to set
+	 */
+	public void setRevUserHeadImg(String revUserHeadImg) {
+		this.revUserHeadImg = revUserHeadImg;
+	}
+	/**
+	 * @return the userId
+	 */
+	public long getUserId() {
+		return userId;
+	}
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(long userId) {
+		this.userId = userId;
+	}
+	/**
+	 * @return the userType
+	 */
+	public int getUserType() {
+		return userType;
+	}
+	/**
+	 * @param userType the userType to set
+	 */
+	public void setUserType(int userType) {
+		this.userType = userType;
+	}
+	/**
+	 * @return the revStatus
+	 */
+	public int getRevStatus() {
+		return revStatus;
+	}
+	/**
+	 * @param revStatus the revStatus to set
+	 */
+	public void setRevStatus(int revStatus) {
+		this.revStatus = revStatus;
+	}
+	/**
+	 * @return the praiseCount
+	 */
+	public long getPraiseCount() {
+		return praiseCount;
+	}
+	/**
+	 * @param praiseCount the praiseCount to set
+	 */
+	public void setPraiseCount(long praiseCount) {
+		this.praiseCount = praiseCount;
+	}
+	/**
+	 * @return the treadCount
+	 */
+	public long getTreadCount() {
+		return treadCount;
+	}
+	/**
+	 * @param treadCount the treadCount to set
+	 */
+	public void setTreadCount(long treadCount) {
+		this.treadCount = treadCount;
+	}
+	/**
+	 * @return the repReviewReplys
+	 */
+	public List<RepReviewReplyDto> getRepReviewReplys() {
+		return repReviewReplys;
+	}
+	/**
+	 * @param repReviewReplys the repReviewReplys to set
+	 */
+	public void setRepReviewReplys(List<RepReviewReplyDto> repReviewReplys) {
+		this.repReviewReplys = repReviewReplys;
+	}
+
+}

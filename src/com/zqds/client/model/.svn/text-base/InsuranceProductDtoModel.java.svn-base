@@ -1,0 +1,71 @@
+/*
+ * ConsultDtoModel.java
+ * classes : com.qdoc.client.model.ConsultDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-31 下午10:57:24
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+
+/**
+ * com.qdoc.client.model.ConsultDtoModel
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-29 下午11:57:24
+ */
+public class InsuranceProductDtoModel implements Serializable {
+    private static final long serialVersionUID = 4360574027193144162L;
+    private int id; //记录编号
+    private String productName;		//保险产品名称	
+    private String productCode;//产品代码 
+    private String productInfo; //保险简介
+    private Integer status;  //状态：0启用，1停用
+    private String productTel;//产品的联系电话
+
+	public String getProductTel() {
+		return productTel;
+	}
+	public void setProductTel(String productTel) {
+		this.productTel = productTel;
+	}
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public String getProductName() {
+		return productName;
+	}
+	public void setProductName(String productName) {
+		this.productName = productName;
+	}
+	public String getProductCode() {
+		return productCode;
+	}
+	public void setProductCode(String productCode) {
+		this.productCode = productCode;
+	}
+	public String getProductInfo() {
+		return productInfo;
+	}
+	public void setProductInfo(String productInfo) {
+		this.productInfo = productInfo;
+	}
+	public Integer getStatus() {
+		return status;
+	}
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
+
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+    
+    
+    
+}

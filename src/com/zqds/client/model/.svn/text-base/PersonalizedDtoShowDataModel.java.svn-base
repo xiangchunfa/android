@@ -1,0 +1,32 @@
+/*
+ * PersonalizedDtoDataModel.java
+ * classes : com.qdoc.client.model.PersonalizedDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 上午12:01:20
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.PersonalizedDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-20 上午12:01:20
+ */
+public class PersonalizedDtoShowDataModel extends AbstractBaseModel {
+    private PersonalizedDtoModel personalizedDto;
+
+    /**
+     * @return the personalizedDto
+     */
+    public PersonalizedDtoModel getPersonalizedDto() {
+        return personalizedDto;
+    }
+
+    /**
+     * @param personalizedDto the personalizedDto to set
+     */
+    public void setPersonalizedDto(PersonalizedDtoModel personalizedDto) {
+        this.personalizedDto = personalizedDto;
+    }
+}

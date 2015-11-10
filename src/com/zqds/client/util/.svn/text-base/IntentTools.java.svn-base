@@ -1,0 +1,648 @@
+/*
+
+ * IntentTools.java
+ * classes : com.ledu.ledubuyer.util.IntentTools
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-7-2 下午11:32:31
+ */
+package com.qdoc.client.util;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+
+import com.qdoc.client.db.bean.CustomContent;
+import com.qdoc.client.model.AdvanceActivitiesDtoModel;
+import com.qdoc.client.model.BankDtoDataModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.DoctorWithdrawDto;
+import com.qdoc.client.model.ImageDtoModel;
+import com.qdoc.client.model.ShowWithdrawalDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.AboutAppActivity;
+import com.qdoc.client.ui.AboutmeActivity;
+import com.qdoc.client.ui.AdvanceDetailActivity;
+import com.qdoc.client.ui.AdviceAndLeaveMessgeActivity;
+import com.qdoc.client.ui.ArticleDetailActivity;
+import com.qdoc.client.ui.BankAccountEditActivitiy;
+import com.qdoc.client.ui.BindingCardSuccessActivity;
+import com.qdoc.client.ui.ClinicTimeSetActivity;
+import com.qdoc.client.ui.ConsultDetailActivity;
+import com.qdoc.client.ui.ConsultSettingActivity;
+import com.qdoc.client.ui.DoctorCertificationActivity;
+import com.qdoc.client.ui.EvaluateActivity;
+import com.qdoc.client.ui.FansDetailInfoActivity;
+import com.qdoc.client.ui.FansIncentiveActivity;
+import com.qdoc.client.ui.FlowerActivity;
+import com.qdoc.client.ui.ForgetPwdActivity;
+import com.qdoc.client.ui.GiftBagActivity;
+import com.qdoc.client.ui.ImageDetailActivity;
+import com.qdoc.client.ui.ImageDetailResActivity;
+import com.qdoc.client.ui.InsuranceDetailActivity;
+import com.qdoc.client.ui.KindlyFeelingsActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.MemberDetailActivity;
+import com.qdoc.client.ui.MyBenefitActivity;
+import com.qdoc.client.ui.MyBenefitDetailActivity;
+import com.qdoc.client.ui.MyCardActivity;
+import com.qdoc.client.ui.MyConsultListActivity;
+import com.qdoc.client.ui.MyInfoActivity;
+import com.qdoc.client.ui.MyInfoEditActivity;
+import com.qdoc.client.ui.MyMobileClinicActivity;
+import com.qdoc.client.ui.MyWithdrawActivity;
+import com.qdoc.client.ui.NewMemberActivity;
+import com.qdoc.client.ui.NewMemberDetailActivity;
+import com.qdoc.client.ui.QuickPhrasesActivity;
+import com.qdoc.client.ui.RegistActivity;
+import com.qdoc.client.ui.SatisfactionActivity;
+import com.qdoc.client.ui.ServiceActivity;
+import com.qdoc.client.ui.ShareAfterBenefitActivity;
+import com.qdoc.client.ui.SystemSettingActivity;
+import com.qdoc.client.ui.ThankLetterActivity;
+import com.qdoc.client.ui.UserInfoActivity;
+import com.qdoc.client.ui.WithDrawDetailActivity;
+import com.qdoc.client.ui.WriteArticleActivity;
+
+/**
+ * com.ledu.ledubuyer.util.IntentTools
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-2 下午11:32:31
+ */
+public class IntentTools {
+
+    public static final String EXTRA_ELEMENT_MODEL = "EXTRA_ELEMENT_MODEL";
+    public static final String EXTRA_CONSULT_ID = "EXTRA_CONSULT_ID";
+    public static final String EXTRA_IMAGE_INDEX = "image_index";
+    public static final String EXTRA_IMAGE_URLS = "image_urls";
+    public static final String EXTRA_INPUT_TYPE = "EXTRA_INPUT_TYPE";
+    public static final String EXTRA_CONSULT_FROM = "EXTRA_CONSULT_FROM";
+    public static final String EXTRA_INPUT_CONTENT = "EXTRA_INPUT_CONTENT";
+    public static final String EXTRA_INPUT_TITLE = "EXTRA_INPUT_TITLE";
+    public static final String EXTRA_INPUT_STYLE = "EXTRA_INPUT_STYLE";
+    public static final String EXTRA_LAUNCHER_FROM = "EXTRA_LAUNCHER_FROM";
+    public static final String EXTRA_CHOOSE_TYPE = "EXTRA_CHOOSE_TYPE";
+    public static final String EXTRA_FROM = "EXTRA_FROM";
+    public static final String EXTRA_BUNDLE = "EXTRA_BUNDLE";
+    public static final String EXTRA_SHARE_STATUS = "EXTRA_SHARE_STATUS";
+    public static final String EXTRA_FAVORITES_STATUS = "EXTRA_FAVORITES_STATUS";
+    public static final String EXTRA_INSURE_STATUS = "EXTRA_INSURE_STATUS";
+    public static final String EXTRA_GIFI_BAG = "EXTRA_GIFT_BAG";
+    public static final String EXTRA_BENEFIT_MONEY = "EXTRA_BENEFIT_MONEY";
+    public static final String EXTRA_VERIFY_CODE_TYPE = "VERIFY_CODE_TYPE";
+    public static final String EXTRA_LOGIN_STATUS = "LOGIN_STATUS";
+    public static final String EXTRA_NAME= "EXTRA_NAME";
+    public static final String EXTRA_INVITER= "EXTRA_INVITER";
+    public static final String EXTRA_HOSPITAL = "EXTRA_HOSPITAL";
+    public static final String EXTRA_DEPARTMENT = "EXTRA_DEPARTMENT";
+    public static final String EXTRA_DOCTOR_TITLE_VALUE = "EXTRA_DECTOR_TITLE_VALUE";
+    public static final String EXTRA_OPEN_ID = "EXTRA_OPEN_ID";
+    public static final String EXTRA_USER_NAME = "EXTRA_USER_NAME";
+    public static final String EXTRA_FANS_INCENTIVE = "EXTRA_FANS_INCENTIVE";
+    public static final String EXTRA_ACTIVITY_URL = "EXTRA_ACTIVITY_URL";
+    public static final String EXTAR_GIFT_BAG_STATUS = "EXTAR_GIFT_BAG_STATUS";
+    public static final String EXTAR_BENEFIT_SECCUSS_MONEY = "benefit_seccuss_money";//成功体现的金额键值
+    public static final String EXTAR_TOTAL_BENEFIT = "total_benefit";
+    public static final String EXTAR_CONSULT_UPDATE = "EXTAR_CONSULT_UPDATE";
+    public static final String EXTAR_DOCTORMODEL = "extar_doctormodel";
+    public static final String EXTAR_DOCTORWITHDRAWSHOWDTO = "extar_doctorwithdrawshowdto";
+    public static final String EXTAR_BANKDTODATAMODEL = "extar_bankdtodatamodel";
+    public static final String EXTAR_TOACCOUNT_TIME = "toAccount_time";
+    public static final String EXTAR_SHOWWITHDRAWDATAMODEL = "show_withdraw_datamode";
+    public static final String EXTAR_BANKINFODATAMODEL = "bankinfodatamodel";
+    public static final String EXTAR_CERTIFICATION_STATE = "certification_state";
+    public static final String EXTAR_IMAGE_RES_ID = "EXTAR_IMAGE_RES_ID";
+    public static final String EXTRA_IMAGE_RES_IDS = "EXTRA_IMAGE_RES_IDS";
+    public static final String EXTRA_START_ACTIVITY_RESOURE = "extra_start_activity_resoure";
+    public static final String EXTRA_PATH = "EXTRA_PATH";
+    public static final String EXTRA_DOCTORWITHDRAWDTO = "doctorwithdrawdto";
+    public static final String EXTRA_ARTICLE_ID = "article_id";
+    public static final String EXTRA_COLUMN_NAME = "column_name"; 
+    public static final String EXTRA_CONSULT_STATE = "EXTRA_CONSULT_STATE";
+    public static final String EXTRA_DOCTOR_INFO = "EXTRA_DOCTOR_INFO";
+    public static final String EXTRA_FIRST_PIC_PATH = "first_pic_path";
+    public static final String EXTRA_TYPE = "EXTRA_TYPE";
+    public static final String EXTRA_CONSULT_OPTION = "EXTRA_CONSULT_OPTION";
+    public static final String EXTRA_CATEGORY_ID = "extra_category_id";//分组编号
+    public static final String EXTRA_CATEGORY_NAME = "extra_category_name";//分组名称
+    public static final String EXTRA_PATIENT_SEX = "extra_patient_sex";//患者性别
+    public static final String EXTRA_REFRESH_REMARK_NAME = "extra_refresh_remark_name";//粉丝备注名
+    public static final String EXTRA_QUICK_PHRASES = "extra_quick_phrases";//快捷短语内容
+    public static final String EXTRA_DURTION = "extra_durtion";//录音时长
+    public static final String EXTRA_DRAFT = "extra_draft";//草稿
+    public static final String EXTRA_CLINIC_URL = "extra_clinic_url";//移动诊所URL
+    public static final String EXTRA_SATISFACTION = "extra_satisfaction";//好评率键值
+    public static final String EXTRA_CONSULT_MODEL = "extra_consult_model";//咨询对象
+    public static final int START_DOCTOR_RESUME_REQUSTCODE = 0033;//启动医生简介编辑页的请求码
+    public static final String EXTRA_DOCTOR_RESUME = "extra_doctor_resume";//医生个人简介的传递键值
+    public static final String EXTRA_DOCTOR_PROFESIONAL = "extra_doctor_profesional";//医生专业领域的传递键值
+    public static final String EXTRA_LAUNCHER_FRAGMENT = "extra_launcher_fragment";//启动页面
+    public static final String EXTRA_LEAVE_MESSAGE_STATUS = "extra_leave_message_status";//留言状态
+    public static final String EXTRA_CONSULT_ADVICE = "extra_consult_advice";//咨询建议
+    public static final String EXTRA_CONSULT_ADVICE_CREATE_TIME = "extra_consult_advice_create_time";//咨询建议创建时间
+    public static final String EXTRA_CONSULT_ADVICE_CONTENT_KEY = "extra_consult_advice_content_key";//传输咨询建议内容的键值
+    
+    public static Intent getLoginIntent(Context context) {
+        Intent intent = new Intent();
+        intent.setClass(context, LoginActivity.class);
+        return intent;
+    }
+
+    public static Intent getRegistIntent(Context context) {
+        Intent intent = new Intent();
+        intent.setClass(context, RegistActivity.class);
+        return intent;
+    }
+
+    public static Intent getForgetPwdIntent(Context context) {
+        Intent intent = new Intent();
+        intent.setClass(context, ForgetPwdActivity.class);
+        
+        return intent;
+    }
+
+    public static Intent getMainIntent(Context context) {
+        Intent intent = new Intent();
+        intent.setClass(context, MainActivity.class);
+        return intent;
+    }
+    
+    public static Intent getMainIntent(Context context, int type) {
+        Intent intent = new Intent();
+        intent.setClass(context, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_TAB_INDEX_KEY, type);
+        return intent;
+    }
+
+    public static Intent getMainFromPushIntent(Context context, int type, String consultId, String consultOption) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.putExtra(IntentTools.EXTRA_TYPE, type);
+        intent.putExtra(IntentTools.EXTRA_CONSULT_ID, consultId);
+        intent.putExtra(IntentTools.EXTRA_LAUNCHER_FROM, AppConstants.XG_PUSH_MESSAGE);
+        intent.putExtra(IntentTools.EXTRA_CONSULT_OPTION, consultOption);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
+    }
+
+    public static Intent getMainFromActiveIntent(Context context, int type) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_TAB_INDEX_KEY, type);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
+    }
+
+    /**
+     * 获取子页面的Intent
+     * @param context:上下文
+     * @param type:类型
+     * @param SubpageIndex:子页面的序号
+     * @return
+     */
+    public static Intent getMainFromSubpageIntent(Context context, int type, int subpageIndex) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_TAB_INDEX_KEY, type);
+        intent.putExtra(MainActivity.EXTRA_SUBPAGE_TAB_INDEX_KEY, subpageIndex);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
+    }
+    
+    public static Intent getConsultDetailIntent(Context context, String consultID, int from, int consultState) {
+        Intent intent = new Intent();
+        intent.setClass(context, ConsultDetailActivity.class);
+        intent.putExtra(EXTRA_FROM, from);
+        intent.putExtra(EXTRA_CONSULT_ID, consultID);
+        intent.putExtra(EXTRA_CONSULT_STATE, consultState);
+        return intent;
+    }
+    
+    public static Intent getConsultDetailFromPushIntent(Context context, String consultId, int from) {
+        Intent intent = new Intent();
+        intent.setClass(context, ConsultDetailActivity.class);
+        intent.putExtra(EXTRA_CONSULT_ID, consultId);
+        intent.putExtra(EXTRA_FROM, from);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
+    }
+
+    public static Intent getImageDetailIntent(Context context, int position, ArrayList<ImageDtoModel> list) {
+        Intent intent = new Intent(context, ImageDetailActivity.class);
+        intent.putExtra(EXTRA_IMAGE_URLS, list);
+        intent.putExtra(EXTRA_IMAGE_INDEX, position);
+        return intent;
+    }
+
+    public static Intent getImageDetailResIntent(Context context, int position, int[] list) {
+        Intent intent = new Intent(context, ImageDetailResActivity.class);
+        intent.putExtra(EXTRA_IMAGE_RES_IDS, list);
+        intent.putExtra(EXTRA_IMAGE_INDEX, position);
+        return intent;
+    }    
+
+    public static Intent getMyEditInfoIntent(Context context, String title, String type, String content, int style) {
+        Intent intent = new Intent();
+        intent.setClass(context, MyInfoEditActivity.class);
+        intent.putExtra(EXTRA_INPUT_TITLE, title);
+        intent.putExtra(EXTRA_INPUT_TYPE, type);
+        intent.putExtra(EXTRA_INPUT_CONTENT, content);
+        intent.putExtra(EXTRA_INPUT_STYLE, style);
+        return intent;
+    }
+
+
+    public static Intent getAboutIntent(Context context, int from) {
+        Intent intent = new Intent();
+        intent.setClass(context, AboutmeActivity.class);
+        intent.putExtra(EXTRA_LAUNCHER_FROM, from);
+        return intent;
+    }
+    
+    public static Intent getUserInfoIntent(Context context,String openId) {
+        Intent intent = new Intent();
+        intent.putExtra(EXTRA_OPEN_ID, openId);
+        intent.setClass(context, UserInfoActivity.class);
+        return intent;
+    }	
+    
+    public static Intent getAdviceIntent(Context context,Bundle bundle, int fragmentID) {
+        Intent intent = new Intent();
+        intent.putExtras(bundle);
+        intent.putExtra(EXTRA_LAUNCHER_FRAGMENT, fragmentID);
+        intent.setClass(context, AdviceAndLeaveMessgeActivity.class);
+        return intent;
+    }
+    
+    public static Intent getInsuranceDetailIntent(Context context, int from) {
+        Intent intent = new Intent();
+        intent.putExtra(EXTRA_LAUNCHER_FROM, from);
+        intent.setClass(context, InsuranceDetailActivity.class);
+        return intent;
+    }
+    
+    public static Intent getGiftBagIntent(Context context,String status) {
+        Intent intent = new Intent();
+        intent.setClass(context, GiftBagActivity.class);
+        intent.putExtra(EXTAR_GIFT_BAG_STATUS, status);
+        return intent;
+    }
+    
+    public static Intent getFansIncentiveIntent(Context context) {
+        Intent intent = new Intent();
+        intent.setClass(context, FansIncentiveActivity.class);
+        return intent;
+    }
+    
+    public static Intent startMyWithdrawActivity(Context context){
+        Intent intent = new Intent();
+        intent.setClass(context, MyWithdrawActivity.class);
+        return intent;
+    }
+    
+    public static Intent startMyBenefitActivity(Context context,DoctorModel doctorDto){
+    	Intent intent = new Intent();
+    	intent.setClass(context, MyBenefitActivity.class);
+    	intent.putExtra(EXTAR_DOCTORMODEL, doctorDto);
+    	return intent;
+    }
+    
+    public static Intent startMyBenefitDetailActivity(Context context,String maxMoney,String totalBenefit,ShowWithdrawalDataModel showWithdrawalDataModel,DoctorModel doctorModel){
+    	Intent intent = new Intent();
+    	intent.putExtra("MAXMONEY", maxMoney);
+    	intent.putExtra(EXTAR_TOTAL_BENEFIT, totalBenefit);
+    	intent.putExtra(EXTAR_SHOWWITHDRAWDATAMODEL, showWithdrawalDataModel);
+    	intent.putExtra(EXTAR_DOCTORMODEL, doctorModel);
+    	intent.setClass(context, MyBenefitDetailActivity.class);
+    	return intent;
+    }
+    
+    public static Intent startBankAccountEditActivity(Context context,BankDtoDataModel bankDtoDataModel,DoctorModel doctorModel){
+    	Intent intent = new Intent();
+    	intent.setClass(context, BankAccountEditActivitiy.class);
+    	intent.putExtra(EXTAR_DOCTORMODEL, doctorModel);
+    	intent.putExtra(EXTAR_BANKDTODATAMODEL, bankDtoDataModel);
+    	return intent;
+    }
+    
+    public static Intent startMyInfoActivity(Context context,int laucherFrom){
+    	Intent intent = new Intent();
+    	intent.setClass(context, MyInfoActivity.class);
+    	intent.putExtra(AboutmeActivity.LAUCHERFROM, laucherFrom);
+    	return intent;
+    }
+    /***********************************************************************antony 2014-11-21添加**************************************************************/
+    public static Intent startConsultSettingActivity(Context context,int laucherFrom){
+    	Intent intent = new Intent();
+    	intent.setClass(context, ConsultSettingActivity.class);
+    	intent.putExtra(AboutmeActivity.LAUCHERFROM, laucherFrom);
+    	return intent;
+    }
+    
+    public static Intent startMyCardActivitiy(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, MyCardActivity.class);
+    	return intent;
+    }
+    
+//    public static Intent startCollectActivity(Context context){
+//    	Intent intent = new Intent();
+//    	intent.setClass(context, CollectActivity.class);
+//    	return intent;
+//    }
+    
+    public static Intent startNewMemberDetailActivity(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, NewMemberDetailActivity.class);
+    	return intent;
+    }
+    
+    public static Intent startNewMemberActivity(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, NewMemberActivity.class);
+    	return intent;
+    }
+    
+    public static Intent startMyConsultListActivity(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, MyConsultListActivity.class);
+    	return intent;
+    }
+    
+    public static Intent startMemberDetailActivity(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, MemberDetailActivity.class);
+    	return intent;
+    }
+    /***********************************************************************antony 2014-11-21添加**************************************************************/
+    public static Intent startFlowerIntent(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, FlowerActivity.class);
+    	return intent;
+    }
+    
+    public static Intent startMyConsultListIntent(Context context,String from){
+    	Intent intent = new Intent();
+    	intent.setClass(context, MyConsultListActivity.class);
+    	intent.putExtra(IntentTools.EXTRA_FROM, from);
+    	return intent;
+    }
+    public static Intent startThankLetterIntent(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, ThankLetterActivity.class);
+    	return intent;
+    }
+    
+    public static Intent startFansDetailInfoActivityByOpenId(Context context,String openid){
+    	Intent intent = new Intent();
+    	intent.setClass(context, FansDetailInfoActivity.class);
+    	intent.putExtra(IntentTools.EXTRA_OPEN_ID, openid);
+    	return intent;
+    }
+    
+    public static Intent startMyMobileClinicActivity(Context context, DoctorModel doctorDto){
+    	Intent intent = new Intent();
+    	intent.putExtra(EXTRA_DOCTOR_INFO, doctorDto);
+    	intent.setClass(context, MyMobileClinicActivity.class);
+    	return intent;
+    }
+    
+    public static Intent startAboutAppActivity(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, AboutAppActivity.class);
+    	return intent;
+    }
+    
+    public static Intent startAdvanceDetailActivity(Context context,AdvanceActivitiesDtoModel advanceDtoModel){
+    	Intent intent = new Intent();
+    	intent.setClass(context, AdvanceDetailActivity.class);
+    	intent.putExtra(EXTRA_ACTIVITY_URL, advanceDtoModel);
+    	return intent;
+    }
+    
+    /**
+     * 启动体现成功后的分享界面
+     * @param context
+     * @param money
+     * @return
+     */
+    public static Intent startShareAfterBenefitActivity(Context context,double money,String totalBenefit,String toAccountTime){
+    	Intent intent = new Intent();
+    	intent.setClass(context, ShareAfterBenefitActivity.class);
+    	intent.putExtra(EXTAR_BENEFIT_SECCUSS_MONEY, money);
+    	intent.putExtra(EXTAR_TOTAL_BENEFIT, totalBenefit);
+    	intent.putExtra(EXTAR_TOACCOUNT_TIME, toAccountTime);
+    	return intent;
+    }
+    /**
+     * 推送咨询消息
+     * @param context 
+     * @param content :咨询消息对象
+     * @return
+     */
+    public static Intent startConsultUpdate(Context context,CustomContent content){
+    	Intent intent = new Intent();
+    	intent.setAction(AppConstants.PUSH_CONSULT_MESSAGE_ACTION);
+    	intent.putExtra(EXTAR_CONSULT_UPDATE, content);
+    	return intent;
+    }
+    
+    /**
+     * 打开门诊时间设置界面
+     * @param context
+     * @param doctorDto
+     * @return
+     */
+    public static Intent startClinicTimeSetActivity(Context context,DoctorModel doctorDto){
+    	Intent intent = new Intent();
+    	intent.setClass(context, ClinicTimeSetActivity.class);
+    	intent.putExtra(EXTAR_DOCTORMODEL, doctorDto);
+    	return intent;
+    }
+    
+    /**
+     * 绑定银行卡成功界面
+     * @param context
+     * @param bankDtoDataModel
+     * @return
+     */
+    public static Intent startBindingCardSuccessActivity(Context context,BankDtoDataModel bankDtoDataModel,DoctorModel doctorModel){
+    	Intent intent = new Intent();
+    	intent.setClass(context, BindingCardSuccessActivity.class);
+    	intent.putExtra(EXTAR_BANKDTODATAMODEL, bankDtoDataModel);
+    	intent.putExtra(EXTAR_DOCTORMODEL, doctorModel);
+    	return intent;
+    }
+    
+    /**
+     * 跳转到医生认证界面
+     * @param context
+     * @param certification_state
+     * @return
+     */
+    public static Intent startDoctorCertificationActivity(Context context,int certification_state){
+    	Intent intent = new Intent();
+    	intent.setClass(context, DoctorCertificationActivity.class);
+    	intent.putExtra(EXTAR_CERTIFICATION_STATE, certification_state);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    	return intent;
+    }
+    
+    /**
+     * 跳转到医生认证界面(重构)
+     * @param context
+     * @param certification_state
+     * @param startActivityResoure
+     * @return
+     */
+    public static Intent startDoctorCertificationActivity(Context context,int certification_state,String startActivityResoure){
+    	Intent intent = new Intent();
+    	intent.setClass(context, DoctorCertificationActivity.class);
+    	intent.putExtra(EXTAR_CERTIFICATION_STATE, certification_state);
+    	intent.putExtra(EXTRA_START_ACTIVITY_RESOURE, startActivityResoure);
+    	return intent;
+    }
+    
+    /**
+     * 打开提现明细的详细内容页
+     * @param context 上下文对象
+     * @param doctorWithDrawDto 需要传输的提现记录对象
+     * @return
+     */
+    public static Intent startWithDrawDetailActivitiy(Context context,DoctorWithdrawDto doctorWithDrawDto){
+    	Intent intent = new Intent();
+    	intent.setClass(context, WithDrawDetailActivity.class);
+    	intent.putExtra(EXTRA_DOCTORWITHDRAWDTO, doctorWithDrawDto);
+    	return intent;
+    }
+    
+    /**
+     * 推送客服消息
+     * @param context 
+     * @param content :咨询消息对象
+     * @return
+     */
+    public static Intent startServiceUpdate(Context context,CustomContent content){
+    	Intent intent = new Intent();
+    	intent.setAction(AppConstants.UPDATE_SERVICE_INFO_INTENT_ACTION);
+    	intent.putExtra(EXTAR_CONSULT_UPDATE, content);
+    	return intent;
+    }
+    
+    /**
+     * 启动文章内容页
+     * @param context
+     * @param articleId 文章编号
+     * @return
+     */
+    public static Intent startArticleActivity(Context context,long articleId,int columnRes){
+    	Intent intent = new Intent();
+    	intent.setClass(context, ArticleDetailActivity.class);
+    	intent.putExtra(EXTRA_ARTICLE_ID, articleId);
+    	intent.putExtra(EXTRA_COLUMN_NAME, columnRes);
+    	return intent;
+    }
+    
+    /**
+     * 启动写文章页
+     * @param context
+     * @return
+     */
+    public static Intent startWriteArticleActivity(Context context,String firstPicPath){
+    	Intent intent = new Intent();
+    	intent.setClass(context, WriteArticleActivity.class);
+    	intent.putExtra(EXTRA_FIRST_PIC_PATH, firstPicPath);
+    	return intent;
+    }
+    
+    /**
+     * 启动小可聊天页面
+     * @param context
+     * @param doctorDto
+     * @return
+     */
+    public static Intent startServiceActivity(Context context, DoctorModel doctorDto){
+    	Intent intent = new Intent();
+    	intent.putExtra(EXTRA_DOCTOR_INFO, doctorDto);
+    	intent.setClass(context, ServiceActivity.class);
+    	return intent;
+    }
+    
+    /**
+     * 启动快捷短语页面
+     * @param context
+     * @param doctorDto
+     * @return
+     */
+    public static Intent startQuickChrasesActivity(Context context){
+    	Intent intent = new Intent();
+    	intent.setClass(context, QuickPhrasesActivity.class);
+    	return intent;
+    }
+    
+    /**
+     * 启动系统设置页面
+     * @param context
+     * @return
+     */
+    public static Intent startSystemSettingActivity(Context context, DoctorModel doctorDto, int launcherFrom){
+    	Intent intent = new Intent();
+    	intent.setClass(context, SystemSettingActivity.class);
+    	intent.putExtra(IntentTools.EXTRA_DOCTOR_INFO, doctorDto);
+    	intent.putExtra(IntentTools.EXTRA_LAUNCHER_FROM, launcherFrom);
+    	return intent;
+    }
+
+    
+    /**
+     * 返回咨询列表页面
+     * @param context
+     * @return
+     */
+    public static Intent backConsulrLiarActivity(Context context, String draft){
+    	Intent intent = new Intent();
+    	intent.putExtra(EXTRA_DRAFT, draft);
+    	return intent;
+    }
+
+    
+    /**
+     * 启动收到心意列表界面
+     * @param context
+     * @param doctorDto
+     * @return
+     */
+    public static Intent startKindlyFeelingsActivity(Context context,DoctorModel doctorDto){
+    	Intent intent = new Intent();
+    	intent.setClass(context, KindlyFeelingsActivity.class);
+    	intent.putExtra(EXTAR_DOCTORMODEL, doctorDto);
+    	return intent;
+    }
+    
+    /**
+     * 启动满意度列表界面
+     * @param context
+     * @param satisfaction
+     * @return
+     */
+    public static Intent startSatisfactionListActivity(Context context,String satisfaction){
+    	Intent intent = new Intent();
+    	intent.setClass(context, SatisfactionActivity.class);
+    	intent.putExtra(EXTRA_SATISFACTION, satisfaction);
+    	return intent;
+    }
+
+    /**
+     * 启动评价页面
+     * @param context
+     * @param bundle
+     * @return
+     */
+    public static Intent getEvaluateIntent(Context context,Bundle bundle) {
+        Intent intent = new Intent();
+        intent.putExtras(bundle);
+        intent.setClass(context, EvaluateActivity.class);
+        return intent;
+    }
+}

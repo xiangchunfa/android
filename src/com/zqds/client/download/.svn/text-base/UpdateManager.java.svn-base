@@ -1,0 +1,165 @@
+package com.qdoc.client.download;
+
+import java.util.Calendar;
+
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.content.DialogInterface.OnKeyListener;
+import android.content.Intent;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.widget.ProgressBar;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.BaseActivity;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.util.ConfigService;
+import com.qdoc.client.util.DateUtil;
+
+public class UpdateManager {
+	
+	public static final String TAG = UpdateManager.class.getSimpleName();
+
+	private static String tag = "UpdateManager";
+//	private ConfigService config;
+	private Context mContext;
+	// 返回的安装包url
+	private String apkUrl = "";
+	private String app_version_name = "";
+	private String app_explain = "";
+
+	private Dialog noticeDialog;
+
+	private Dialog downloadDialog;
+
+	/** 进度条与通知ui刷新的handler和msg常量 */
+	private ProgressBar mProgress;
+
+	private static final int DOWN_UPDATE = 1;
+
+	private static final int DOWN_OVER = 2;
+
+	private int progress;
+
+	private Thread downLoadThread;
+
+	private boolean interceptFlag = false;
+	private boolean autoUpdate;
+	private boolean isForcedUpdates = false;
+
+	public UpdateManager(Context context, boolean autoUpdate) {
+		this.mContext = context;
+		this.autoUpdate = autoUpdate;
+	}
+
+	/** 外部接口 让主Activity调用 */
+	public void checkUpdateInfo(String apkUrl, String app_version_name,String app_explain,boolean isForcedUpdates) {
+		this.app_version_name = app_version_name;
+		this.app_explain = app_explain;
+		this.apkUrl = apkUrl;
+		this.isForcedUpdates = isForcedUpdates;
+		showVersionUpdateDialog();
+	}
+	
+	private void showVersionUpdateDialog(){
+		String updateMsg = String.format(mContext.getString(R.string.str_update_msg_version),Global.APP_VERSION_NAME)+ "\n"
+							+ String.format(mContext.getString(R.string.str_update_msg),app_version_name)+ "\n"
+							+ String.format(mContext.getString(R.string.str_add_features)+ "\n", app_explain);
+		String title = mContext.getString(R.string.str_update_title);
+		String ok_text = mContext.getString(R.string.str_update);
+		String cancle_text = null;
+		if(this.isForcedUpdates){
+			//判断是否强制更新
+			cancle_text = mContext.getString(R.string.str_out_off_app);
+		}else{
+			cancle_text = mContext.getString(R.string.str_no_update);
+		}
+//		if(autoUpdate && !isForcedUpdates){
+			//判断是否应用检测更新且不是强制更新
+//			PersonalConfig.getString();
+//			if(!PersonalConfig.hasKey(PersonalConfigKey.EXTAR_VERSION_NAME)){
+//				//如果是应用检测更新，读取SharePreference文件是否记录了忽略的版本号，没有的话说明是第一次检测，立刻显示对话框
+//				showDialog(updateMsg, title, cancle_text, ok_text);
+//			}else{
+//				//如果是应用检测更新，并且读取SharePreference文件有更新时间,与当前时间比较，超过一天就显示对话框
+//				//系统当前时间
+//				long currentTime = System.currentTimeMillis();
+//				//需要显示更新对话框的时间
+//				long showDialogTime = config.getLong(config.NEXT_UPGRADE_TIME);
+//				if((currentTime-showDialogTime)>=0){
+//					showDialog(updateMsg, title, cancle_text, ok_text);
+//				}
+//			}
+		//XXX 待优化
+		showDialog(updateMsg, title, cancle_text, ok_text);
+//		}else{
+			//用户自己点击更新或者强制更新，则直接显示对话框
+//			showDialog(updateMsg, title, cancle_text, ok_text);
+//		}
+	}
+	
+	private void showDialog(String updateMsg,String title,String cancle_text,String ok_text){
+		//当前时间大于需要显示更新对话框的时间，则显示更新对话框
+		HintDlg mHintDlg = new HintDlg(mContext, updateMsg, title, cancle_text, ok_text, new OnDialogclickListener() {
+			
+			@Override
+			public void onButtonClick(int type, Dialog dialog) {
+				switch (type) {
+				case AppConstants.LEFT_BUTTON:
+					//根据是否强制更新，操作暂时不更新还是退出应用
+					if(isForcedUpdates){
+						dialog.dismiss();
+						//强制更新的情况下，不选择更新，则退出应用
+						BaseActivity.exitApplication(mContext);
+					}else{
+						if (autoUpdate) {
+							PersonalConfig.putString(PersonalConfigKey.EXTAR_VERSION_NAME, app_version_name);
+							PersonalConfig.asyncCommit();
+						}
+						dialog.dismiss();
+					}
+					break;
+				case AppConstants.RIGHT_BUTTON:
+					//立刻更新
+					// 开启更新服务UpdateService
+					// 这里为了把update更好模块化，可以传一些updateService依赖的值
+					// 如布局ID，资源ID，动态获取的标题,这里以app_name为例
+					Intent updateIntent = new Intent(mContext, UpdateService.class);updateIntent.putExtra("app_name", mContext.getResources().getString(R.string.app_name));
+					updateIntent.putExtra("apk_url", apkUrl);
+					mContext.startService(updateIntent);
+					dialog.dismiss();
+					break;
+				}
+			}
+		}, R.layout.version_update_dialog,false);
+		mHintDlg.setOnKeyListener(new OnKeyListener() {
+			
+			@Override
+			public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+				if(keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount()==0 && event.getAction()==MotionEvent.ACTION_UP){
+					//更新版本对话框弹出，用户没有点击对话框上按钮，而是点击物理返回键返回 的处理
+					//强制更新
+					if(isForcedUpdates){
+						//强制更新的情况下，不选择更新，则退出应用
+						BaseActivity.exitApplication(mContext);
+					}else if(autoUpdate){
+						//非强制更新，但属于自动更新
+						PersonalConfig.putString(PersonalConfigKey.EXTAR_VERSION_NAME, app_version_name);
+						PersonalConfig.asyncCommit();
+					}
+				}
+				return false;
+			}
+		});
+		mHintDlg.show();
+	}
+}

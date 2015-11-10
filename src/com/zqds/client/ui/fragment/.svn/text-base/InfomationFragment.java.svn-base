@@ -1,0 +1,322 @@
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.db.DatabaseService;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ArticleListDto;
+import com.qdoc.client.model.InfomationListModel;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.ArticleDetailActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.adapter.InfomationAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+
+/**
+ * create at 2015-04-09 17:25
+ * @author Antony
+ * 资讯内容页(Fragment)
+ *
+ */
+public class InfomationFragment extends BaseFragment {
+	
+	private static final String TAG = InfomationFragment.class.getSimpleName();
+	
+	private int fragment_type;//资讯类型
+	private int pageSize = 20;//一页数据条数
+	private int page;//页码
+	
+	private ArrayList<ArticleListDto> infomationList;
+	private InfomationAdapter infomationAdapter;
+	private PullRefreshView infomation_listview;
+	private PullListMaskController mViewController;
+	private List<Long> newArticleIdList;
+	private DatabaseService dataBaseService;
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_infomation, container, false);
+	}
+	
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		super.onActivityCreated(savedInstanceState);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		
+		initView(view);
+		initData();
+		initListent();
+	}
+	
+	private void initView(View view) {
+		infomation_listview = (PullRefreshView) view.findViewById(R.id.lv_article);
+	    ErrorMaskView maskView = (ErrorMaskView) view.findViewById(R.id.maskView);
+	    mViewController = new PullListMaskController(infomation_listview, maskView);
+	    mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+	}
+
+	private void initData() {
+		fragment_type = getArguments().getInt(AppConstants.INFOMATION_FRAGMENT_KEY);
+		page = 1;
+		dataBaseService = new DatabaseService(getContext());
+		newArticleIdList = dataBaseService.queryArticleId();
+		infomationList = new ArrayList<ArticleListDto>();
+		infomationAdapter = new InfomationAdapter(getActivity(), infomationList,newArticleIdList);
+		infomation_listview.setAdapter(infomationAdapter);
+		startInfomationListInitRequest(fragment_type);
+	}
+
+	private void initListent() {
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				startInfomationListInitRequest(fragment_type);
+			}
+		});
+		
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+			
+			@Override
+			public void onClickFootView() {
+				getInfomationListMoreData(fragment_type);
+			}
+		});
+		
+		mViewController.setOnRefreshListener(new OnRefreshListener() {
+			
+			@Override
+			public void onRefresh() {
+				getInfomationListRefresh(fragment_type);
+			}
+		});
+		
+		infomation_listview.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View item, int position,
+					long arg3) {
+				ArticleListDto articleDto = (ArticleListDto) parent.getAdapter().getItem(position);
+				long articleId = articleDto.getArticleId();
+				if(AppConstants.TODAY_INFOMATION==articleDto.getNewStatus() && !newArticleIdList.contains(articleId)){
+					newArticleIdList.add(articleId);
+					dataBaseService.saveNewArticleId(articleDto.getArticleId());
+					TextView tv_new_info_mark = (TextView) item.findViewById(R.id.tv_new_info_mark);
+					tv_new_info_mark.setVisibility(View.GONE);
+				}
+				int column_name = 0;
+				if(fragment_type==AppConstants.INFOMATION_POPULAR_RECOMMEND_VALUE)
+					column_name = R.string.popular_recommend;
+				else
+					column_name = R.string.qdoc_subscription;
+				if(articleDto!=null)
+					ArticleDetailActivity.startActivity(getActivity(), articleDto.getArticleId(),column_name);
+			}
+		});
+	}
+	
+	/**
+	 * 获取资讯初始数据
+	 */
+	private void startInfomationListInitRequest(int infomation_type) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getNewsArticleList(TAG, token, infomation_type, page, pageSize), 
+				JsonParserFactory.parseBaseModel(InfomationListModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode == ServerErrorCode.STATUS_SUCCESS){
+					InfomationListModel infomationListModel = (InfomationListModel) resultData;
+					if(infomationListModel!=null && infomationListModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ArticleListDto> pager = infomationListModel.getPager();
+						ArrayList<ArticleListDto> articleList = pager.getElements();
+						if(articleList!=null){
+							if(ListUtils.isEmpty(articleList)){
+								mViewController.showViewStatus(ListViewState.EMPTY_BLANK, getString(R.string.editor_busy));
+							}else if(pager.isHasNext()){
+								//有资讯信息,且还有下一页
+								initReturnData(articleList);
+								mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+							}else{
+								//有资讯信息，已经是最后一页
+								initReturnData(articleList);
+								mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+							}
+						}else{
+							mViewController.showViewStatus(ListViewState.EMPTY_BLANK, getString(R.string.editor_busy));
+						}
+					}else if(infomationListModel!=null && infomationListModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+	
+	private void initReturnData(ArrayList<ArticleListDto> articleList){
+		infomationList.clear();//先清空所有记录
+		infomationList.addAll(articleList);//再重新添加新加载的记录
+		infomationAdapter.changeData(infomationList);
+	}
+	
+	/**
+	 * 刷新资讯列表
+	 * @param infomation_type
+	 */
+	private void getInfomationListRefresh(int infomation_type){
+		page = 1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getNewsArticleList(TAG, token, infomation_type, page, pageSize), 
+				JsonParserFactory.parseBaseModel(InfomationListModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode == ServerErrorCode.STATUS_SUCCESS){
+					InfomationListModel infomationListModel = (InfomationListModel) resultData;
+					if(infomationListModel!=null && infomationListModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ArticleListDto> pager = infomationListModel.getPager();
+						ArrayList<ArticleListDto> articleList = pager.getElements();
+						if(articleList!=null){
+							if(ListUtils.isEmpty(articleList)){
+								mViewController.showViewStatus(ListViewState.EMPTY_BLANK, getString(R.string.editor_busy));
+							}else if(pager.isHasNext()){
+								//有资讯信息,且还有下一页
+								infomationList.clear();//先清空所有记录
+								infomationList.addAll(articleList);//再重新添加新加载的记录
+								infomationAdapter.changeData(infomationList);
+								mViewController.showViewStatus(ListViewState.LIST_REFRESH_COMPLETE);
+							}else{
+								//有提现记录，已经是最后一页
+								infomationList.clear();//先清空所有记录
+								infomationList.addAll(articleList);//再重新添加新加载的记录
+								infomationAdapter.changeData(infomationList);
+								mViewController.showViewStatus(ListViewState.PULL_DOWN_LIST_NO_MORE);
+							}
+						}else{
+							mViewController.showViewStatus(ListViewState.EMPTY_BLANK, getString(R.string.editor_busy));
+						}
+					}else if(infomationListModel!=null && infomationListModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+	
+	/**
+	 * 上拉刷新
+	 * @param infomation_type
+	 */
+	private void getInfomationListMoreData(int infomation_type){
+		page = page+1;
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getNewsArticleList(TAG, token, infomation_type, page, pageSize), 
+				JsonParserFactory.parseBaseModel(InfomationListModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					InfomationListModel infomationListModel = (InfomationListModel) resultData;
+					if(infomationListModel!=null && infomationListModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<ArticleListDto> pager = infomationListModel.getPager();
+						if(!ListUtils.isEmpty(pager.getElements())){
+							infomationList.addAll(pager.getElements());
+							infomationAdapter.changeData(infomationList);
+							if(pager.isHasNext())
+								mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+							else
+								mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}else{
+							//没有更多数据
+							mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(infomationListModel!=null && infomationListModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						//token已过期，跳转到登陆界面要求从新登陆
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+                    mViewController.showViewStatus(ListViewState.LIST_RETRY);
+					page = page-1;//网络出错，页面回滚到之前页码
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+}

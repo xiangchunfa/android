@@ -1,0 +1,156 @@
+package com.qdoc.client.helper;
+
+import android.app.Activity;
+import android.content.Context;
+
+import com.umeng.socialize.bean.SHARE_MEDIA;
+import com.umeng.socialize.controller.UMServiceFactory;
+import com.umeng.socialize.controller.UMSocialService;
+import com.umeng.socialize.media.SmsShareContent;
+import com.umeng.socialize.media.UMImage;
+import com.umeng.socialize.sso.SmsHandler;
+import com.umeng.socialize.sso.UMQQSsoHandler;
+import com.umeng.socialize.weixin.controller.UMWXHandler;
+
+/**
+ * FileName    : ShareService.java
+ * Description : 友盟分享服务类
+ * @Company    : 深圳市荣迪信息技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0
+ * Create Date : 2014-10-30 上午09:33:35
+ **/
+public class ShareService {
+     
+	private UMSocialService mController;
+	public static final String DESCRIPTOR = "com.umeng.share";
+	private String targetUrl;
+	
+	/**
+     *微信appID与AppSecret
+     */
+	public static final String 	WEIXIN_APP_ID="wx59cbb50af9965991";//appId
+	public static final String  WEIXIN_APP_SECRET = "c145c04fc6384b2676a65e476ad35d05";//AppSecret
+	/**
+	 * QQ开放平台appID与appKey
+	 * */
+	public static final String QQ_APP_ID="101051741";//appId
+	public static final String QQ_APP_KEY="bf6421f0c9714a71252cce865f197ea5";//appKEY
+	/**
+     * 分享标题
+     */
+	public String mTitle;
+	/**
+     * 分享图片URL
+     */
+	public String mImageURL;
+	/**
+     * 分享内容
+     */
+    public String mShareContent;
+	private Activity mContext;
+	
+	public ShareService(Activity context) {
+		// TODO Auto-generated constructor stub
+		mController = UMServiceFactory.getUMSocialService(DESCRIPTOR);
+		mContext = context; 
+	}
+	
+	/**
+	 * @Title: configUMShare
+	 * @Description: 配置友盟分享
+	 * @param shareContent:分享内容
+	 * @param title:分享标题
+	 * @param iamgeURL:分享图片URL
+	 * @return void
+	 * @throws
+	 */
+	public void configUMShare(Context context,String shareContent,String title,String imageURL) {
+		mController = UMServiceFactory.getUMSocialService(DESCRIPTOR);
+		mTitle = title;
+		mShareContent = shareContent;
+		mImageURL = imageURL;
+		// 设置基本的分享内容，每个平台使用基本分享内容
+		mController.setShareContent(shareContent);
+//		// 设置分享图片, 参数2为图片的url地址
+		mController.setShareMedia(new UMImage(context,
+				imageURL));
+		// //为了保证人人分享成功且能够在PC上正常显示，请设置website
+		// mController.setAppWebSite(SHARE_MEDIA.RENREN,"http://www.umeng.com/social");
+		// 配置SSO
+//		mController.getConfig().setSsoHandler(new SinaSsoHandler());
+//		mController.getConfig().setSsoHandler(new TencentWBSsoHandler());
+		mController.getConfig().removePlatform(SHARE_MEDIA.DOUBAN,SHARE_MEDIA.QZONE,
+				SHARE_MEDIA.RENREN,SHARE_MEDIA.SINA,SHARE_MEDIA.TENCENT);
+	}
+
+	public void configUMShare(Context context,String shareContent,String title,String imageURL,String shareUrl) {
+		targetUrl = shareUrl;
+		configUMShare(context, shareContent, title, imageURL);
+	}
+	
+	/**
+	 * @功能描述 : 分享(先选择平台)
+	 */
+	public void openShareBoard() {
+		addQQPlatform();
+		addWXPlatform();
+		addSms();
+		mController.openShare(mContext, false);
+	}
+
+
+	/**
+	 * @Title: addSms
+	 * @Description:
+	 * @throws
+	 */
+	private void addSms() {
+		// 添加短信
+		SmsHandler smsHandler = new SmsHandler();
+        SmsShareContent smsContent = new SmsShareContent();
+        // 设置分享到腾讯微博的文字内容
+        String content=mTitle+"\n"+mShareContent+"\n"+targetUrl;
+        smsContent.setShareContent(content);
+        // 设置分享到腾讯微博的多媒体内容
+        mController.setShareMedia(smsContent);
+		smsHandler.addToSocialSDK();
+	}
+
+
+
+	/**
+	 * @功能描述 : 添加QQ平台支持 QQ分享的内容， 包含四种类型， 即单纯的文字、图片、音乐、视频. 参数说明 : title, summary,
+	 *       image url中必须至少设置一个, targetUrl必须设置,网页地址必须以"http://"开头, title :
+	 *       要分享标题 ,summary : 要分享的文字概述, image url : 图片地址 [以上三个参数至少填写一个] ,targetUrl
+	 *       : 用户点击该分享时跳转到的目标地址 [必填] ( 若不填写则默认设置为友盟主页 )
+	 * @return
+	 */
+	private void addQQPlatform() {
+		// 添加QQ支持, 并且设置QQ分享内容的target url
+		UMQQSsoHandler qqSsoHandler = new UMQQSsoHandler(mContext,
+				QQ_APP_ID, QQ_APP_KEY);
+	    qqSsoHandler.setTargetUrl(targetUrl);
+	    qqSsoHandler.setTitle(mTitle);
+		qqSsoHandler.addToSocialSDK();
+	}
+
+	/**
+	 * @功能描述 : 添加微信平台分享
+	 * @return
+	 */
+	private void addWXPlatform() {
+		// wx967daebe835fbeac是你在微信开发平台注册应用的AppID, 这里需要替换成你注册的AppID
+		UMWXHandler wxHandler = new UMWXHandler(mContext,WEIXIN_APP_ID,WEIXIN_APP_SECRET);
+		wxHandler.setTargetUrl(targetUrl);
+		wxHandler.setTitle(mTitle);
+		wxHandler.addToSocialSDK();
+
+		// 支持微信朋友圈
+		UMWXHandler wxCircleHandler = new UMWXHandler(mContext,WEIXIN_APP_ID,WEIXIN_APP_SECRET);
+		wxCircleHandler.setToCircle(true);
+		wxCircleHandler.setTargetUrl(targetUrl);
+		wxCircleHandler.setTitle(mTitle);
+		wxCircleHandler.addToSocialSDK();
+	}
+}

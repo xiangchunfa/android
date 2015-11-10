@@ -1,0 +1,447 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextUtils;
+import android.text.style.AbsoluteSizeSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.Window;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BankDtoDataModel;
+import com.qdoc.client.model.BankInfoDtoModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.DoctorWithdrawShowDto;
+import com.qdoc.client.model.GainDtoDataModel;
+import com.qdoc.client.model.GainDtoModel;
+import com.qdoc.client.model.ShowWithdrawalDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.BankAccountEditActivitiy;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MyBenefitActivity;
+import com.qdoc.client.ui.MyBenefitDetailActivity;
+import com.qdoc.client.ui.MyWithdrawActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.DisplayUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ *         
+ *         update at 2014-12-18 by antony
+ *         修改收益提现界面
+ */
+public class MyBenefitFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = MyBenefitFragment.class.getSimpleName();
+    
+/*
+    private TitleBar mTitleBar;
+    private ListView mListView;
+    private TextView mPickmoney;
+    private BenefitListAdapter mAdapter;
+    private ArrayList<MessageModel> titleList = new ArrayList<MessageModel>();
+    private String accountBanlace = ""; 
+    private int doctorWithDrawCount = 0;
+    private boolean isLoadingFinish = false;//判断数据是否加载完成，未加载完成，用户不能点击
+*/
+    private TitleBar mTitleBar;
+    private TextView rightTitle;
+    //private TextView mPickmoney;
+    private TextView available_money_tv;
+    private TextView total_money_tv;
+    private TextView withdraw_cash_tv;
+    private String available_money;
+    private String total_money;
+    private int doctorWithDrawCount = 0;
+    private boolean isLoadingFinish = false;//判断数据是否加载完成，未加载完成，用户不能点击
+    private DoctorModel doctorModel;
+    
+    
+    public static MyBenefitFragment newInstance(Bundle bundle) {
+        final MyBenefitFragment fragment = new MyBenefitFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        //return inflater.inflate(R.layout.fragment_benefit_list, container, false);
+    	return inflater.inflate(R.layout.fragment_mybenefit, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+    	/*
+        mAdapter = new BenefitListAdapter(getContext());
+        mListView.setAdapter(mAdapter);
+        initData();
+        */
+    	initData();
+    }
+
+    private void initView(View view) {
+    	/*
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.aboutus_benefit, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+                getResources().getColor(R.color.titlebar_bg));
+        mListView = (ListView) view.findViewById(R.id.listView);
+        mPickmoney=(TextView) view.findViewById(R.id.pickmoney);
+        mPickmoney.setVisibility(View.GONE);
+        */
+    	mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+    	mTitleBar.setTitleInfoWithRightText(R.string.aboutus_benefit, R.drawable.icon_back, R.string.withdraw_cash_record, actionBarLeftBtnListener, actionBarRightListener, getResources().getColor(R.color.titlebar_bg));
+    	rightTitle = (TextView) view.findViewById(R.id.titlebar_righttitle);
+    	//根据屏幕密度来显示右边按钮文字的大小
+    	if(320>DisplayUtils.getDensityDpi(getContext())){
+    		//小于320证明是hdpi/mdpi/ldpi
+    		rightTitle.setTextSize(13);
+    	}else{
+    		//大于等于320证明是xhdpi/xxhdpi
+    		rightTitle.setTextSize(15);
+    	}
+    	rightTitle.setVisibility(View.GONE);
+    	LogUtils.d(TAG, "---Display:"+DisplayUtils.getDensityDpi(getContext()));
+    	//mPickmoney=(TextView) view.findViewById(R.id.pickmoney);
+        //mPickmoney.setVisibility(View.GONE);
+        available_money_tv = (TextView) view.findViewById(R.id.fragment_mybenefit_available_money);
+        available_money_tv.setText(R.string.available_money);
+        total_money_tv = (TextView) view.findViewById(R.id.fragment_mybenefit_total_money);
+        total_money_tv.setText(R.string.total_money);
+        withdraw_cash_tv = (TextView) view.findViewById(R.id.fragment_mybenefit_withdraw_cash_tv);
+    }
+
+    private void initData() {
+    	/*
+        String[] mTabTitles = getResources().getStringArray(R.array.benefit_default_list_name);
+        TypedArray drawables = getResources().obtainTypedArray(R.array.benefit_default_list_icon);
+        int size = mTabTitles.length;
+        for (int i = 0; i < size; i++) {
+            MessageModel model = new MessageModel();
+            model.setIcon(drawables.getResourceId(i, 0));
+            model.setName(mTabTitles[i]);
+            titleList.add(model);
+        }
+        mAdapter.addListData(titleList,doctorWithDrawCount);
+        */
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            final MyBenefitActivity msgActivity = (MyBenefitActivity) getActivity();
+            if (msgActivity == null) {
+                LogUtils.d(TAG, "msgActivity == null!!!!");
+                return;
+            }
+            msgActivity.finish();
+        }
+    };
+    
+    OnClickListener actionBarRightListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			if(doctorWithDrawCount>0){
+				MyWithdrawActivity.startActivity(getActivity());
+			}
+		}
+	};
+
+    private void initListener() {
+        // TODO Auto-generated method stub
+        final MyBenefitActivity msgActivity = (MyBenefitActivity) getActivity();
+        if (msgActivity == null) {
+            LogUtils.d(TAG, "msgActivity == null!!!!");
+            return;
+        }
+        //mPickmoney.setOnClickListener(this);
+        withdraw_cash_tv.setOnClickListener(this);
+        /*
+        mListView.setOnItemClickListener(new OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // TODO Auto-generated method stub
+                switch (position) {
+                    case 0:
+                    	if(doctorWithDrawCount>0)
+                    		 //msgActivity.switchToMyWithdrawFragment();
+                    		MyWithdrawActivity.startActivity(msgActivity);
+                        break;
+                    case 1:
+                    	if(!NetworkUtils.isOnline(QdocApplication.getInstance())){
+                    		ToastUtils.ToastShort(msgActivity, "网络不可用");
+                    		return;
+                    	}
+                    	if(isLoadingFinish){
+                        	String maxMoney = titleList.get(position).getSize()==null?"0":titleList.get(position).getSize();
+                        	MyBenefitDetailActivity.startActivity(msgActivity,maxMoney);
+                    	}
+                    	//msgActivity.switchToMyBenefitDetailFragment(titleList.get(position).getSize());
+                        break;
+                }
+            }
+        });
+        */
+    }
+
+    public void startHttpRequest() {
+    	getMyBenefitRequest();
+    }
+
+    private void getMyBenefitRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+
+        HttpTaskManager.startStringRequest(DataRequestUtils.getShowBenefitInfoRequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(GainDtoDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final GainDtoDataModel dataModel = (GainDtoDataModel) resultData;
+                            //初始化提现流水记录条数
+                            doctorWithDrawCount = dataModel.getDoctorWithDrawCount();
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	if ((dataModel != null) && (dataModel.getGainDto() != null)) {
+                            		/*
+                            		 GainDtoModel doctorDto = dataModel.getGainDto();
+                            		 String value1 = String.valueOf(doctorDto.getTotalFinance());
+                            		 String value2 = String.valueOf(doctorDto.getBufferFinance());
+                            		 accountBanlace=value2;
+                            		 String[] value = { value1, value2};
+                            		 String[] mTabTitles = getResources().getStringArray(R.array.benefit_default_list_name);
+                            		 TypedArray drawables = getResources().obtainTypedArray(R.array.benefit_default_list_icon);
+                            		 titleList.clear();
+                            		 int size = mTabTitles.length;
+                            		 for (int i = 0; i < size; i++) {
+                            			 MessageModel model = new MessageModel();
+                            			 model.setIcon(drawables.getResourceId(i, 0));
+                            			 model.setName(mTabTitles[i]);
+                            			 model.setSize(value[i]);
+
+                            			 titleList.add(model);
+                            		 }
+                            		  mAdapter.addListData(titleList,dataModel.getDoctorWithDrawCount());
+                            		  */
+                            		GainDtoModel doctorDto = dataModel.getGainDto();
+                            		//获取可提现金额和总收益
+                            		available_money = String.valueOf(doctorDto.getBufferFinance());
+                            		total_money = String.valueOf(doctorDto.getTotalFinance());
+                            		//为了方便定位收益数字在字符串的位置而拼接字符串
+                            		String available_money_spinner_text = "￥"+available_money;
+                            		String total_money_spinner_text = "￥"+total_money;
+                            		String available_money_resoure_str = getString(R.string.available_money)+" ";
+                            		String total_money_resoure_str = " "+getString(R.string.total_money);
+                            		SpannableString available_money_spinner = new SpannableString(available_money_resoure_str+available_money_spinner_text);
+                            		SpannableString total_money_spinner = new SpannableString(total_money_spinner_text+total_money_resoure_str);
+                            		//将收益数字设置大字体
+                            		available_money_spinner.setSpan(new AbsoluteSizeSpan(23,true), available_money_resoure_str.length(), available_money_spinner.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            		total_money_spinner.setSpan(new AbsoluteSizeSpan(23,true), 0, total_money_spinner_text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            		//最终显示
+                            		available_money_tv.setText(available_money_spinner);
+                            		total_money_tv.setText(total_money_spinner);
+                            	} else {
+                            		
+                            	}
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                        if(doctorWithDrawCount<=0)
+                        	rightTitle.setVisibility(View.GONE);
+                        else
+                        	rightTitle.setVisibility(View.VISIBLE);
+                        isLoadingFinish = true;
+                    }
+                });
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+
+    @Override
+    public void onClick(View v) {
+       switch (v.getId()) {
+       case R.id.pickmoney:
+    	   /*
+	     AboutmeActivity activity = (AboutmeActivity) getActivity();
+	     activity.switchToMyBenefitDetailFragment();
+
+         MyBenefitDetailFragment fragment = (MyBenefitDetailFragment) activity
+                 .getCurrentFragment(MyBenefitDetailFragment.TAG);
+         fragment.updateBalance(accountBanlace);
+		*/
+    	   break;
+       case R.id.fragment_mybenefit_withdraw_cash_tv:
+    	   if(!NetworkUtils.isOnline(QdocApplication.getInstance())){
+    		   ToastUtils.ToastShort(getActivity(), "网络不可用");
+    		   return;
+    	   }
+    	   if(isLoadingFinish&&null!=doctorModel){
+    		   //请求服务器，看医生是否保存了银行信息
+    		   getDoctorWithdrawInfo();
+    	   }
+    	   break;
+	}
+
+    }
+    
+    /**
+     * 获取医生银行信息
+     */
+    private void getDoctorWithdrawInfo(){
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	Global.progressDialog = ProgressDialog.show(getActivity(), null,
+        		getActivity().getString(R.string.aboutus_extract), true,
+					true);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getDoctorWithdrawInfoParam(TAG, token,AppConstants.DEVICE_TYPE), 
+    			JsonParserFactory.parseBaseModel(ShowWithdrawalDataModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					final ShowWithdrawalDataModel showWithdrawalDataModel = (ShowWithdrawalDataModel) resultData;
+					if(showWithdrawalDataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS){
+						DoctorWithdrawShowDto doctorWithdrawShowDto = showWithdrawalDataModel.getDoctorWithdraw();
+						if(!TextUtils.isEmpty(doctorWithdrawShowDto.getAccountNo()) && !TextUtils.isEmpty(doctorWithdrawShowDto.getBankName()) && !TextUtils.isEmpty(doctorWithdrawShowDto.getDoctorName())){
+							//已经绑定银行卡信息，跳转到提现界面
+							String maxMoney = available_money==null?"0":available_money;
+				        	MyBenefitDetailActivity.startActivity(getActivity(),maxMoney,total_money,showWithdrawalDataModel,doctorModel);
+						}else{
+							//没绑定银行卡信息，提示用户绑定
+							showBindingCardDialog(showWithdrawalDataModel);
+						}
+					}else if(showWithdrawalDataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						//token失效，需要从新登陆
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext(), showWithdrawalDataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_exception_try_again_later);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+    
+    private void showBindingCardDialog(final ShowWithdrawalDataModel showWithdrawalDataModel){
+    	final AlertDialog bindingCardDialog = new AlertDialog.Builder(getContext()).create();
+    	bindingCardDialog.show();
+    	Window mWindow = bindingCardDialog.getWindow();
+    	mWindow.setContentView(R.layout.binding_card_tips_dialog);
+    	ImageView close_dialog = (ImageView) mWindow.findViewById(R.id.close_dialog);
+    	TextView next_time = (TextView) mWindow.findViewById(R.id.next_time);
+    	TextView binding_card_now = (TextView) mWindow.findViewById(R.id.binding_card_now);
+    	close_dialog.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				bindingCardDialog.dismiss();
+			}
+		});
+    	next_time.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				bindingCardDialog.dismiss();
+			}
+		});
+    	binding_card_now.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				//首先初始化BankDtoDataModel
+				BankDtoDataModel bankDtoDataModel = new BankDtoDataModel();
+				bankDtoDataModel.setBankDto(showWithdrawalDataModel.getBankDto());
+				BankInfoDtoModel bankInfoDtoModel = new BankInfoDtoModel();
+				DoctorWithdrawShowDto doctorWithdrawShowDto = showWithdrawalDataModel.getDoctorWithdraw();
+				bankInfoDtoModel.setAccountNo(doctorWithdrawShowDto.getAccountNo());
+				bankInfoDtoModel.setBankName(doctorWithdrawShowDto.getBankName());
+				bankInfoDtoModel.setName(doctorWithdrawShowDto.getDoctorName());
+				bankDtoDataModel.setBankInfo(bankInfoDtoModel);
+				//跳转到绑定银行卡界面
+				BankAccountEditActivitiy.startActivity(getContext(), bankDtoDataModel, doctorModel);
+				bindingCardDialog.dismiss();
+			}
+		});
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    	startHttpRequest();
+    }
+    
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+    	HttpTaskManager.stop(TAG);
+    }
+
+	/**
+	 * @param doctorModel the doctorModel to set
+	 */
+	public void setDoctorModel(DoctorModel doctorModel) {
+		this.doctorModel = doctorModel;
+	}
+}

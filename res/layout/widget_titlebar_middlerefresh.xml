@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    
+    <TextView
+        android:id="@+id/titlebar_title"
+        style="@style/Titlebar.Title"
+        android:layout_centerInParent="true"
+        android:ellipsize="end"
+        android:lines="1"
+        android:singleLine="true" />
+    
+    <ImageView 
+        android:id="@+id/titlebar_title_middle_refresh_iv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_toRightOf="@id/titlebar_title"
+        android:layout_centerVertical="true"
+        android:contentDescription="@null"/>
+
+    <ImageView
+        android:id="@+id/titlebar_leftbutton"
+        style="@style/Titlebar.Button"
+        android:layout_alignParentLeft="true"
+        android:contentDescription="@string/app_name"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/titlebar_righttitle"
+        style="@style/Titlebar.SmallTitle"
+        android:layout_alignParentRight="true"
+        android:ellipsize="end"
+        android:lines="1"
+        android:paddingRight="20dp"
+        android:singleLine="true"
+        android:visibility="invisible" />
+    
+    <CheckBox 
+        android:id="@+id/titlebar_right_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="10dp"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:button="@null"
+        android:checked="true"
+        android:layout_alignBaseline="@id/titlebar_title"
+        android:background="@drawable/ring_checkbox_selector"/>
+
+</RelativeLayout>

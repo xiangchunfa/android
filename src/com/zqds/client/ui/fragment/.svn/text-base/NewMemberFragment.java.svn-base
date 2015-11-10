@@ -1,0 +1,154 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import android.content.res.TypedArray;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ListView;
+import com.qdoc.client.R;
+import com.qdoc.client.model.MessageModel;
+import com.qdoc.client.ui.NewMemberActivity;
+import com.qdoc.client.ui.NewMemberDetailActivity;
+import com.qdoc.client.ui.adapter.MessageListAdapter;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ */
+public class NewMemberFragment extends BaseFragment implements OnClickListener {
+    /**
+     * TAG
+     */
+    public static final String TAG = NewMemberFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private ListView mListView;
+
+    /**
+     * params
+     */
+    private MessageListAdapter mAdapter;
+    private ArrayList<MessageModel> titleList = new ArrayList<MessageModel>();
+
+    public static NewMemberFragment newInstance(Bundle bundle) {
+        final NewMemberFragment fragment = new NewMemberFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_newmember_list, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initListener();
+        initParams();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+        mAdapter = new MessageListAdapter(getContext());
+        mListView.setAdapter(mAdapter);
+
+        initData();
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.aboutus_newmember_title, R.drawable.icon_back, 0, actionBarLeftBtnListener,
+                null, getResources().getColor(R.color.titlebar_bg));
+
+        mListView = (ListView) view.findViewById(R.id.listView);
+    }
+
+    private void initData() {
+        String[] mTabTitles = getResources().getStringArray(R.array.newmember_default_list_name);
+        TypedArray drawables = getResources().obtainTypedArray(R.array.newmember_default_list_icon);
+
+        int size = mTabTitles.length;
+        for (int i = 0; i < size; i++) {
+            MessageModel model = new MessageModel();
+            model.setIcon(drawables.getResourceId(i, 0));
+            model.setName(mTabTitles[i]);
+
+            titleList.add(model);
+        }
+
+        mAdapter.addListData(titleList);
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            final NewMemberActivity msgActivity = (NewMemberActivity) getActivity();
+            if (msgActivity == null) {
+                LogUtils.d(TAG, "msgActivity == null!!!!");
+                return;
+            }
+            msgActivity.finish();
+            //msgActivity.switchToAboutMeFragment();
+        }
+    };
+
+    private void initListener() {
+        // TODO Auto-generated method stub
+        final NewMemberActivity msgActivity = (NewMemberActivity) getActivity();
+        if (msgActivity == null) {
+            LogUtils.d(TAG, "msgActivity == null!!!!");
+            return;
+        }
+
+        mListView.setOnItemClickListener(new OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // TODO Auto-generated method stub
+                switch (position) {
+                    case 0:
+                        //msgActivity.switchToNewMemberDetailFrament();
+                    	NewMemberDetailActivity.startActivity(msgActivity);
+                        break;
+                }
+            }
+        });
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+
+    @Override
+    public void onClick(View v) {
+        // TODO Auto-generated method stub
+
+    }
+}

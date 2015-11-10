@@ -1,0 +1,92 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class AdvanceActivitiesDtoModel implements Serializable{
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2894125497187662244L;
+	
+	public String activityName;//活动名称：insurance：保险活动;gifbag：礼包活动;activityfans：粉丝激励活动;newyear：新年摇一摇活动
+	public String title;//活动标题
+	public String startDate;//活动起始日期
+	public String endDate;//活动起始日期
+	public Integer activityType;//活动类型0：APP打开 1：浏览器打开
+	public String activityUrl;//活动链接地址，只有当activityType=1是才需要
+    public String activityPicUrl;//活动大图片
+    public Integer status;//活动通用状态0：进行中-1：未启用-2：未开始-3：已结束
+    public Integer orderNo;//活动排放顺序
+    public String statusPicUrl;//活动状态图片
+    public String state;//各自活动的业务状态
+    
+	public String getActivityName() {
+		return activityName;
+	}
+	public void setActivityName(String activityName) {
+		this.activityName = activityName;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public void setTitle(String title) {
+		this.title = title;
+	}
+	public String getStartDate() {
+		return startDate;
+	}
+	public void setStartDate(String startDate) {
+		this.startDate = startDate;
+	}
+	public String getEndDate() {
+		return endDate;
+	}
+	public void setEndDate(String endDate) {
+		this.endDate = endDate;
+	}
+	public Integer getActivityType() {
+		return activityType;
+	}
+	public void setActivityType(Integer activityType) {
+		this.activityType = activityType;
+	}
+	public String getActivityUrl() {
+		return activityUrl;
+	}
+	public void setActivityUrl(String activityUrl) {
+		this.activityUrl = activityUrl;
+	}
+	public String getActivityPicUrl() {
+		return activityPicUrl;
+	}
+	public void setActivityPicUrl(String activityPicUrl) {
+		this.activityPicUrl = activityPicUrl;
+	}
+	public Integer getStatus() {
+		return status;
+	}
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
+	public Integer getOrderNo() {
+		return orderNo;
+	}
+	public void setOrderNo(Integer orderNo) {
+		this.orderNo = orderNo;
+	}
+	public String getStatusPicUrl() {
+		return statusPicUrl;
+	}
+	public void setStatusPicUrl(String statusPicUrl) {
+		this.statusPicUrl = statusPicUrl;
+	}
+	public String getState() {
+		return state;
+	}
+	public void setState(String state) {
+		this.state = state;
+	}
+    
+    
+}

@@ -1,0 +1,107 @@
+/*
+ * ConsultActivity.java
+ * classes : com.qdoc.client.ui.ConsultActivity
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-7-8 下午11:02:48
+ */
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+
+import com.qdoc.client.R;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.fragment.InsuranceGetFragment;
+import com.qdoc.client.ui.fragment.InsuranceNoGetFragment;
+import com.qdoc.client.util.IntentTools;
+import com.tencent.android.tpush.XGPushManager;
+
+/**
+ * 保险状态
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-29 下午11:02:48
+ */
+public class InsuranceDetailActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = InsuranceDetailActivity.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private BaseFragment mInsuranceGetFragment;
+    private BaseFragment mInsuranceNoGetFragment;
+    /**
+     *  params
+     */
+    private int laucherFrom;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_base);
+
+        parseIntent();
+        initView();
+        initListener();
+    }
+
+    public void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        XGPushManager.onActivityStoped(this);
+    }
+
+    private void parseIntent() {
+        // startConsultListRequest();
+        Bundle cacheBundle = getIntent().getExtras();
+        if (cacheBundle != null) {
+            laucherFrom = cacheBundle.getInt(IntentTools.EXTRA_LAUNCHER_FROM);
+        }
+    }
+
+    @Override
+    protected void initView() {
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        if(laucherFrom==AppConstants.GET_FAIL||laucherFrom==AppConstants.NO_GET||laucherFrom==AppConstants.NO_QUALIFICATION){
+        	mInsuranceNoGetFragment = InsuranceNoGetFragment.newInstance(null);
+        	addContent(R.id.fragment_base,mInsuranceNoGetFragment, InsuranceNoGetFragment.TAG);
+        }else if(laucherFrom==AppConstants.NORMAL||laucherFrom==AppConstants.PAST_DUE||laucherFrom==AppConstants.EXPIREDE){
+        	mInsuranceGetFragment = InsuranceGetFragment.newInstance(null);
+        	addContent(R.id.fragment_base,mInsuranceGetFragment, InsuranceGetFragment.TAG);
+        }
+        ft.commitAllowingStateLoss();
+    }
+
+    @Override
+    protected void initListener() {
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+    public static void startActivity(Context context, int from) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.getInsuranceDetailIntent(context, from));
+    }
+    
+    public void switchToInsuranceGetFragment(String tag) {
+    	mInsuranceGetFragment = InsuranceGetFragment.newInstance(null);
+        replaceContent(R.id.fragment_base, mInsuranceGetFragment, tag);
+    }
+ 
+}

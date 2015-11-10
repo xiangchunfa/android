@@ -1,0 +1,239 @@
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ListSatisfactionModel;
+import com.qdoc.client.model.Pagination;
+import com.qdoc.client.model.SatisfactionSurveyListDto;
+import com.qdoc.client.model.UserKindnessDto;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.adapter.SatisfactionListAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView.OnClickFootViewListener;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.ToastUtils;
+
+public class SatisfactionFragment extends BaseFragment {
+	
+	public static final String TAG = SatisfactionFragment.class.getSimpleName();
+	
+	private TitleBar mTitleBar;
+	private LinearLayout ll_satisfaction_top_layout;
+	private TextView tv_high_praise_rate;
+	private TextView tv_appraisal_count;
+	private PullRefreshView satisfaction_listview;
+	private PullListMaskController mViewController;
+	
+	private SatisfactionListAdapter satisfactionAdapter;
+	private List<SatisfactionSurveyListDto> global_satisfactionList;
+	private int currentPage;
+	private int LIMIT = 20;
+	private String token;
+	private String high_praise_rate;
+	
+	public static SatisfactionFragment getNewInstance(Bundle bundle){
+		SatisfactionFragment satisfactionFragment = new SatisfactionFragment();
+		satisfactionFragment.setArguments(bundle);
+		return satisfactionFragment;
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_satisfaction, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		
+		initView(view);
+		initData();
+		initListener();
+		
+	}
+	
+	private void initView(View view){
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.favorable_comment, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+		ll_satisfaction_top_layout = (LinearLayout) view.findViewById(R.id.ll_satisfaction_top_layout);
+		tv_high_praise_rate = (TextView) view.findViewById(R.id.tv_high_praise_rate);
+		tv_appraisal_count = (TextView) view.findViewById(R.id.tv_appraisal_count);
+		satisfaction_listview = (PullRefreshView) view.findViewById(R.id.listView);
+		// 自定义emptyview
+		ErrorMaskView maskView = (ErrorMaskView)view.findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(satisfaction_listview, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+	}
+	
+	private void initData(){
+		high_praise_rate = getArguments().getString(IntentTools.EXTRA_SATISFACTION);
+		global_satisfactionList = new ArrayList<SatisfactionSurveyListDto>();
+		satisfactionAdapter = new SatisfactionListAdapter(getContext(), global_satisfactionList);
+		satisfaction_listview.setAdapter(satisfactionAdapter);
+		getSatisfactionListInit();
+	}
+	
+	private void initListener(){
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				getSatisfactionListInit();
+			}
+		});
+		
+		mViewController.setOnLoadMoreListener(new OnClickFootViewListener() {
+			
+			@Override
+			public void onClickFootView() {
+				getSatisfactionListMore();
+			}
+		});
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			if(getActivity()==null)
+				return;
+			getActivity().finish();
+		}
+	};
+	
+	private void getSatisfactionListInit(){
+		currentPage = 1;
+		if(token==null)
+			token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getSatisfactionList(TAG, token, currentPage, LIMIT), 
+				JsonParserFactory.parseBaseModel(ListSatisfactionModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(ServerErrorCode.STATUS_SUCCESS==resultCode){
+					ListSatisfactionModel listSatisfactionModel = (ListSatisfactionModel) resultData;
+					if(null!=listSatisfactionModel && listSatisfactionModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						Pagination<SatisfactionSurveyListDto> pager = listSatisfactionModel.getPager();
+						if(pager!=null){
+							tv_high_praise_rate.setText(high_praise_rate);
+							tv_appraisal_count.setText(String.valueOf(pager.getTotalCount()));
+							List<SatisfactionSurveyListDto> satisfactionListInit = pager.getElements();
+							if(ListUtils.isEmpty(satisfactionListInit)){
+								mViewController.showViewStatus(ListViewState.EMPTY_USER_DEFINED, getString(R.string.no_satisfaction),R.drawable.empty_satisfaction_icon);
+							}else if(pager.isHasNext()){
+								//有下一页
+								processInitResultData(satisfactionListInit, ListViewState.LIST_NORMAL_HAS_MORE);
+							}else{
+								//没有下一页
+								processInitResultData(satisfactionListInit, ListViewState.LIST_NO_MORE);
+							}
+						}else{
+							mViewController.showViewStatus(ListViewState.EMPTY_USER_DEFINED, getString(R.string.no_satisfaction),R.drawable.empty_satisfaction_icon);
+						}
+					}else if(null!=listSatisfactionModel && listSatisfactionModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getContext());
+					}else{
+						ToastUtils.ToastShort(getContext(), listSatisfactionModel.getErrorMsg());
+					}
+				}else{
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void processInitResultData(List<SatisfactionSurveyListDto> satisfactionList,ListViewState listviewState){
+		ll_satisfaction_top_layout.setVisibility(View.VISIBLE);
+		global_satisfactionList.clear();
+		global_satisfactionList = satisfactionList;
+		satisfactionAdapter.changeData(global_satisfactionList);
+		mViewController.showViewStatus(listviewState);
+	}
+	
+	private void getSatisfactionListMore(){
+		currentPage = currentPage + 1;
+		if(token==null)
+			token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getSatisfactionList(TAG, token, currentPage, LIMIT), 
+				JsonParserFactory.parseBaseModel(ListSatisfactionModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(ServerErrorCode.STATUS_SUCCESS==resultCode){
+					ListSatisfactionModel listSatisfactionModel = (ListSatisfactionModel) resultData;
+					if(listSatisfactionModel!=null && ServerErrorCode.INTERFACE_SUCCESS==listSatisfactionModel.getState()){
+						Pagination<SatisfactionSurveyListDto> pager = listSatisfactionModel.getPager();
+						if(pager!=null){
+							ArrayList<SatisfactionSurveyListDto> satisfactionListMore =  pager.getElements();
+							if(ListUtils.isEmpty(satisfactionListMore)){
+								mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+							}else if(pager.isHasNext()){
+								processMoreResultData(satisfactionListMore, ListViewState.LIST_NORMAL_HAS_MORE);
+							}else{
+								processMoreResultData(satisfactionListMore, ListViewState.LIST_NO_MORE);
+							}
+						}else{
+							 mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+						}
+					}else if(listSatisfactionModel!=null && ServerErrorCode.TOKEN_INVALID==listSatisfactionModel.getState()){
+						LoginActivity.startActivity(getContext());
+					}else{
+						ToastUtils.ToastShort(getContext(), listSatisfactionModel.getErrorMsg());
+						mViewController.showViewStatus(ListViewState.LIST_NORMAL_HAS_MORE);
+						currentPage = currentPage -1;
+					}
+				}else{
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+					//请求失败，页码回滚
+					currentPage = currentPage - 1;
+					mViewController.showViewStatus(ListViewState.LIST_RETRY);
+				}
+			}
+		});
+	}
+	
+	private void processMoreResultData(List<SatisfactionSurveyListDto> satisfactionList,ListViewState listviewState){
+		global_satisfactionList.addAll(satisfactionList);
+		satisfactionAdapter.changeData(global_satisfactionList);
+		mViewController.showViewStatus(listviewState);
+	}
+	
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+}

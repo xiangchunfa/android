@@ -1,0 +1,111 @@
+/*
+ * MessageListAdapter.java
+ * classes : com.qdoc.client.ui.adapter.MessageListAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午5:57:58
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.WuserDtoModel;
+import com.qdoc.client.system.ImageLoaderHelper;
+
+/**
+ * com.qdoc.client.ui.adapter.MessageListAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午5:57:58
+ */
+public class FlowerListAdapter extends BaseAdapter {
+    /**000000000000
+     * TAG
+     */
+    private static final String TAG = FlowerListAdapter.class.getSimpleName();
+
+    /**
+     * params
+     */
+    private ArrayList<ElementsModel> mElementsList = new ArrayList<ElementsModel>();
+    private LayoutInflater inflater;
+    private Context mContext;
+
+    public FlowerListAdapter(Context context) {
+        mContext = context;
+        inflater = LayoutInflater.from(context);
+    }
+
+    public void addListData(ArrayList<ElementsModel> list) {
+        mElementsList.clear();
+        mElementsList.addAll(list);
+        notifyDataSetChanged();
+    }
+
+    public void addMoreListData(ArrayList<ElementsModel> list) {
+        mElementsList.addAll(list);
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public int getCount() {
+        return mElementsList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return mElementsList.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+    
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder;
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.listitem_flower, null);
+            holder = new ViewHolder();
+            holder.icon_head = (ImageView) convertView.findViewById(R.id.icon_head);
+            holder.tv_name = (TextView) convertView.findViewById(R.id.name);
+            holder.tv_time = (TextView) convertView.findViewById(R.id.time);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        if (getCount() > position) {
+            final ElementsModel model = mElementsList.get(position);
+            if (model != null) {
+                WuserDtoModel userModel = model.getwUserDto();
+                if (userModel != null) {
+                    holder.tv_name.setText(userModel.getNicknameStr()+mContext.getResources().getString(R.string.send_flowers));
+                    holder.tv_time.setText(mContext.getResources().getString(R.string.send_time,
+                            TextUtils.isEmpty(model.getCreateTime()) ? "未知时间" : model.getCreateTime()));
+                    ImageLoaderHelper.getInstance(mContext).displayImage(userModel.getHeadimgurl(), holder.icon_head, R.drawable.bank_owener_default_header);
+                }
+            }
+        }
+        return convertView;
+    }
+
+    private static class ViewHolder {
+        private ImageView icon_head;
+        private TextView tv_name;
+        private TextView tv_time;
+
+    }
+}

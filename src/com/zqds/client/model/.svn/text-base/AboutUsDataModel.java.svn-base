@@ -1,0 +1,28 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class AboutUsDataModel extends AbstractBaseModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6313487458642095111L;
+	
+	private AboutUsInfoDto aboutUsInfoDto;
+
+	/**
+	 * @return the aboutUsInfoDto
+	 */
+	public AboutUsInfoDto getAboutUsInfoDto() {
+		return aboutUsInfoDto;
+	}
+
+	/**
+	 * @param aboutUsInfoDto the aboutUsInfoDto to set
+	 */
+	public void setAboutUsInfoDto(AboutUsInfoDto aboutUsInfoDto) {
+		this.aboutUsInfoDto = aboutUsInfoDto;
+	}
+
+}

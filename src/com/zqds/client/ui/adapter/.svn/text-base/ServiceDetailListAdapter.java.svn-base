@@ -1,0 +1,325 @@
+/*
+ * ConsultAdapter.java
+ * classes : com.qdoc.client.ui.adapter.ConsultAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午1:56:20
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import android.content.Context;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ImageDtoModel;
+import com.qdoc.client.model.SystemMessageDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.AdviceAndLeaveMessgeActivity;
+import com.qdoc.client.ui.ConsultDetailActivity;
+import com.qdoc.client.ui.EvaluateActivity;
+import com.qdoc.client.ui.ImageDetailActivity;
+import com.qdoc.client.ui.view.CopyPopWindow;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.FaceConversionUtil;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.TimeUtils;
+import com.qdoc.client.util.ViewUtils;
+
+/**
+ * FileName    : ServiceDetailListAdapter.java
+ * Description : 输入法工具类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-3-23 
+ **/
+public class ServiceDetailListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = ServiceDetailListAdapter.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private static final int TYPE_MAX_COUNT = 2;
+    private ListView mListView;
+    
+    /**
+     * params
+     */
+    private final LayoutInflater mInflater;
+    private List<SystemMessageDto> mElementsList;
+    private Context mContext;
+    private DetailItemOnclickListener mListener;
+	private String preTime;//上一个时间
+	private SystemMessageDto dto;//小可默认提示信息
+    private CopyPopWindow mPopWindow;
+    public String docHeadImg;//医生头部图像
+    private boolean loadOrder = true;//getView的加载顺序 true：代表顺序加载，false：代表倒序加载
+    private boolean loadFlag = true;//对比标志，true：可以对比，false：不用对比
+    
+	
+    public ServiceDetailListAdapter(Context context,DetailItemOnclickListener detailItemOnclickListener,ListView listView,CopyPopWindow popWindow) {
+        mContext = context;
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mListener = detailItemOnclickListener;
+        mElementsList = new ArrayList<SystemMessageDto>();
+        dto = new SystemMessageDto();
+        dto.setContent(mContext.getResources().getString(R.string.xiaoke_default_msg));
+        dto.setMsgType(AppConstants.TEXT);
+        dto.setType(AppConstants.SERVICE_TYPE_SYSTEM);
+        mListView = listView;
+        mPopWindow = popWindow;
+    }
+
+	public void setListData(List<SystemMessageDto> elementsList) {
+		Collections.reverse(elementsList);
+		mElementsList = elementsList;
+        mElementsList.add(0,dto);
+        notifyDataSetChanged();
+        mListView.setSelection(mListView.getCount() - 1);
+        loadFlag = true;
+    }
+
+    public void addMoreListData(final List<SystemMessageDto> elementsList) {
+    	loadFlag = true;
+		Collections.reverse(elementsList);
+		mElementsList.remove(0);
+		elementsList.add(0, dto);
+		mElementsList.addAll(0,elementsList);
+        notifyDataSetChanged();
+        mListView.post(new Runnable() {
+	          @Override
+	          public void run() {
+	        	    mListView.setSelection(elementsList.size());
+	          }
+	    });
+    }
+    
+    /**
+     * 添加咨询消息
+     * @param model:咨询消息
+     */
+    public void addData(SystemMessageDto model) {
+		mElementsList.add(model);
+        notifyDataSetChanged();
+        mListView.setSelection(mListView.getCount() - 1);//定位到尾部
+    }
+    
+
+    public void clearListData() {
+        mElementsList.clear();
+        mElementsList = null;
+    }
+
+    @Override
+    public int getCount() {
+        // TODO Auto-generated method stub
+        return ListUtils.isEmpty(mElementsList) ? 0 : mElementsList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        // TODO Auto-generated method stub
+        if (!ListUtils.isEmpty(mElementsList)) {
+            int size = mElementsList.size();
+            return mElementsList.get(position % size);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public long getItemId(int position) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public int getViewTypeCount() {
+        return TYPE_MAX_COUNT;
+    }
+    
+    @Override
+    public int getItemViewType(int position) {
+        if (!ListUtils.isEmpty(mElementsList)) {
+        	return mElementsList.get(position).getSourceType();
+        }
+        return AppConstants.SERVICE_TYPE_SYSTEM;
+    }
+
+    @Override
+    public View getView(final int position, View convertView, ViewGroup parent) {
+    	final SystemMessageDto model = mElementsList.get(position);
+    	
+        ViewHolder holder = null;
+        if (convertView == null) {
+        	holder = new ViewHolder();
+        	    if (model.getSourceType()==AppConstants.SERVICE_TYPE_DOCTOR) {
+        		    convertView = mInflater.inflate(R.layout.listitem_servicedetail_right_list, null);
+        		} else if(model.getSourceType()==AppConstants.SERVICE_TYPE_SYSTEM){
+        			convertView = mInflater.inflate(R.layout.listitem_servicedetail_left_list, null);
+    			} 
+            	/**
+                 * 咨询列表
+                 */  
+                holder.icon_userheadurl_list = (ImageView) convertView.findViewById(R.id.icon_userheadurl_list);
+                holder.description_list = (TextView) convertView.findViewById(R.id.description_list);
+                holder.image_des = (ImageView) convertView.findViewById(R.id.image_des);
+                holder.tv_time = (TextView) convertView.findViewById(R.id.tv_time);
+                holder.rly_consultdetail_list = (RelativeLayout) convertView.findViewById(R.id.consultdetail_list);
+                convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+        if (getCount() > position) {
+        	if (mPopWindow.isShowing()) {
+        		mPopWindow.dismiss();
+        	}
+            final ViewHolder tempholder = holder;
+            if (model != null) {
+            	   holder.rly_consultdetail_list.setOnClickListener(listener);
+            	   holder.description_list.setOnClickListener(listener);
+                   if(model.getSourceType() == AppConstants.SERVICE_TYPE_DOCTOR) {//医生
+                	   docHeadImg = model.getHeadImage();
+                       ImageLoaderHelper.getInstance(mContext).displayImage(docHeadImg, holder.icon_userheadurl_list, R.drawable.bank_owener_default_header);
+                   }
+                   String preTime = null;
+                   if (position > 0) 
+                       preTime = mElementsList.get(position - 1).getCreateDate();
+            	   String time =  TimeUtils.friendly_time(preTime, model.getCreateDate(), DateUtil.timeFormat1);
+                   if (!StringUtils.isEmpty(time)) {
+                	   holder.tv_time.setVisibility(View.VISIBLE);
+                	   holder.tv_time.setText(time);
+                   } else {
+                	   holder.tv_time.setVisibility(View.GONE);
+                   }
+                   if (AppConstants.MSG_IMAGE.equals(model.getMsgType())) {
+                       ViewUtils.setVisibility(holder.description_list, View.GONE);
+                       ViewUtils.setVisibility(holder.image_des, View.VISIBLE);
+                	   ImageLoaderHelper.getInstance(mContext).displayImage(model.getUrl(), holder.image_des);
+                       holder.image_des.setOnClickListener(new OnClickListener() {
+
+                           @Override
+                           public void onClick(View v) {
+                        	   ImageDtoModel dataModel=new ImageDtoModel();
+                        	   dataModel.setRealUrl(model.getUrl());
+                        	   ArrayList<ImageDtoModel> list=new ArrayList<ImageDtoModel>();
+                        	   list.add(dataModel);
+                               ImageDetailActivity.startActivity(mContext, 0, list);
+                           }
+                       });
+                   } else if (AppConstants.MSG_ARTICLE.equals(model.getMsgType())) {
+                  	   SpannableStringBuilder spannableString = StringUtils.getLinkString(mContext, model.getContent(), model.getUrl());
+                       if (!StringUtils.isEmpty(spannableString)) {
+                   	      holder.description_list.setText(spannableString);
+                      	  //在单击链接时凡是有要执行的动作，都必须设置MovementMethod对象
+                   	      holder.description_list.setMovementMethod(LinkMovementMethod.getInstance());
+                   	      holder.description_list.setOnLongClickListener(new OnLongClickListener() {
+						  @Override
+						  public boolean onLongClick(View arg0) {
+							 mListener.onButtonClick(AppConstants.TEXT_COPY, model,tempholder.description_list, null);
+							 return false;
+						    }
+					      });
+                          ViewUtils.setVisibility(holder.description_list, View.VISIBLE);
+                          ViewUtils.setVisibility(holder.image_des, View.GONE);
+                        } else {
+                          ViewUtils.setVisibility(holder.description_list, View.GONE); 
+                        }
+				} else if (AppConstants.MSG_TEXT.equals(model.getMsgType())) {
+					SpannableString spannableString = FaceConversionUtil.getInstace(mContext).getExpressionString(mContext, model.getContent());
+					if (!StringUtils.isEmpty(spannableString)) {
+						if (!StringUtils.isEmpty(model.getAction()) && Integer.valueOf(model.getAction()) == AppConstants.CONSULT_BILL) {
+							if (Integer.valueOf(model.getConsultOption()) == AppConstants.CONSULTOPTION_EVALUATE_CONSULT) {
+								SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(spannableString);
+								// 设置文本链接
+								spannableStringBuilder.setSpan(new ClickableSpan() {
+											@Override
+											public void updateDrawState(TextPaint ds) {
+												super.updateDrawState(ds);
+												ds.setUnderlineText(true); // 设置下划线
+											}
+											@Override
+											public void onClick(View widget) {
+												mListener.onButtonClick(AppConstants.CHECK_EVALUATE, model,null, null);
+											}
+										}, 0, model.getContent().length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+								holder.description_list.setText(spannableStringBuilder);
+							} else {
+								holder.description_list.setText(spannableString);
+							}
+						} else {
+							holder.description_list.setText(spannableString);
+						}
+						// 在单击链接时凡是有要执行的动作，都必须设置MovementMethod对象
+						holder.description_list.setMovementMethod(LinkMovementMethod.getInstance());
+						holder.description_list.setOnLongClickListener(new OnLongClickListener() {
+							@Override
+							public boolean onLongClick(View arg0) {
+								mListener.onButtonClick(AppConstants.TEXT_COPY, model, tempholder.description_list, null);
+								return false;
+							}
+						});
+						ViewUtils.setVisibility(holder.description_list, View.VISIBLE);
+						ViewUtils.setVisibility(holder.image_des, View.GONE);
+					} else {
+						ViewUtils.setVisibility(holder.description_list, View.GONE);
+					}
+				} else {
+					ViewUtils.setVisibility(holder.description_list, View.GONE);
+				}
+			}
+        }
+        return convertView;
+    }
+
+    public interface DetailItemOnclickListener {
+        public void onButtonClick(int type, Object obj, View view1, View view2);
+    }
+
+    class ViewHolder {
+        public ImageView image_des;
+        public ImageView icon_userheadurl_list;
+        public TextView description_list;
+        public TextView tv_time;
+        public RelativeLayout rly_consultdetail_list;
+    }
+    
+    OnClickListener listener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+            switch (v.getId()) {
+			case R.id.description_list:
+			case R.id.consultdetail_list:
+				//隐藏更多
+				mListener.onButtonClick(AppConstants.LAYOUT_ITEM, null, null, null);
+				break;
+			}  			
+		}
+	};
+}

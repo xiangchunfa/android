@@ -1,0 +1,96 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * 移动诊所的就医分享
+ * @author Antony
+ * create at 2015-08-21
+ *
+ */
+public class ConsultShareListDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 482166368576186178L;
+	
+	private long consultId;//咨询服务ID
+	private String sex;//性别
+	private String age;//年龄
+	private String description;//症状描述
+	private String diagnosis;//诊断
+	private String cureAdvise;//治疗建议
+	/**
+	 * @return the consultId
+	 */
+	public long getConsultId() {
+		return consultId;
+	}
+	/**
+	 * @param consultId the consultId to set
+	 */
+	public void setConsultId(long consultId) {
+		this.consultId = consultId;
+	}
+	/**
+	 * @return the sex
+	 */
+	public String getSex() {
+		return sex;
+	}
+	/**
+	 * @param sex the sex to set
+	 */
+	public void setSex(String sex) {
+		this.sex = sex;
+	}
+	/**
+	 * @return the age
+	 */
+	public String getAge() {
+		return age;
+	}
+	/**
+	 * @param age the age to set
+	 */
+	public void setAge(String age) {
+		this.age = age;
+	}
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	/**
+	 * @return the diagnosis
+	 */
+	public String getDiagnosis() {
+		return diagnosis;
+	}
+	/**
+	 * @param diagnosis the diagnosis to set
+	 */
+	public void setDiagnosis(String diagnosis) {
+		this.diagnosis = diagnosis;
+	}
+	/**
+	 * @return the cureAdvise
+	 */
+	public String getCureAdvise() {
+		return cureAdvise;
+	}
+	/**
+	 * @param cureAdvise the cureAdvise to set
+	 */
+	public void setCureAdvise(String cureAdvise) {
+		this.cureAdvise = cureAdvise;
+	}
+}

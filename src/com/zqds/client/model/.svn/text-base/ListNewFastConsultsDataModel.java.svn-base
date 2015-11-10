@@ -1,0 +1,40 @@
+package com.qdoc.client.model;
+/**
+ * FileName    : ListNewFastConsultsDataModel.java
+ * Description : 新的快捷咨询抢单列表类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-4-10 
+ **/
+public class ListNewFastConsultsDataModel extends AbstractBaseModel {
+
+	private static final long serialVersionUID = -1663867153770730458L;
+	private int count;
+	private Pagination<FastConsultDtoModel> pager;
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<FastConsultDtoModel> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<FastConsultDtoModel> pager) {
+		this.pager = pager;
+	}
+
+	public int getCount() {
+		return count;
+	}
+
+	public void setCount(int count) {
+		this.count = count;
+	}
+	
+	
+}

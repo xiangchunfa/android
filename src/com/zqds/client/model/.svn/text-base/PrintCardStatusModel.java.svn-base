@@ -1,0 +1,119 @@
+package com.qdoc.client.model;
+
+/**
+ * create at 2014-11-27 19:23
+ * @author antony
+ *申请加印名片的状态类
+ */
+public class PrintCardStatusModel extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3263253502603477978L;
+	
+	
+	public static final int PRINT_CARD_STATUS_REFUSE_ACCEPT = -1;//不受理
+	public static final int PRINT_CARD_STATUS_NOT_YET_ACCEPT = 0;//受理中
+	public static final int PRINT_CARD_STATUS_PRINTING = 1;//印刷中
+	public static final int PRINT_CARD_STATUS_FINISH = 2;//印刷完成
+	public static final int PRINT_CARD_STATUS_SENDING = 3;//已寄出
+	public static final int PRINT_CARD_STATUS_CAN_APPLY = 4;//已寄出5天，可以再申请
+	
+	public static final int PRINT_CARD_FIRST_TIME = 0;//第一次申请加印名片
+	public static final int PRINT_CARD_NOT_FIRST_TIME = 1;//不是第一次申请加印名片
+	
+	private String planSendDate;//预计送达时间
+	private int status;//受理状态
+	private String lastSendDate;//最近一次寄送时间
+	private int toSend;//重新派送：0不是，1是
+	private int fansCount;//寄送条件（默认20）
+	private int fansNumber;//医生粉丝数
+	private int isFirst;//是否第一次申请 0是   1不是
+
+	/**
+	 * @return the lastSendDate
+	 */
+	public String getLastSendDate() {
+		return lastSendDate;
+	}
+	/**
+	 * @param lastSendDate the lastSendDate to set
+	 */
+	public void setLastSendDate(String lastSendDate) {
+		this.lastSendDate = lastSendDate;
+	}
+	/**
+	 * @return the planSendDate
+	 */
+	public String getPlanSendDate() {
+		return planSendDate;
+	}
+	/**
+	 * @param planSendDate the planSendDate to set
+	 */
+	public void setPlanSendDate(String planSendDate) {
+		this.planSendDate = planSendDate;
+	}
+	/**
+	 * @return the status
+	 */
+	public int getStatus() {
+		return status;
+	}
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(int status) {
+		this.status = status;
+	}
+	/**
+	 * @return the toSend
+	 */
+	public int getToSend() {
+		return toSend;
+	}
+	/**
+	 * @param toSend the toSend to set
+	 */
+	public void setToSend(int toSend) {
+		this.toSend = toSend;
+	}
+	/**
+	 * @return the fansCount
+	 */
+	public int getFansCount() {
+		return fansCount;
+	}
+	/**
+	 * @param fansCount the fansCount to set
+	 */
+	public void setFansCount(int fansCount) {
+		this.fansCount = fansCount;
+	}
+	/**
+	 * @return the fansNumber
+	 */
+	public int getFansNumber() {
+		return fansNumber;
+	}
+	/**
+	 * @param fansNumber the fansNumber to set
+	 */
+	public void setFansNumber(int fansNumber) {
+		this.fansNumber = fansNumber;
+	}
+	/**
+	 * @return the isFirst
+	 */
+	public int getIsFirst() {
+		return isFirst;
+	}
+	/**
+	 * @param isFirst the isFirst to set
+	 */
+	public void setIsFirst(int isFirst) {
+		this.isFirst = isFirst;
+	}
+
+}

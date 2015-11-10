@@ -1,0 +1,139 @@
+/*
+O * AboutmeActivity.java
+ * classes : com.qdoc.client.ui.AboutmeActivity
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-11 下午11:27:39
+ */
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentTransaction;
+import com.qdoc.client.R;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.fragment.ChangeDeviceFragment;
+import com.qdoc.client.ui.fragment.CheckVerifyCodeFragment;
+import com.qdoc.client.ui.fragment.LoginFragment;
+import com.qdoc.client.ui.fragment.Register1Fragment;
+import com.qdoc.client.ui.fragment.Register2Fragment;
+import com.qdoc.client.ui.fragment.SetPasswordFragment;
+import com.qdoc.client.util.IntentTools;
+
+/**
+ * com.qdoc.client.ui.AboutmeActivity
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-11 下午11:27:39
+ */
+public class LoginActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = LoginActivity.class.getSimpleName();
+
+    /**
+     * view
+     */
+    
+    private BaseFragment mCurFragment;
+    private BaseFragment mLoginFragment;
+    private BaseFragment mChangeDeviceFragment;
+    private BaseFragment mCheckVerifyCodeFragment;
+    private BaseFragment mSetPasswordFragment;
+    private BaseFragment mRegister1Fragment;
+    private BaseFragment mRegister2Fragment;
+    private int laucherFrom;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_base);
+        parseIntent();
+        initView();
+        initListener();
+    }
+
+    private void parseIntent() {
+        // TODO Auto-generated method stub
+        Bundle cacheBundle = getIntent().getExtras();
+        if (cacheBundle != null) {
+            laucherFrom = cacheBundle.getInt(IntentTools.EXTRA_LAUNCHER_FROM);
+        }
+    }
+
+    @Override
+    protected void initView() {
+        // TODO Auto-generated method stub
+    	mLoginFragment =LoginFragment.newInstance(null);
+    	addContent(R.id.fragment_base,mLoginFragment, TAG);
+    }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+    	// TODO Auto-generated method stub
+    	super.onSaveInstanceState(outState);
+    }
+    
+    @Override
+    protected void initListener() {
+        // TODO Auto-generated method stub
+    }
+
+    public void switchContent(BaseFragment from, BaseFragment to) {
+        if (mCurFragment != to) {
+            mCurFragment = to;
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            if (!to.isAdded()) { // 先判断是否被add过
+                transaction.hide(from).add(R.id.fragment_base, to, to.getReqestTag()).commitAllowingStateLoss(); // 隐藏当前的fragment，add下一个到Activity中
+            } else {
+                transaction.hide(from).show(to).commitAllowingStateLoss(); // 隐藏当前的fragment，显示下一个
+            }
+        }
+    }
+
+    
+    public void switchToLoginFragment(String tag) {
+    	mLoginFragment=LoginFragment.newInstance(null);
+    	replaceContent(R.id.fragment_base,mLoginFragment,tag);
+    }
+    
+    public void switchToChangeDeviceFragment(String tag) {
+    	mChangeDeviceFragment=ChangeDeviceFragment.newInstance(null);
+    	addContent(R.id.fragment_base,mChangeDeviceFragment,tag,true);
+    }
+ 
+    public void switchToCheckVerifyCodeFrament(Bundle bundle,String tag) {
+    	mCheckVerifyCodeFragment=CheckVerifyCodeFragment.newInstance(bundle);
+    	replaceContent(R.id.fragment_base,mCheckVerifyCodeFragment,tag,true);
+    }
+    
+    public void switchToSetPasswordFragment(String tag) {
+    	mSetPasswordFragment=SetPasswordFragment.newInstance(null);
+    	replaceContent(R.id.fragment_base,mSetPasswordFragment,tag);
+    }
+    
+    public void switchToRegister1Fragment(Bundle bundle,String tag) {
+    	mRegister1Fragment=Register1Fragment.newInstance(bundle);
+    	replaceContent(R.id.fragment_base,mRegister1Fragment,tag,true);
+    }
+    
+    public void switchToRegister2Fragment(Bundle bundle,String tag) {
+    	mRegister2Fragment=Register2Fragment.newInstance(bundle);
+    	addContent(R.id.fragment_base,mRegister2Fragment,tag);
+    }
+    
+    public void onDestroy() {
+        super.onDestroy();
+    }
+    
+    public static void startActivity(Context context) {
+		Global.quitAccount();
+    	BaseActivity.closeApplication();
+        context.startActivity(IntentTools.getLoginIntent(context));
+    }
+    
+    public static void startActivityFromLauncher(Context context) {
+        context.startActivity(IntentTools.getLoginIntent(context));
+    }
+}

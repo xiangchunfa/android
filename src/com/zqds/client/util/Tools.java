@@ -1,0 +1,583 @@
+
+package com.zqds.client.util;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.app.ActivityManager;
+import android.app.ProgressDialog;
+import android.content.ClipData;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Build;
+import android.telephony.TelephonyManager;
+import android.text.Selection;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.ForegroundColorSpan;
+import android.util.DisplayMetrics;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.OvershootInterpolator;
+import android.view.animation.TranslateAnimation;
+
+
+@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+public class Tools {
+	public static String getMetaData(Context context, String key) {
+		try {
+			ApplicationInfo ai = context.getPackageManager().getApplicationInfo(
+					context.getPackageName(), PackageManager.GET_META_DATA);
+			Object value = ai.metaData.get(key);
+			if (value != null) {
+				return value.toString();
+			}
+		} catch (Exception e) {
+			//
+		}
+		return null;
+	}
+	public static void setMetaData(Context context, String key) {
+		try {
+			ApplicationInfo ai = context.getPackageManager().getApplicationInfo(
+					context.getPackageName(), PackageManager.GET_META_DATA);
+			ai.metaData.putBoolean("isInstall",true);
+		} catch (Exception e) {}
+	}
+	
+	public static String nullToString(Object value) {
+		return nullToString(value, "");
+	}
+	
+	public static String nullToString(Object value, String defaultValue) {
+		if(value == null)
+			return defaultValue;
+		return value.toString();
+	}
+	
+	public static int stringToInt(String value) {
+		return stringToInt(value, 0);
+	}
+	
+	public static int stringToInt(String value, int defaultValue) {
+		if(StringUtils.isEmpty(value))
+			return defaultValue;
+		Integer result = new Integer(defaultValue);
+		try{
+			result = Integer.valueOf(value);
+			return result.intValue();
+		} catch(Exception e) {
+			return defaultValue;
+		}
+	}
+
+	public static long stringToLong(String value) {
+		return stringToInt(value, 0);
+	}
+	
+	public static long stringToLong(String value, long defaultValue) {
+		if (StringUtils.isEmpty(value))
+			return defaultValue;
+		Long result = new Long(defaultValue);
+		try{
+			result = Long.valueOf(value);
+			return result.longValue();
+		} catch(Exception e) {
+			return defaultValue;
+		}
+	}
+	
+	public static byte stringToByte(String value) {
+		return stringToByte(value, (byte)0);
+	}
+	
+	public static byte stringToByte(String value, byte defaultValue) {
+		if(StringUtils.isEmpty(value))
+			return defaultValue;
+		Byte result = new Byte(defaultValue);
+		try{
+			result = Byte.valueOf(value);
+			return result.byteValue();
+		} catch(Exception e) {
+			return defaultValue;
+		}
+	}
+	
+	public static double stringToDouble(String value) {
+		return stringToDouble(value, 0);
+	}
+	
+	public static double stringToDouble(String value, double defaultValue) {
+		if(StringUtils.isEmpty(value))
+			return defaultValue;
+		Double result = new Double(defaultValue);
+		try{
+			result = Double.valueOf(value);
+			return result.doubleValue();
+		} catch(Exception e) {
+			return defaultValue;
+		}
+	}
+
+	public static boolean nullToBoolean(Object value) {
+		return nullToBoolean(value, false);
+	}
+
+	public static boolean nullToBoolean(Object value, boolean defaultValue) {
+		if (value == null)
+			return defaultValue;
+		try {
+			String strValue = value.toString();
+			if(strValue.trim().equals("on") ||
+					strValue.trim().equals("yes") ||
+					strValue.trim().equals("true") ||
+					strValue.trim().equals("1"))
+				return true;
+			if(strValue.trim().equals("off") ||
+					strValue.trim().equals("no") ||
+					strValue.trim().equals("false") ||
+					strValue.trim().equals("0"))
+				return false;
+		} catch (Exception e) {}
+		return defaultValue;
+	}
+	public static java.util.Date stringToDate(String strDate) {
+		return stringToDate(strDate, new java.util.Date(0));
+	}
+
+	public static java.util.Date stringToDate(String strDate,
+			java.util.Date defaultValue) {
+		java.util.Date date = defaultValue;
+		try {
+			date = java.sql.Date.valueOf(strDate);
+		} catch (Exception e) {
+		}
+		return date;
+	}
+
+	public static java.util.Date stringToDate(String strDate, String strFormat) {
+		SimpleDateFormat fromat = new SimpleDateFormat (strFormat);
+		try {
+			return fromat.parse(strDate);
+		} catch (ParseException e) { }
+		return null;
+	}
+	public static int convertDIP2PX(Context context,double d) {
+		float screenDensity = context.getResources().getDisplayMetrics().density;
+		return (int) (d * screenDensity + 0.5f * (d >= 0 ? 1 : -1));
+	}
+
+	public static int convertSP2PX(Context context,float sp) {
+		DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+		return (int) (sp * metrics.scaledDensity+0.5f);
+	}
+	
+	public static Spannable getSpannable(Context context,String text){
+		Spannable rechargeSpan = new SpannableString(text);
+		rechargeSpan.setSpan(new ForegroundColorSpan(Color.parseColor("#5b9005")), 0, 4,
+				Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+		rechargeSpan.setSpan(
+				new ForegroundColorSpan(Color.parseColor("#f27a10")), 4, 8,
+				Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+		rechargeSpan.setSpan(new AbsoluteSizeSpan(convertSP2PX(context,25)), 4, 8,
+				Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+		rechargeSpan.setSpan(
+				new ForegroundColorSpan(Color.parseColor("#5b9005")), 8, 14,
+				Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+	      return rechargeSpan;
+	   }
+	
+	public static ArrayList<String> getStringList(SharedPreferences prefs, String key) {
+		String str = prefs.getString(key, "");
+		ArrayList<String> defValues=null;
+		if (!str.equals("")) {
+			String[] values = str.split(";");
+				defValues = new ArrayList<String>();
+				for (String value : values) {
+					if (!value.equals("")) {
+						defValues.add(value);
+					}
+			}
+		}
+		return defValues;
+	}
+	public static LinkedHashMap<String,String> getStringMap(SharedPreferences prefs, String key) {
+		String str = prefs.getString(key, "");
+		LinkedHashMap<String,String> defValues=null;
+		if (!str.equals("")) {
+			String[] values = str.split(";");
+				defValues = new LinkedHashMap<String,String>();
+				for (String value : values) {
+					if (!value.equals("")) {
+					   	String keyValuePair[]=value.split("‖");
+                        defValues.put(keyValuePair[0],keyValuePair[1]);
+					}
+			}
+		}
+		return defValues;
+	}
+    
+	public static LinkedHashMap<String,String> getStringMap(ConfigService prefs, String key) {
+		String str = prefs.getString(key, "");
+		LinkedHashMap<String,String> defValues=null;
+		if (!str.equals("")) {
+			String[] values = str.split(";");
+				defValues = new LinkedHashMap<String,String>();
+				for (String value : values) {
+					if (!value.equals("")) {
+					   	String keyValuePair[]=value.split("‖");
+                        defValues.put(keyValuePair[0],keyValuePair[1]);
+					}
+			}
+		}
+		return defValues;
+	}
+	
+	public static SharedPreferences.Editor putStringList(
+			SharedPreferences.Editor ed, String key, List<?> values) {
+		String str = "";
+		if (values !=null&&!values.isEmpty()) {
+			Object[] objects = values.toArray();
+			for (Object obj : objects) {
+				str += obj.toString();
+				str += ";";
+			}
+			str.charAt(str.length()-1);
+			ed.putString(key, str);
+		}
+		return ed;
+	}
+
+	/**
+     * 半角转全角
+     * @param input String.
+     * @return 全角字符串.
+     */
+   public static String ToSBC(String input) {
+        if(input==null||"".equals(input.trim())){
+        	return "";
+        }else{
+	     char c[] = input.toCharArray();
+         for (int i = 0; i < c.length; i++) {
+           if (c[i] == ' ') {
+             c[i] = '\u3000';
+           } else if (c[i] < '\177') {
+             c[i] = (char) (c[i] + 65248);
+           }
+         }
+         return new String(c);
+        } 
+}
+ 
+
+   /**
+    * 全角转半角
+    * @param input String.
+    * @return 半角字符串
+    */
+   public static String ToDBC(String input) { 
+	   if(input==null||"".equals(input.trim())){
+       	return "";
+       }else{
+	   char[] c = input.toCharArray();  
+	   for (int i = 0; i< c.length; i++) {  
+	       if (c[i] == 12288) {  
+	         c[i] = (char) 32;  
+	         continue;  
+	       }if (c[i]> 65280&& c[i]< 65375)  
+	          c[i] = (char) (c[i] - 65248);  
+	       }  
+	   return new String(c);
+       } 
+	}  
+  /**
+   * 获得设备的DPI
+   *
+   */
+   public static int getDensityDPI(Context context){
+	     DisplayMetrics dm = new DisplayMetrics();  
+		 dm = context.getResources().getDisplayMetrics();  
+	     return dm.densityDpi;
+   }
+   /** 
+    * 判断某张表是否存在 
+    * @param tabName 表名 
+    * @return 
+    */  
+   public static boolean tableIsExist(SQLiteDatabase db,String tableName){  
+           boolean result = false;  
+           if(tableName == null){  
+                   return false;  
+           }  
+           Cursor cursor = null;  
+           try {  
+                   String sql = "select count(*) as c from Sqlite_master  where type ='table' and name ='"+tableName.trim()+"' ";  
+                   cursor = db.rawQuery(sql, null);  
+                   if(cursor.moveToNext()){  
+                           int count = cursor.getInt(0);  
+                           if(count>0){  
+                                   result = true;  
+                           }  
+                   }  
+           } catch (Exception e) {  
+           }                  
+           return result;  
+   } 
+   /**
+    * 用来判断服务是否运行.
+    * @param context
+    * @param className 判断的服务名字
+    * @return true 在运行 false 不在运行
+    */
+   public static boolean isServiceRunning(Context mContext,String className) {
+       boolean isRunning = false;
+      ActivityManager activityManager = (ActivityManager)
+      mContext.getSystemService(Context.ACTIVITY_SERVICE); 
+       List<ActivityManager.RunningServiceInfo> serviceList 
+       = activityManager.getRunningServices(30);
+      if (!(serviceList.size()>0)) {
+           return false;
+       }
+       for (int i=0; i<serviceList.size(); i++) {
+           if (serviceList.get(i).service.getClassName().equals(className) == true) {
+               isRunning = true;
+               break;
+           }
+       }
+       return isRunning;
+   }
+   
+   /**
+    * 获取网络状态（2G/3G/WIFI） 
+    * @param context 
+    * 
+    */
+	 public static String getNetworkState(Context context){
+			ConnectivityManager connectivityManager = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+			NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+			String network_3g="3G";
+			String network_2g="2G";
+			String network_wifi="wifi";
+			if(activeNetInfo==null) 
+				return null;
+			//判断是否为wifi网络
+	        if(activeNetInfo.getType()==ConnectivityManager.TYPE_WIFI){
+	           return network_wifi;
+	        }else if(activeNetInfo.getType()==ConnectivityManager.TYPE_MOBILE){
+	           switch(activeNetInfo.getSubtype()){
+	           //以下是3G网络
+	           case TelephonyManager.NETWORK_TYPE_EVDO_0:
+	               return network_3g; // ~ 400-1000 kbps
+	           case TelephonyManager.NETWORK_TYPE_EVDO_A:
+	               return network_3g; // ~ 600-1400 kbps
+	           case TelephonyManager.NETWORK_TYPE_HSDPA:
+	               return network_3g; // ~ 2-14 Mbps
+	           case TelephonyManager.NETWORK_TYPE_HSPA:
+	               return network_3g; // ~ 700-1700 kbps
+	           case TelephonyManager.NETWORK_TYPE_HSUPA:
+	               return network_3g; // ~ 1-23 Mbps
+	           case TelephonyManager.NETWORK_TYPE_UMTS:
+	               return network_3g; // ~ 400-7000 kbps
+	               
+	           //以下是2G网络    
+	           case TelephonyManager.NETWORK_TYPE_1xRTT:
+	               return network_2g; // ~ 50-100 kbps
+	           case TelephonyManager.NETWORK_TYPE_CDMA:
+	               return network_2g; // ~ 14-64 kbps
+	           case TelephonyManager.NETWORK_TYPE_EDGE:
+	               return network_2g; // ~ 50-100 kbps
+	           case TelephonyManager.NETWORK_TYPE_GPRS:
+	               return network_2g; // ~ 100 kbps
+	               
+	           // Unknown
+	           case TelephonyManager.NETWORK_TYPE_UNKNOWN:
+	               return network_2g; 
+	           default:
+	               return network_2g;
+	           }
+	       }else{
+	           return network_2g;
+	       }
+	   }
+	 
+	   /**
+	    * 判断当前网络是否为 WIFI网络  
+	    * @param context 
+	    * 
+	    */
+	      public static boolean isWifiActive(Context icontext){
+	          Context context = icontext.getApplicationContext();    
+	          ConnectivityManager connectivity = (ConnectivityManager) context    
+	                 .getSystemService(Context.CONNECTIVITY_SERVICE);
+	         NetworkInfo[] info;
+	         if (connectivity != null) {    
+	             info = connectivity.getAllNetworkInfo();    
+	              if (info != null) {    
+	                 for (int i = 0; i < info.length; i++) {    
+	                     if (info[i].getTypeName().equals("WIFI") && info[i].isConnected()) {    
+	                         return true;    
+	                     }    
+	                 }    
+	             }    
+	         }    
+	         return false;   
+     }
+   
+	     /**
+		  	 * 关闭进度条
+		  	 * @param waitDlg 进度条
+		  	 *           
+		  	 */
+		public static void closeProgress(ProgressDialog waitDlg) {
+			try {
+				if (waitDlg != null) {
+					waitDlg.dismiss();
+					waitDlg = null;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+   
+	   /**
+	    *生成指定长度的字符串 
+	    *@param num：字符串长度  
+	    *@param str:需要显示的字符
+	    */
+	   public static String getStr(int num, String str){
+	    	StringBuffer sb = new StringBuffer("");
+	    	for(int i=0;i<num;i++){
+	    	   sb.append(str);
+	    	}
+	    	return sb.toString();
+	     }  
+    
+	   /** 1.API在11版本以上，包括11版本
+	    *  2.实现复制功能
+	    */
+		@SuppressLint("NewApi")
+		public static void setClipBoard(String content,Context context) {
+			int currentapiVersion = android.os.Build.VERSION.SDK_INT;
+			if (currentapiVersion >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+				android.content.ClipboardManager clipboard = (android.content.ClipboardManager)context.getSystemService(Context.CLIPBOARD_SERVICE);
+				ClipData clip = ClipData.newPlainText("label", content);
+				clipboard.setPrimaryClip(clip);
+			} else {
+				android.text.ClipboardManager clipboard = (android.text.ClipboardManager)context.getSystemService(Context.CLIPBOARD_SERVICE);
+				clipboard.setText(content);
+			}
+		}
+		
+		/**
+		 * 比较两个版本号的大小，新版本号大于老版本号返回true，相反返回false
+		 * @param oldVersion :老版本号
+		 * @param newVersion :新版本号
+		 * @return 
+		 */
+	    public static boolean versionContrast(String oldVersion,String newVersion){
+	    	if(StringUtils.isEmpty(newVersion)){
+	    		return false;
+	    	}
+	    	//本地忽略升级版本为空，则提示升级
+	    	if(StringUtils.isEmpty(oldVersion)){
+	    		return true;
+	    	}
+	    	boolean isChange = false;
+	    	String[] oldVersions = oldVersion.split(oldVersion);
+	    	String[] newVersions = newVersion.split(newVersion);
+	    	int oldVersionSize = countVersion(oldVersions);
+	    	int newVersionSize = countVersion(newVersions);
+	    	if(newVersionSize > oldVersionSize){
+	    		isChange = true;    		
+	    	}
+	    	return isChange;
+	    }
+	    
+	    /**
+	     * 计算版本号的大小
+	     */
+	    public static int countVersion(String[] array){
+	    	int versionSize = 0 ;
+	     	for(int i=0;i<array.length;i++){
+	    		if(i == 0){
+	    		    versionSize = Integer.valueOf(array[i])*10000;	
+	    		}else if(i == 1){
+	    			versionSize += Integer.valueOf(array[i])*100;
+	    		}else{
+	    			versionSize += Integer.valueOf(array[i]);
+	    		}
+	    	}
+	    	return versionSize;
+	    }
+	    
+	    /**
+		 * 设置光标的位置
+		 * @param et :文本
+		 * @param position ：光标位置
+		 */
+	    public static void setCursorPosition(CharSequence text, int position) {
+			if (text instanceof Spannable) {
+			    Spannable spanText = (Spannable)text;
+			    Selection.setSelection(spanText, position);
+			}
+	    }
+		
+	    /**
+	     * 滑动view
+	     * @param view
+	     * @param p1
+	     * @param p2
+	     */
+	    public static void slideview(final View view, final float fromXDelta, final float toXDelta, final float fromYDelta, final float toYDelta) {
+	    	TranslateAnimation animation = new TranslateAnimation( fromXDelta, toXDelta, fromYDelta, toYDelta);
+	    	animation.setInterpolator(new OvershootInterpolator());
+	    	animation.setDuration(1000);
+	    	animation.setAnimationListener(new Animation.AnimationListener() {
+	    	     @Override
+	    	     public void onAnimationStart(Animation animation) {
+	    	     }
+	    	       
+	    	    @Override
+	    	    public void onAnimationRepeat(Animation animation) {
+	    	    }
+	    	         
+	    	   @Override
+	    	    public void onAnimationEnd(Animation animation) {
+	    	        int left = view.getLeft()+(int)(toXDelta - fromXDelta);
+	    	        int top = view.getTop()+(int)(toYDelta - fromYDelta);
+	    	        int width = view.getWidth();
+	    	        int height = view.getHeight();
+	    	        view.clearAnimation();
+	    	        view.layout(left, top, left+width, top+height);
+	    	         }
+	    	     });
+	    	     view.startAnimation(animation);
+	     }
+	    
+	    /**
+	     * 数字四舍五入
+	     * @param v1 数字
+	     * @param scale 表示需要精确到小数点以后几位
+	     * @return 四舍五入的值
+	     */
+	    public static double divide(double v1, int scale){
+		    BigDecimal b = new BigDecimal(v1);
+		    double f1 = b.setScale(scale, RoundingMode.HALF_UP).doubleValue();
+	        return f1;
+	    }  
+}

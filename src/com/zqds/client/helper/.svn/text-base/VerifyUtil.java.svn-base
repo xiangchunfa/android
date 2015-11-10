@@ -1,0 +1,106 @@
+package com.qdoc.client.helper;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.view.Gravity;
+
+import com.qdoc.client.R;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtil;
+import java.util.regex.*;
+
+/**
+* FileName    : VerifyUtil
+* Description : 字符串验证帮助类
+* @Copyright  : Rongdi information technology Co.,Ltd.Rights Reserved 
+* @Company    : 荣迪信息技术有限公司
+* @author     : 向春发
+* @version    : 1.0  
+* Create Date : 2014-04-20  
+**/
+public class VerifyUtil {
+     /**`
+      *验证用户名 
+      */
+	 @SuppressLint("ParserError")
+	public static boolean verifyUserName(Context context,String userName){
+			if (StringUtils.isBlank(userName)) {
+				 ToastUtil.show(context, context.getString(R.string.input_username));
+				 return false;
+			}
+			if(!userName.startsWith("1")){//是否以1开头
+				 ToastUtil.show(context, context.getString(R.string.input_correct_username),Gravity.TOP);
+				 return false;
+			} 
+			int size=userName.length();
+			if(size!=11){
+				 ToastUtil.show(context, context.getString(R.string.input_correct_username),Gravity.TOP);
+				 return false;
+			}
+		
+			return true;
+	 }
+	 
+     /**
+      *验证单个密码
+      */
+	 public static boolean verifyPassword(Context context,String password){
+			if (StringUtils.isBlank(password)) {
+				 ToastUtil.show(context, context.getString(R.string.input_password),Gravity.TOP);
+				 return false;
+			}
+			return true;		
+	 }
+	 
+     /**
+      *验证身份证
+      */
+	 public static boolean verifyCardNo(Context context,String idCard){
+			if (StringUtils.isBlank(idCard)) {
+				 ToastUtil.show(context, context.getString(R.string.discovery_input_cardno),Gravity.BOTTOM);
+				 return false;
+			}
+			if(idCard.length()!=18){
+				 ToastUtil.show(context, context.getString(R.string.discovery_cardno_digits_limit),Gravity.BOTTOM);
+				 return false;
+			}
+			return true;		
+	 }
+	 
+
+     /**
+      *验证两个密码是否相等
+      *@param password1:输入的密码
+      *@param password2：确认输入的密码
+      */
+	 public static boolean verifyPasswordSame(Context context,String password1,String passwrod2){
+	        if(!password1.equalsIgnoreCase(passwrod2)){
+				 ToastUtil.show(context, context.getString(R.string.str_passwrod_disagree),Gravity.BOTTOM);
+				 return false;
+		    }
+	        return true;
+	 }
+/**
+ * 验证密码只能输入6-20位的字符。字符只能是字母、数字或_的组合。
+ * @param context
+ * @param password
+ * @return
+ */
+	 public static boolean verifyPasswordLengthAndType(Context context,String password){
+		 if(password.length()<6||password.length()>20){
+			 return false;
+		 }
+		//首先,使用Pattern解释要使用的正则表达式，其中^表是字符串的开始，$表示字符串的结尾。
+		  Pattern pt = Pattern.compile("^[0-9a-zA-Z_]+$");
+		 
+		  //然后使用Matcher来对比目标字符串与上面解释得结果
+		  Matcher mt = pt.matcher(password);
+		  if(mt.matches()){
+			   return true;
+			  }
+		          
+		return false;
+		 
+	 }
+	 
+}

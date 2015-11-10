@@ -1,0 +1,231 @@
+/*
+ * ConsultMsgDto.java
+ * classes : com.qdoc.client.model.ConsultMsgDto
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:06:09
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * com.qdoc.client.model.ConsultMsgDto
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:06:09
+ */
+public class ConsultMsgDtoModel implements Serializable {
+
+    private static final long serialVersionUID = -6394722601558379156L;
+
+    private Long consultId;
+    private String content;
+    private Long id;
+    private Long inmsgid;
+    private String mediaUrl;
+    private String msgTime;
+    private String msgType;
+    private String openid;
+    private Integer readType;
+    private String uuid;
+    private String realUrl;
+    private String realContentUrl;
+    // 咨询案例使用
+    private String description;
+    private Integer type;
+    private Integer mediaDura;//时长
+
+	public Integer getMediaDura() {
+		return mediaDura;
+	}
+
+	public void setMediaDura(Integer mediaDura) {
+		this.mediaDura = mediaDura;
+	}
+
+	public Integer getType() {
+		return type;
+	}
+
+	public void setType(Integer type) {
+		this.type = type;
+	}
+
+	public String getRealContentUrl() {
+		return realContentUrl;
+	}
+
+	public void setRealContentUrl(String realContentUrl) {
+		this.realContentUrl = realContentUrl;
+	}
+
+	/**
+     * @return the consultId
+     */
+    public Long getConsultId() {
+        return consultId;
+    }
+
+    /**
+     * @param consultId the consultId to set
+     */
+    public void setConsultId(Long consultId) {
+        this.consultId = consultId;
+    }
+
+    /**
+     * @return the content
+     */
+    public String getContent() {
+        return content;
+    }
+
+    /**
+     * @param content the content to set
+     */
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    /**
+     * @return the id
+     */
+    public Long getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the inmsgid
+     */
+    public Long getInmsgid() {
+        return inmsgid;
+    }
+
+    /**
+     * @param inmsgid the inmsgid to set
+     */
+    public void setInmsgid(Long inmsgid) {
+        this.inmsgid = inmsgid;
+    }
+
+    /**
+     * @return the mediaUrl
+     */
+    public String getMediaUrl() {
+        return mediaUrl;
+    }
+
+    /**
+     * @param mediaUrl the mediaUrl to set
+     */
+    public void setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+    }
+
+    /**
+     * @return the msgTime
+     */
+    public String getMsgTime() {
+        return msgTime;
+    }
+
+    /**
+     * @param msgTime the msgTime to set
+     */
+    public void setMsgTime(String msgTime) {
+        this.msgTime = msgTime;
+    }
+
+    /**
+     * @return the msgType
+     */
+    public String getMsgType() {
+        return msgType;
+    }
+
+    /**
+     * @param msgType the msgType to set
+     */
+    public void setMsgType(String msgType) {
+        this.msgType = msgType;
+    }
+
+    /**
+     * @return the openid
+     */
+    public String getOpenid() {
+        return openid;
+    }
+
+    /**
+     * @param openid the openid to set
+     */
+    public void setOpenid(String openid) {
+        this.openid = openid;
+    }
+
+    /**
+     * @return the readType
+     */
+    public Integer getReadType() {
+        return readType;
+    }
+
+    /**
+     * @param readType the readType to set
+     */
+    public void setReadType(Integer readType) {
+        this.readType = readType;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * @return the realUrl
+     */
+    public String getRealUrl() {
+        return realUrl;
+    }
+
+    /**
+     * @param realUrl the realUrl to set
+     */
+    public void setRealUrl(String realUrl) {
+        this.realUrl = realUrl;
+    }
+
+    /**
+     * @return the description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * @param description the description to set
+     */
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+}

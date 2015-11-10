@@ -1,0 +1,516 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.util.Timer;
+import java.util.TimerTask;
+import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.helper.VerifyUtil;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ActiveAccountDataModel;
+import com.qdoc.client.model.LoginModel;
+import com.qdoc.client.model.VertifyCodeDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.SystemBarUtil;
+import com.qdoc.client.util.ToastUtil;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.CheckVerifyCodeFragment
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-18 上午9:24:13
+ */
+public class CheckVerifyCodeFragment extends BaseFragment implements OnClickListener {
+	/**
+	 * TAG
+	 */
+	public static final String TAG = CheckVerifyCodeFragment.class.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private EditText edtInputVerifyCode;
+	private EditText edtFirstPWD;
+	private EditText edtSecondPWD;
+	private EditText tvPhoneNum;
+	private TextView tvVerifyCode;
+	private Button btnSubmit;
+	private TitleBar mTitleBar;
+    private TextView tv_warm_prompt;
+    private TextView tv_send_hint;
+    //private String confirmPWD;
+	private String confirmPWD;
+    
+    private Bundle bundle;
+    /**
+     * params 
+     */
+	Handler handler=new Handler();
+	private Timer timer ;
+	private int count;
+    private int verifyCodeType;//验证码类型
+    private int loginStatus;//登录状态
+    private String userName;//用户名
+	
+	public static CheckVerifyCodeFragment newInstance(Bundle bundle) {
+		final CheckVerifyCodeFragment fragment = new CheckVerifyCodeFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+		super.onCreate(savedInstanceState);
+
+	}
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_no_active, container, false);
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		initView(view);
+		initListener();
+		initParams();
+	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+		SystemBarUtil.setSystemStatusBar(false, 0, getActivity());
+	}
+
+	private void initParams() {
+		//VerifySmsContent content=new VerifySmsContent(handler, getActivity(), edtInputVerifyCode, AppConstants.VERIFYCODE_SEND_PHONENO);
+		//getActivity().getContentResolver().registerContentObserver(Uri.parse("content://sms/"), true, content);
+		verifyCodeType = getArguments().getInt(IntentTools.EXTRA_VERIFY_CODE_TYPE);
+		loginStatus = getArguments().getInt(IntentTools.EXTRA_LOGIN_STATUS);
+		//获取传过来的电话号码
+		userName = getArguments().getString(IntentTools.EXTRA_USER_NAME); 
+		if(userName!=null){
+			tvPhoneNum.setText(userName);
+			tvPhoneNum.setEnabled(false);
+		}else{
+			tvPhoneNum.setText("");
+			tvPhoneNum.setEnabled(true);
+		}
+	}
+	
+
+
+	private void initView(View view) {
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.regist,
+				R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+				getResources().getColor(R.color.titlebar_bg));
+		tvPhoneNum = (EditText) view.findViewById(R.id.tv_phone_num);
+		btnSubmit = (Button) view.findViewById(R.id.btn_submit);
+		tvVerifyCode = (TextView) view.findViewById(R.id.tv_verify_code);
+		tv_warm_prompt = (TextView) view.findViewById(R.id.tv_warm_prompt);
+		tv_send_hint = (TextView) view.findViewById(R.id.tv_send_hint);
+		edtInputVerifyCode = (EditText) view.findViewById(R.id.et_input_verify_code);
+		edtFirstPWD= (EditText) view.findViewById(R.id.et_first_pwd);
+		edtSecondPWD = (EditText) view.findViewById(R.id.et_second_pwd);
+		
+		
+		
+		//隐藏软件盘
+		       getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE |
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+		
+	
+	}
+
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			LoginActivity activity = (LoginActivity) getActivity();
+			if (activity == null) {
+				return;
+			}
+            activity.switchToLoginFragment(LoginFragment.TAG);
+		}
+	};
+
+	protected void initListener() {
+
+		tvVerifyCode.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+
+//				if (!OnKeyDownUtil.isInValidClick()) {
+				
+					startVertifyCodeRequest();
+//				} else {
+//					ToastUtils.ToastShort(QdocApplication.getInstance(),
+//							"间隔2分钟才可再次获取验证码");
+//				}
+			}
+		});
+
+		btnSubmit.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View arg0) {
+				//获取密码，判断是否为空
+				String setPWD=edtFirstPWD.getText().toString();
+            	confirmPWD = edtSecondPWD.getText().toString(); 
+            	if(StringUtils.isBlank(tvPhoneNum.getText().toString().trim())){
+            		ToastUtils.ToastShort(getActivity(), "请输入手机号码");
+            		return;
+            	}
+            	if(StringUtils.isBlank(edtInputVerifyCode.getText().toString().trim())){
+            		ToastUtils.ToastShort(getActivity(), "请输入验证码");
+            		return;
+            	}
+            	if(StringUtils.isBlank(setPWD)){
+            		ToastUtils.ToastLong(getActivity(), R.string.input_password);
+            		return;
+            	}
+            	if(StringUtils.isBlank(confirmPWD)){
+            		ToastUtils.ToastLong(getActivity(), R.string.input_confirm_password);
+            		return;
+            	}
+            	
+            	//判断密码是否格式正确
+            	if(!VerifyUtil.verifyPasswordLengthAndType(getActivity(), setPWD)){
+            		ToastUtils.ToastLong(getActivity(), R.string.input_correct_password);
+            		return;
+            	}
+            	if(!VerifyUtil.verifyPasswordLengthAndType(getActivity(), confirmPWD)){
+            		ToastUtils.ToastLong(getActivity(), R.string.input_correct_password);
+            		return;
+            	}
+            	
+            	if(!VerifyUtil.verifyPasswordSame(getActivity(), setPWD, confirmPWD)){
+            		return;
+            	}
+            
+            	bundle = new Bundle();
+            	bundle.putString("confirmPWD", confirmPWD);
+            	
+				String verifyCode=edtInputVerifyCode.getText().toString();
+                if(StringUtils.isEmpty(verifyCode)){
+                   ToastUtil.show(getActivity(), getActivity().getString(R.string.verify_code_not_null),Gravity.BOTTOM);
+               	   return;
+                }
+				startCheckVerifyCodeRequest(verifyCode);
+
+			}
+
+			
+		});
+	    SpannableString spannableString= new SpannableString(getActivity().getResources().getString(R.string.verify_code_hint));
+	        spannableString.setSpan(new ClickableSpan()
+	        {
+	        	 @Override
+	             public void updateDrawState(TextPaint ds) {
+	                 super.updateDrawState(ds);
+	                 ds.setUnderlineText(false);      //设置下划线
+	             }
+		
+	           @Override
+	            public void onClick(View widget)
+	            {
+	        		 Global.callPhone(getActivity(), AppConstants.SERVICE_PHONE);
+	            }
+	        }, 66, 78, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+	       
+	     spannableString.setSpan(new ForegroundColorSpan(getActivity().getResources().getColor(R.color.red)),  66, 78, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);  //设置前景色为洋红色 
+	     spannableString.setSpan(new RelativeSizeSpan(1.3f), 66, 78, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);  //1.3f表示默认字体大小的1.3倍  
+	     tv_warm_prompt.setText(spannableString);
+	     //  在单击链接时凡是有要执行的动作，都必须设置MovementMethod对象
+	     tv_warm_prompt.setMovementMethod(LinkMovementMethod.getInstance());
+	}
+
+    /**
+     * 获取验证码
+     * @return void
+     */
+	private void startVertifyCodeRequest() {
+		
+		//String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+		final String accountName = tvPhoneNum.getText().toString().trim();
+		if(TextUtils.isEmpty(accountName)){
+			ToastUtils.ToastShort(getContext(), "手机号码不能为空");
+			return;
+		}
+		Global.progressDialog = ProgressDialog.show(getActivity(), null,getActivity().getString(R.string.load_data), true,true);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getVertifyCodeStandardRequestParam(TAG, accountName,verifyCodeType), 
+				JsonParserFactory.parseBaseModel(VertifyCodeDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						Global.progressDialog.dismiss();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							callTimer();
+							//sp.edit().putString("phoneNumber", accountName).commit();
+							PersonalConfig.putString(PersonalConfigKey.EXTRA_ACCOUNT_HINT, accountName);
+							PersonalConfig.asyncCommit();
+							final VertifyCodeDataModel dataModel = (VertifyCodeDataModel) resultData;
+							if (dataModel != null&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(), "验证码已发送");
+								tv_send_hint.setText(getActivity().getString(R.string.send_verify_code_hint, accountName));
+								tv_send_hint.setVisibility(View.VISIBLE);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),dataModel.getErrorMsg());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+						LogUtils.d(TAG, "resultCode::: " + resultCode+ "resultData ::: " + resultData);
+					}
+				});
+	}
+
+	/**
+     * 验证码校验
+     * @return void
+     */
+	private void startCheckVerifyCodeRequest(String code) {
+	    Global.progressDialog = ProgressDialog.show(getActivity(), null,
+		    		  getActivity().getString(R.string.load_data), true,
+						true);
+		String devicetoken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+		//String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+		final String accountName = tvPhoneNum.getText().toString().trim();
+		if(TextUtils.isEmpty(accountName)){
+			ToastUtils.ToastShort(getContext(), "手机号码不能为空");
+			return;
+		}
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getCheckVerifyCodeRequestParam(TAG, accountName, devicetoken,
+						AppConstants.ANDROID, verifyCodeType, code),
+				JsonParserFactory.parseBaseModel(ActiveAccountDataModel.class),
+				new IResultReceiver() {
+
+					@SuppressLint("ParserError")
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						Global.progressDialog.dismiss();
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final ActiveAccountDataModel dataModel = (ActiveAccountDataModel) resultData;
+							if (dataModel != null&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS) {
+								//保存获取验证码的手机号码到本地
+//								ToastUtils.ToastShort(getContext()
+//										.getApplicationContext(), "激活成功");
+								LoginActivity activity = (LoginActivity) getActivity();
+								if (loginStatus == AppConstants.LOGIN_NO_ACTIVE || loginStatus == AppConstants.LOGIN_NO_AUDIT) {
+									//activity.switchToSetPasswordFragment(SetPasswordFragment.TAG);
+									//跳到我的界面
+									//MainActivity.startActivity(getActivity(), MainActivity.TAB_INDEX_TAB5_ACTIVITY);
+									startLoginRequest2(confirmPWD);
+									
+								} else if (loginStatus == AppConstants.LOGIN_NO_ENTRY) {
+									activity.switchToRegister1Fragment(bundle,Register1Fragment.TAG);
+								}
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),dataModel.getErrorMsg());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext()
+										.getApplicationContext(), R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+					}
+
+				});
+	}
+	
+	
+
+	private void startLoginRequest2(String confirmPWD) {
+		//final String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+		final String accountName = tvPhoneNum.getText().toString().trim();
+		if(TextUtils.isEmpty(accountName)){
+			ToastUtils.ToastShort(getContext(), "手机号码不能为空");
+			return;
+		}
+        String devicetoken = PersonalConfig.getString(PersonalConfigKey.EXTRA_DEVICE_TOKEN);
+        if(TextUtils.isEmpty(Global.APP_VERSION_NAME))
+        	Global.APP_VERSION_NAME = Global.getVerName(getContext());
+        if(TextUtils.isEmpty(Global.OS_VERSION))
+        	Global.OS_VERSION = Global.getOSVersion();
+        if(TextUtils.isEmpty(Global.PHONE_MODEL))
+        	Global.PHONE_MODEL = Global.getPhoneModel();
+        RequestParams params=DataRequestUtils.getLoginRequestParam(TAG, accountName, confirmPWD, AppConstants.ANDROID, devicetoken, AppConstants.MODEL_NO_ACTIVE,Global.APP_VERSION_NAME,Global.OS_VERSION,Global.PHONE_MODEL);
+        HttpTaskManager.startStringRequest(
+        		params,
+                JsonParserFactory.parseBaseModel(LoginModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final LoginModel dataModel = (LoginModel) resultData;
+                            // 先清除再保存TOKEN数据
+                            if (PersonalConfig.hasKey(PersonalConfigKey.EXTRA_TOKEN)) {
+                                PersonalConfig.remove(PersonalConfigKey.EXTRA_TOKEN);
+                            }
+                            PersonalConfig.putString(PersonalConfigKey.EXTRA_TOKEN, dataModel.getToken());
+                            PersonalConfig.putString(PersonalConfigKey.EXTRA_ACCOUNT_HINT, accountName);
+//                          PersonalConfig.putString(PersonalConfigKey.EXTRA_PWD_HINT, password);
+                            PersonalConfig.asyncCommit();
+                            Global.loginSuccess(dataModel.getUserStatus(),true,accountName,dataModel.getDoctorCertificationStatus());
+                            MainActivity.startActivity(getContext(),MainActivity.TAB_INDEX_TAB5_ACTIVITY);
+//                            getActivity().finish();
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                            	
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+		
+	}
+   
+	/**
+	 * 呼叫计时
+	 */
+	public void callTimer() {
+		// 定义计时器
+		tvVerifyCode.setEnabled(false);
+		if(timer!=null){
+			timer.cancel();
+		}
+		timer = new Timer();
+		count = 120;
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				Message msg = new Message();
+				msg.what = count--;
+				TimerHandler.sendMessage(msg);
+			}
+		}, 0, 1000);
+	}
+
+	private Handler TimerHandler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			if (msg.what > 0) {
+				tvVerifyCode.setText(String.valueOf(msg.what));
+			} else {
+				if(isAdded()){
+					//避免Fragment not attached to Activity
+					tvVerifyCode.setEnabled(true);
+					tvVerifyCode.setText(getResources().getString(R.string.login_verify_code));
+				}
+				timer.cancel();
+			}
+		}
+	};
+
+	
+	
+	public void onDestroy() {
+		super.onDestroy();
+	}
+
+	@Override
+	public void onPause() {
+		// TODO Auto-generated method stub
+		super.onPause();
+		LogUtils.i(TAG, "onPause");
+		
+	}
+	
+	@Override
+	public void onStop() {
+		// TODO Auto-generated method stub
+		super.onStop();
+	}
+	
+	public static void startActivity(Context context) {
+		context.startActivity(IntentTools.getLoginIntent(context));
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		}
+
+	}
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public void onDestroyView() {
+	    	// TODO Auto-generated method stub
+	    super.onDestroyView();
+	    LogUtils.d(TAG, "onDestroyView");
+	}
+	    
+    
+}

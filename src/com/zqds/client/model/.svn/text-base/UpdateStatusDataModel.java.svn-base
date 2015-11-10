@@ -1,0 +1,35 @@
+/*
+ * UpdateStatusDataModel.java
+ * classes : com.qdoc.client.model.UpdateStatusDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-14 下午5:25:22
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.UpdateStatusDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-14 下午5:25:22
+ */
+public class UpdateStatusDataModel extends AbstractBaseModel {
+	private static final long serialVersionUID = 1L;
+	private StatusUpdateDtoModel statusUpdateDto;
+
+
+	/**
+     * @return the statusUpdateDto
+     */
+    public StatusUpdateDtoModel getStatusUpdateDto() {
+        return statusUpdateDto;
+    }
+
+    /**
+     * @param statusUpdateDto the statusUpdateDto to set
+     */
+    public void setStatusUpdateDto(StatusUpdateDtoModel statusUpdateDto) {
+        this.statusUpdateDto = statusUpdateDto;
+    }
+
+}

@@ -1,0 +1,69 @@
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+
+import com.qdoc.client.R;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.fragment.FlowerFragment;
+import com.qdoc.client.util.IntentTools;
+
+public class FlowerActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = FlowerActivity.class.getSimpleName();
+    /**
+     * view
+     */
+    private BaseFragment mCurFragment;  
+	private BaseFragment flowerFragment; 
+	
+	 @Override
+	protected void onCreate(Bundle arg0) {
+		// TODO Auto-generated method stub
+		super.onCreate(arg0);
+		setContentView(R.layout.activity_flower);
+		initView();
+		initListener();
+	}
+
+	@Override
+	protected void initView() {
+		// TODO Auto-generated method stub
+		flowerFragment = new FlowerFragment();
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.fragment_flower, flowerFragment, FlowerFragment.TAG);
+        ft.show(flowerFragment);
+        ft.commitAllowingStateLoss();
+        mCurFragment = flowerFragment;
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+		
+	}
+  
+    public void switchContent(BaseFragment from, BaseFragment to) {
+        if (mCurFragment != to) {
+            mCurFragment = to;
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            if (!to.isAdded()) { // 先判断是否被add过
+                transaction.hide(from).add(R.id.fragment_flower, to, to.getReqestTag()).commitAllowingStateLoss(); // 隐藏当前的fragment，add下一个到Activity中
+            } else {
+                transaction.hide(from).show(to).commitAllowingStateLoss(); // 隐藏当前的fragment，显示下一个
+            }
+        }
+    }
+    
+    public static void startActivity(Context context) {
+        if (context == null) {
+            return;
+        }
+        context.startActivity(IntentTools.startFlowerIntent(context));
+    }
+}

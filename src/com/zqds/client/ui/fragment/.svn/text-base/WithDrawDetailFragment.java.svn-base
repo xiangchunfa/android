@@ -1,0 +1,192 @@
+package com.qdoc.client.ui.fragment;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.DoctorWithdrawDto;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+/**
+ * create at 2015-03-25
+ * @author antony
+ *
+ */
+public class WithDrawDetailFragment extends BaseFragment {
+	
+	public static final String TAG = WithDrawDetailFragment.class.getSimpleName();
+	
+	//顶部标题
+	private TitleBar mTitleBar;
+	//提现状态图标
+	private ImageView withdraw_detail_state_logo;
+	//提现状态文案
+	private TextView withdraw_detail_state_text;
+	//提现金额
+	private TextView withdraw_detail_money;
+	//提现手续费文案
+	private TextView withdraw_detail_counter_fee;
+	//医生姓名
+	private TextView withdraw_detail_doctor_name;
+	//银行名称
+	private TextView withdraw_detail_bank_name;
+	//银行卡号
+	private TextView withdraw_detail_bank_number;
+	//交易单号
+	private TextView withdraw_detail_transation_number;
+	//提现时间
+	private TextView withdraw_detail_transfer_time;
+	//预计到账时间标题
+	private TextView withdraw_detail_to_accout_time_title;
+	//预计到账时间或者是到账时间
+	private TextView withdraw_detail_to_accout_time;
+	//传输过来的提现明细对象
+	private DoctorWithdrawDto mDoctorWithdrawDto;
+	//银行信息布局
+	private LinearLayout bank_info_layout;
+	
+	
+	
+	public static WithDrawDetailFragment getNewInstance(Bundle bundle){
+		final WithDrawDetailFragment withDrawDetailFragment = new WithDrawDetailFragment();
+		withDrawDetailFragment.setArguments(bundle);
+		return withDrawDetailFragment;
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_withdraw_detail, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		LogUtils.i(TAG, "------------------>"+savedInstanceState);
+		initView(view);
+		initData();
+		initListener();
+	}
+	
+	private void initView(View view){
+		 mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+	     mTitleBar.setTitleInfo(R.string.my_withdraw_record, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,
+	                getResources().getColor(R.color.titlebar_bg));
+	     
+	 	withdraw_detail_state_logo = (ImageView) view.findViewById(R.id.withdraw_detail_state_logo);
+	 	withdraw_detail_state_text = (TextView) view.findViewById(R.id.withdraw_detail_state_text);
+	 	withdraw_detail_money = (TextView) view.findViewById(R.id.withdraw_detail_money);
+	 	withdraw_detail_counter_fee = (TextView) view.findViewById(R.id.withdraw_detail_counter_fee);
+	 	withdraw_detail_doctor_name = (TextView) view.findViewById(R.id.withdraw_detail_doctor_name);
+	 	withdraw_detail_bank_name = (TextView) view.findViewById(R.id.withdraw_detail_bank_name);
+	 	withdraw_detail_bank_number = (TextView) view.findViewById(R.id.withdraw_detail_bank_number);
+	 	withdraw_detail_transation_number = (TextView) view.findViewById(R.id.withdraw_detail_transation_number);
+	 	withdraw_detail_transfer_time = (TextView) view.findViewById(R.id.withdraw_detail_transfer_time);
+	 	withdraw_detail_to_accout_time_title = (TextView) view.findViewById(R.id.withdraw_detail_to_accout_time_title);
+	 	withdraw_detail_to_accout_time = (TextView) view.findViewById(R.id.withdraw_detail_to_accout_time);
+	 	bank_info_layout = (LinearLayout) view.findViewById(R.id.bank_info_layout);
+	}
+	
+	private void initData(){
+		//显示提现状态和底部文案
+		setWithDrawState(mDoctorWithdrawDto.getStatus(), withdraw_detail_state_logo, withdraw_detail_state_text,withdraw_detail_to_accout_time_title,withdraw_detail_to_accout_time);
+		//显示提现金额
+		withdraw_detail_money.setText(mDoctorWithdrawDto.getWithdMoney());
+		//显示手续费文案
+		showWithFee(mDoctorWithdrawDto, withdraw_detail_counter_fee);
+		//显示医生名字
+		withdraw_detail_doctor_name.setText(getContent(mDoctorWithdrawDto.getDoctorName()));
+		//显示银行名称
+		withdraw_detail_bank_name.setText(getContent(mDoctorWithdrawDto.getBankName()));
+		//显示银行卡号
+		withdraw_detail_bank_number.setText(StringUtils.dealWithBankNo(getContent(mDoctorWithdrawDto.getAccountNo())));
+		if(TextUtils.isEmpty(mDoctorWithdrawDto.getBankName()) || TextUtils.isEmpty(mDoctorWithdrawDto.getAccountNo())){
+			bank_info_layout.setVisibility(View.GONE);
+		}else{
+			bank_info_layout.setVisibility(View.VISIBLE);
+		}
+		//显示交易单号
+		withdraw_detail_transation_number.setText(getContent(mDoctorWithdrawDto.getTradeNo()));
+		//提现时间
+		withdraw_detail_transfer_time.setText(getContent(mDoctorWithdrawDto.getCreatDate()));
+	}
+	
+	private void initListener(){}
+	
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	getActivity().finish();
+        }
+    };
+    
+    /**
+     * 根据提现状态，显示图标和文案
+     * @param status
+     * @param stateLogoImageView
+     * @param stateTextView
+     */
+    private void setWithDrawState(int status,ImageView stateLogoImageView,TextView stateTextView,TextView bottomTitleTextView,TextView bottomContentTextView){
+		if(DoctorWithdrawDto.WITHDRAW_STATUS_UNTREATED==status || DoctorWithdrawDto.WITHDRAW_STATUS_APPROVED==status || DoctorWithdrawDto.WITHDRAW_STATUS_SUBMITS==status){
+			//处理中
+			withdraw_detail_state_logo.setImageResource(R.drawable.withdraw_state_ing);
+			stateTextView.setTextColor(getResources().getColor(R.color.top_tips_color_e73d43));
+			stateTextView.setText(R.string.withdraw_status_ing);
+			bottomTitleTextView.setText(R.string.expected_to_accout_time);
+			bottomContentTextView.setText(getContent(mDoctorWithdrawDto.getExpectDate()));
+		}else if(DoctorWithdrawDto.WITHDRAW_STATUS_PAID==status){
+			//提现成功
+			withdraw_detail_state_logo.setImageResource(R.drawable.withdraw_state_success);
+			stateTextView.setText(R.string.withdraw_status_paid);
+			bottomTitleTextView.setText(R.string.withdraw_made_time);
+			bottomContentTextView.setText(getContent(mDoctorWithdrawDto.getPaymentTime()));
+		}else if(DoctorWithdrawDto.WITHDRAW_STATUS_FAIL==status){
+			//提现失败
+			withdraw_detail_state_logo.setImageResource(R.drawable.withdraw_state_fail);
+			stateTextView.setText(R.string.withdraw_status_fail);
+			bottomTitleTextView.setText(R.string.withdraw_fail_reason);
+			bottomContentTextView.setText(getContent(mDoctorWithdrawDto.getDrawInfo()));
+		}
+    }
+    
+    /**
+     * 处理提现收取手续费的文案显示
+     * @param doctorWithdrawDto
+     * @param feeTextView
+     */
+    private void showWithFee(DoctorWithdrawDto doctorWithdrawDto,TextView feeTextView){
+    	int withdMoney = Integer.parseInt(doctorWithdrawDto.getWithdMoney());
+    	if(withdMoney>=doctorWithdrawDto.getFee() || doctorWithdrawDto.getStatus()==DoctorWithdrawDto.WITHDRAW_STATUS_FAIL){
+    		//大于手续费收取边界，不用显示手续费文案
+    		feeTextView.setVisibility(View.GONE);
+    	}else{
+    		String feeText = getString(R.string.withdraw_fee)+doctorWithdrawDto.getWithdFee()+getString(R.string.yuan);
+    		feeTextView.setVisibility(View.VISIBLE);
+    		feeTextView.setText(feeText);
+    	}
+    }
+    
+    private String getContent(String content){
+    	return TextUtils.isEmpty(content)?"":content;
+    }
+    
+    public void setDoctorWithdrawDto(DoctorWithdrawDto doctorWithdrawDto){
+    	this.mDoctorWithdrawDto = doctorWithdrawDto;
+    }
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+}

@@ -1,0 +1,83 @@
+/*
+ * ConsultModel.java
+ * classes : com.qdoc.client.model.ConsultModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:14:04
+ */
+package com.qdoc.client.model;
+
+
+/**
+ * FileName    : ShowContentDataModel.java
+ * Description : 医生分享内容实体类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2014-12-1 
+ **/
+public class DoctorShareDataModel extends AbstractBaseModel{
+
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private String conent;
+	private String headimage;
+	private String shareurl;
+    private String title;
+	/**
+	 * @return the conent
+	 */
+	public String getConent() {
+		return conent;
+	}
+	/**
+	 * @param conent the conent to set
+	 */
+	public void setConent(String conent) {
+		this.conent = conent;
+	}
+	/**
+	 * @return the headimage
+	 */
+	public String getHeadimage() {
+		return headimage;
+	}
+	/**
+	 * @param headimage the headimage to set
+	 */
+	public void setHeadimage(String headimage) {
+		this.headimage = headimage;
+	}
+     
+	/**
+	 * @return the shareurl
+	 */
+	public String getShareurl() {
+		return shareurl;
+	}
+	/**
+	 * @param shareurl the shareurl to set
+	 */
+	public void setShareurl(String shareurl) {
+		this.shareurl = shareurl;
+	}
+	/**
+	 * @return the title
+	 */
+	public String getTitle() {
+		return title;
+	}
+	/**
+	 * @param title the title to set
+	 */
+	public void setTitle(String title) {
+		this.title = title;
+	}
+    
+    
+    
+    
+}

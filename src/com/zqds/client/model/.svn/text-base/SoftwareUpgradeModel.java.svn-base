@@ -1,0 +1,40 @@
+/*
+ * StatusUpdateDtoModel.java
+ * classes : com.qdoc.client.model.StatusUpdateDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-14 下午5:25:43
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.StatusUpdateDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-14 下午5:25:43
+ */
+public class SoftwareUpgradeModel extends AbstractBaseModel{
+
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 5214575791975324351L;
+	private boolean needUp;
+    private DataVersionDtoModel dataVersionDto;
+
+	public DataVersionDtoModel getDataVersionDto() {
+		return dataVersionDto;
+	}
+	public void setDataVersionDto(DataVersionDtoModel dataVersionDto) {
+		this.dataVersionDto = dataVersionDto;
+	}
+	public boolean getNeedUp() {
+		return needUp;
+	}
+	public boolean setNeedUp(boolean needUp) {
+		return this.needUp = needUp;
+	}
+    
+   
+
+}

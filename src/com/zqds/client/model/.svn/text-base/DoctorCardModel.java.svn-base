@@ -1,0 +1,273 @@
+/*
+ * DoctorCardModel.java
+ * classes : com.qdoc.client.model.DoctorCardModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-19 下午11:21:03
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.DoctorCardModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-19 下午11:21:03
+ */
+public class DoctorCardModel {
+    private String birthday;
+    private String city;
+    private String departName;
+    private String dictinoaryLable;
+    private int doctorId;
+    private String doctorName;
+    private String enName;
+    private String headImage;
+    private String hospitalName;
+    private String introduction;
+    private String realQzCodeUrl;
+    private String realHeadImage;
+    private String positionName;
+    private String professional;
+    private String qzCodeUrl;
+    private int sex;
+    private String telphone;
+    /**
+	 * @return the realHeadImage
+	 */
+	public String getRealHeadImage() {
+		return realHeadImage;
+	}
+
+	/**
+	 * @param realHeadImage the realHeadImage to set
+	 */
+	public void setRealHeadImage(String realHeadImage) {
+		this.realHeadImage = realHeadImage;
+	}
+
+	/**
+     * @return the realQzCodeUrl
+     */
+    public String getRealQzCodeUrl() {
+        return realQzCodeUrl;
+    }
+
+    /**
+     * @param realQzCodeUrl the realQzCodeUrl to set
+     */
+    public void setRealQzCodeUrl(String realQzCodeUrl) {
+        this.realQzCodeUrl = realQzCodeUrl;
+    }
+    
+    /**
+     * @return the birthday
+     */
+    public String getBirthday() {
+        return birthday;
+    }
+
+    /**
+     * @param birthday the birthday to set
+     */
+    public void setBirthday(String birthday) {
+        this.birthday = birthday;
+    }
+
+    /**
+     * @return the city
+     */
+    public String getCity() {
+        return city;
+    }
+
+    /**
+     * @param city the city to set
+     */
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    /**
+     * @return the departName
+     */
+    public String getDepartName() {
+        return departName;
+    }
+
+    /**
+     * @param departName the departName to set
+     */
+    public void setDepartName(String departName) {
+        this.departName = departName;
+    }
+
+    /**
+     * @return the dictinoaryLable
+     */
+    public String getDictinoaryLable() {
+        return dictinoaryLable;
+    }
+
+    /**
+     * @param dictinoaryLable the dictinoaryLable to set
+     */
+    public void setDictinoaryLable(String dictinoaryLable) {
+        this.dictinoaryLable = dictinoaryLable;
+    }
+
+    /**
+     * @return the doctorId
+     */
+    public int getDoctorId() {
+        return doctorId;
+    }
+
+    /**
+     * @param doctorId the doctorId to set
+     */
+    public void setDoctorId(int doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    /**
+     * @return the doctorName
+     */
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    /**
+     * @param doctorName the doctorName to set
+     */
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
+
+    /**
+     * @return the headImage
+     */
+    public String getHeadImage() {
+        return headImage;
+    }
+
+    /**
+     * @param headImage the headImage to set
+     */
+    public void setHeadImage(String headImage) {
+        this.headImage = headImage;
+    }
+
+    /**
+     * @return the hospitalName
+     */
+    public String getHospitalName() {
+        return hospitalName;
+    }
+
+    /**
+     * @param hospitalName the hospitalName to set
+     */
+    public void setHospitalName(String hospitalName) {
+        this.hospitalName = hospitalName;
+    }
+
+    /**
+     * @return the introduction
+     */
+    public String getIntroduction() {
+        return introduction;
+    }
+
+    /**
+     * @param introduction the introduction to set
+     */
+    public void setIntroduction(String introduction) {
+        this.introduction = introduction;
+    }
+
+
+    /**
+     * @return the sex
+     */
+    public int getSex() {
+        return sex;
+    }
+
+    /**
+     * @param sex the sex to set
+     */
+    public void setSex(int sex) {
+        this.sex = sex;
+    }
+
+    /**
+     * @return the telphone
+     */
+    public String getTelphone() {
+        return telphone;
+    }
+
+    /**
+     * @param telphone the telphone to set
+     */
+    public void setTelphone(String telphone) {
+        this.telphone = telphone;
+    }
+
+	/**
+	 * @return the positionName
+	 */
+	public String getPositionName() {
+		return positionName;
+	}
+
+	/**
+	 * @param positionName the positionName to set
+	 */
+	public void setPositionName(String positionName) {
+		this.positionName = positionName;
+	}
+
+	/**
+	 * @return the professional
+	 */
+	public String getProfessional() {
+		return professional;
+	}
+
+	/**
+	 * @param professional the professional to set
+	 */
+	public void setProfessional(String professional) {
+		this.professional = professional;
+	}
+
+	/**
+	 * @return the qzCodeUrl
+	 */
+	public String getQzCodeUrl() {
+		return qzCodeUrl;
+	}
+
+	/**
+	 * @param qzCodeUrl the qzCodeUrl to set
+	 */
+	public void setQzCodeUrl(String qzCodeUrl) {
+		this.qzCodeUrl = qzCodeUrl;
+	}
+
+	/**
+	 * @return the enName
+	 */
+	public String getEnName() {
+		return enName;
+	}
+
+	/**
+	 * @param enName the enName to set
+	 */
+	public void setEnName(String enName) {
+		this.enName = enName;
+	}
+
+}

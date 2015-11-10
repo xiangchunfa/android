@@ -1,0 +1,110 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+/**
+ * FileName    : SystemMessageDto.java
+ * Description : 客服信息实体类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-3-26 
+ **/
+public class SystemMessageDto implements Serializable {
+
+	private static final long serialVersionUID = 3989942556185811318L;
+	
+	private Long id;//客服消息ID
+	private Long doctorId;//医生id
+	private String headImage;//医生头像 
+	private Integer type;//类型： 0系统消息；1客户消息
+	private String msgType;//消息类型：文本:text,图片:image
+	private String content;//文字消息内容
+	private String url;//消息地址
+	private String customerImage;//客服头像
+	private String createDate;//发送时间
+	private int sourceType;//发送类型  0:发送人为客服，接收人为医生   1:发送人为医生，接收人为客服  
+	private String action;//操作
+	private long consultId;//咨询ID
+	private String consultOption;//咨询操作
+	
+	public String getConsultOption() {
+		return consultOption;
+	}
+	public void setConsultOption(String consultOption) {
+		this.consultOption = consultOption;
+	}
+	public Long getId() {
+		return id;
+	}
+	public void setId(Long id) {
+		this.id = id;
+	}
+	public Long getDoctorId() {
+		return doctorId;
+	}
+	public void setDoctorId(Long doctorId) {
+		this.doctorId = doctorId;
+	}
+	public String getHeadImage() {
+		return headImage;
+	}
+	public void setHeadImage(String headImage) {
+		this.headImage = headImage;
+	}
+	public Integer getType() {
+		return type;
+	}
+	public void setType(Integer type) {
+		this.type = type;
+	}
+	public String getMsgType() {
+		return msgType;
+	}
+	public void setMsgType(String msgType) {
+		this.msgType = msgType;
+	}
+	public String getContent() {
+		return content;
+	}
+	public void setContent(String content) {
+		this.content = content;
+	}
+	public String getUrl() {
+		return url;
+	}
+	public void setUrl(String url) {
+		this.url = url;
+	}
+	public String getCustomerImage() {
+		return customerImage;
+	}
+	public void setCustomerImage(String customerImage) {
+		this.customerImage = customerImage;
+	}
+	public String getCreateDate() {
+		return createDate;
+	}
+	
+	public void setCreateDate(String createDate) {
+		this.createDate = createDate;
+	}
+	public int getSourceType() {
+		return sourceType;
+	}
+	public void setSourceType(int sourceType) {
+		this.sourceType = sourceType;
+	}
+	public String getAction() {
+		return action;
+	}
+	public void setAction(String action) {
+		this.action = action;
+	}
+	public long getConsultId() {
+		return consultId;
+	}
+	public void setConsultId(long consultId) {
+		this.consultId = consultId;
+	}
+}

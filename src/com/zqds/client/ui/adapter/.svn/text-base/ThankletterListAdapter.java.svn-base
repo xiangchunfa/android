@@ -1,0 +1,118 @@
+/*
+ * MessageListAdapter.java
+ * classes : com.qdoc.client.ui.adapter.MessageListAdapter
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午5:57:58
+ */
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.system.ImageLoaderHelper;
+
+/**
+ * com.qdoc.client.ui.adapter.MessageListAdapter
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午5:57:58
+ */
+public class ThankletterListAdapter extends BaseAdapter {
+    /**
+     * TAG
+     */
+    private static final String TAG = ThankletterListAdapter.class.getSimpleName();
+
+    /**
+     * params
+     */
+    private ArrayList<ElementsModel> mElementsList = new ArrayList<ElementsModel>();
+    private LayoutInflater inflater;
+    private Context mContext;
+
+    public ThankletterListAdapter(Context context) {
+        mContext = context;
+        inflater = LayoutInflater.from(context);
+    }
+
+    public void addListData(ArrayList<ElementsModel> list) {
+        mElementsList.clear();
+        mElementsList.addAll(list);
+        notifyDataSetChanged();
+    }
+
+    public void addMoreListData(ArrayList<ElementsModel> list) {
+        mElementsList.addAll(list);
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public int getCount() {
+        return mElementsList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return mElementsList.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder;
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.listitem_thankletter_list, null);
+            holder = new ViewHolder();
+            holder.icon_UserHeadUrl = (ImageView) convertView.findViewById(R.id.icon_userheadurl);
+            holder.nicknameStr = (TextView) convertView.findViewById(R.id.nickname);
+            holder.time = (TextView) convertView.findViewById(R.id.time);
+            holder.description = (TextView) convertView.findViewById(R.id.description);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        if (getCount() > position) {
+            final ElementsModel model = mElementsList.get(position);
+            if (model != null) {
+                // 头像/名字
+                if (model.getwUserDto() != null) {
+                    ImageLoaderHelper.getInstance(mContext).displayImage(model.getwUserDto().getHeadimgurl(),
+                            holder.icon_UserHeadUrl, R.drawable.bank_owener_default_header);
+                    if (!TextUtils.isEmpty(model.getwUserDto().getNicknameStr())) {
+                        holder.nicknameStr.setText(model.getwUserDto().getNicknameStr());
+                    } else {
+                        holder.nicknameStr.setText("无名氏");
+                    }
+                    // 时间
+                    holder.time.setText(mContext.getResources().getString(R.string.msg_create,model.getCreateTime()));
+                }
+                // 内容描述
+                holder.description.setText(model.getContent());
+            }
+        }
+        return convertView;
+    }
+
+    private static class ViewHolder {
+        private ImageView icon_UserHeadUrl;
+        private TextView nicknameStr;
+        private TextView time;
+        private TextView description;
+    }
+}

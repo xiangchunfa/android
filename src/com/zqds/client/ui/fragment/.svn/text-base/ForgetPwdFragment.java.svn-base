@@ -1,0 +1,300 @@
+/*
+ * RegistStepOne.java
+ * classes : com.qdoc.client.ui.fragment.RegistStepOne
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-10 下午9:45:20
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
+import android.app.ProgressDialog;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ActiveAccountDataModel;
+import com.qdoc.client.model.RestPwdVertifyCodeDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.ForgetPwdActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.OnKeyDownUtil;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.RegistStepOne
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-10 下午9:45:20
+ */
+public class ForgetPwdFragment extends BaseFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = ForgetPwdFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private EditText edUserName;
+    private EditText edInputVertifyCode;
+    private Button btnGetVertifyCode;
+    private EditText edInputPwd;
+    private EditText edConfirmPwd;
+    private Timer timer;
+    private int count;
+
+    public static ForgetPwdFragment newInstance(Bundle bundle) {
+        final ForgetPwdFragment fragment = new ForgetPwdFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_forgetpwd, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initParams();
+        initListener();
+    }
+
+    private void initParams() {
+		String account = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+        if(!StringUtils.isEmpty(account)){
+        	edUserName.setText(account);
+        }
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfoWithRightText(R.string.forget_title1, R.drawable.icon_back, R.string.finish,
+                actionBarLeftBtnListener, actionBarRightBtnListener, getResources().getColor(R.color.titlebar_bg));
+        edUserName = (EditText) view.findViewById(R.id.et_username);
+        edInputVertifyCode = (EditText) view.findViewById(R.id.et_vertifycode);
+        btnGetVertifyCode = (Button) view.findViewById(R.id.btnVertify);
+        edInputPwd = (EditText) view.findViewById(R.id.et_inputpwd);
+        edConfirmPwd = (EditText) view.findViewById(R.id.et_confirmpwd);
+    }
+
+    protected void initListener() {
+        btnGetVertifyCode.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                if (TextUtils.isEmpty(edUserName.getText().toString())) {
+                    ToastUtils.ToastShort(getContext().getApplicationContext(), "号码不能为空!");
+                    return;
+                }
+                if (OnKeyDownUtil.isValidClick()) {
+                    //btnGetVertifyCode.setBackgroundResource(R.drawable.btn_vertifycode_bg);
+                    startVertifyCodeRequest();
+                } else {
+                    //btnGetVertifyCode.setBackgroundResource(R.drawable.icon_vertifycode_normal);
+                    ToastUtils.ToastShort(getActivity(), "间隔2分钟才可再次获取验证码");
+                }
+            }
+        });
+    }
+
+    /**
+     * 返回
+     */
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            getActivity().finish();
+        }
+    };
+
+    /**
+     * 下一步
+     */
+    OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            // TODO Auto-generated method stub
+            if (TextUtils.isEmpty(edUserName.getText().toString())) {
+                ToastUtils.ToastShort(getContext().getApplicationContext(), "用户名不能为空!");
+                return;
+            }
+            if (TextUtils.isEmpty(edInputVertifyCode.getText().toString())) {
+                ToastUtils.ToastShort(getContext().getApplicationContext(), "验证码不能为空!");
+                return;
+            }
+            if (TextUtils.isEmpty(edInputPwd.getText().toString())) {
+                ToastUtils.ToastShort(getContext().getApplicationContext(), "密码不能为空!");
+                return;
+            }
+            if (TextUtils.isEmpty(edConfirmPwd.getText().toString())) {
+                ToastUtils.ToastShort(getContext().getApplicationContext(), "确认密码不能为空!");
+                return;
+            }
+            if (!edConfirmPwd.getText().toString().equals(edInputPwd.getText().toString())) {
+                ToastUtils.ToastShort(getContext().getApplicationContext(), "两次密码输入不一致!");
+                return;
+            }
+            startFixPwdCodeRequest();
+        }
+    };
+    
+    /**
+     * 重置密码获取验证码
+     * @return void
+     */
+    private void startVertifyCodeRequest() {
+	    Global.progressDialog = ProgressDialog.show(getActivity(), null,getActivity().getString(R.string.load_data), true,true);
+        HttpTaskManager.startStringRequest(
+                DataRequestUtils.getResetVertifyCodeRequestParam(TAG, edUserName.getText().toString()),
+                JsonParserFactory.parseBaseModel(RestPwdVertifyCodeDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        Global.progressDialog.dismiss();
+                    	if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final RestPwdVertifyCodeDataModel dataModel = (RestPwdVertifyCodeDataModel) resultData;
+                            if ((dataModel != null) && (dataModel.getAccount() != 0)) {
+                                // 赋值
+                                // edInputVertifyCode.setText(dataModel.getAccount());
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), "验证码已发送");
+                                callTimer();
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), "获取验证码失败");
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+	/**
+	 * 呼叫计时
+	 */
+	public void callTimer() {
+		// 定义计时器
+		btnGetVertifyCode.setEnabled(false);
+		if(timer!=null){
+			timer.cancel();
+		}
+		timer = new Timer();
+		count = 120;
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				Message msg = new Message();
+				msg.what = count--;
+				TimerHandler.sendMessage(msg);
+			}
+		}, 0, 1000);
+	}
+	
+	private Handler TimerHandler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			if (msg.what > 0) {
+				btnGetVertifyCode.setText(String.valueOf(msg.what));
+			} else {
+				if(isAdded()){
+					//避免Fragment not attached to Activity
+					btnGetVertifyCode.setEnabled(true);
+					btnGetVertifyCode.setText(getResources().getString(R.string.login_verify_code));
+				}
+				timer.cancel();
+			}
+		}
+	};
+
+    /**
+     * 重新设置密码
+     * @return
+     */
+    private void startFixPwdCodeRequest() {
+	    Global.progressDialog = ProgressDialog.show(getActivity(), null,
+	    		  getActivity().getString(R.string.load_data), true,
+					true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getResetPwdCodeRequestParam(TAG, edUserName.getText()
+                .toString(), edInputPwd.getText().toString(), edInputVertifyCode.getText().toString()),
+                JsonParserFactory.parseBaseModel(ActiveAccountDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                    	if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final ActiveAccountDataModel dataModel = (ActiveAccountDataModel) resultData;
+							if (dataModel != null&&dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS) {
+			                   ToastUtils.ToastShort(getContext().getApplicationContext(), "重置密码成功");
+                               // 跳转到登陆页面
+                               LoginActivity.startActivity(getContext());
+                               ForgetPwdActivity activity = (ForgetPwdActivity) getActivity();
+                               if (activity == null) {
+                                   return;
+                               }
+                               activity.finish();
+							} else {
+							   ToastUtils.ToastShort(getContext().getApplicationContext(),dataModel.getErrorMsg());
+							}
+                         } else {
+                            if (resultData == null) {
+                			   ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                               ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                         }
+                    }
+                });
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+
+        HttpTaskManager.stop(TAG);
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+}

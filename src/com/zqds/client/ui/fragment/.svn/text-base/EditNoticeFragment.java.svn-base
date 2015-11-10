@@ -1,0 +1,199 @@
+package com.qdoc.client.ui.fragment;
+
+import java.util.List;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.ShowBulletin;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.view.MyEditText;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.ToastUtils;
+
+import android.app.ProgressDialog;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.TextView;
+
+/**
+ * 
+ * @author Antony
+ *
+ */
+public class EditNoticeFragment extends BaseFragment implements OnClickListener{
+	
+	public static final String TAG = EditNoticeFragment.class.getSimpleName();
+	
+	private MyEditText et_dynamic_notice;
+	private TextView tv_save_dynamic_notice;
+	private TitleBar mTitleBar;
+	
+	private String beforeDynamicNotice;//动态公告
+	private List<String> reference;//动态公告案例列表
+	
+	private boolean beforeHasNotice = false;
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_edit_notice, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		
+		initView(view);
+		initData();
+		initListener();
+	}
+	
+	private void initView(View v) {
+        mTitleBar = (TitleBar) v.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.my_dynamic_notice, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        
+        et_dynamic_notice = (MyEditText) v.findViewById(R.id.et_dynamic_notice);
+        et_dynamic_notice.getEt_input().setHint(R.string.dynamic_notice_hint);
+        tv_save_dynamic_notice = (TextView) v.findViewById(R.id.tv_save_dynamic_notice);
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			getActivity().finish();
+		}
+	};
+
+	private void initData() {
+		getDynamicNotice();
+	}
+
+	private void initListener() {
+		tv_save_dynamic_notice.setOnClickListener(this);
+	}
+	
+	/**
+	 * 获取医生动态公告
+	 */
+	private void getDynamicNotice(){
+		// 判断网络是否可用
+		if (!NetworkUtils.isOnline(QdocApplication.getInstance())) {
+			ToastUtils.ToastShort(getContext(), R.string.network_unavaible);
+			return;
+		}
+		Global.progressDialog = ProgressDialog.show(getActivity(), null, null, true, true);
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getDynamicNotice(TAG, token), 
+				JsonParserFactory.parseBaseModel(ShowBulletin.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					ShowBulletin bulletin = (ShowBulletin) resultData;
+					if(ServerErrorCode.INTERFACE_SUCCESS==bulletin.getState()){
+						//显示医生的动态公告
+						beforeDynamicNotice = bulletin.getBulletin();
+						reference = bulletin.getReference();
+						if(TextUtils.isEmpty(beforeDynamicNotice)){
+							beforeHasNotice = false;
+							et_dynamic_notice.getEt_input().setText("");
+							tv_save_dynamic_notice.setText(R.string.save);
+						}else{
+							beforeHasNotice = true;
+							et_dynamic_notice.getEt_input().setText(beforeDynamicNotice);
+							tv_save_dynamic_notice.setText(R.string.update_dynamic_notice);
+						}
+					}else if(ServerErrorCode.TOKEN_INVALID==bulletin.getState()){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext(), bulletin.getErrorMsg());
+					}
+				}else{
+					ToastUtils.ToastShort(getContext(),R.string.network_error);
+				}
+			}
+		});
+	}
+	
+	/**
+	 * 保存修改医生动态公告
+	 */
+	private void saveOrupdateNotice(){
+		// 判断网络是否可用
+		if (!NetworkUtils.isOnline(QdocApplication.getInstance())) {
+			ToastUtils.ToastShort(getContext(), R.string.network_unavaible);
+			return;
+		}
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		String bulletin = et_dynamic_notice.getEt_input().getText().toString().trim();
+		HttpTaskManager.startStringRequest(DataRequestUtils.saveOrUpdateNotice(TAG, token, bulletin), 
+				JsonParserFactory.parseBaseModel(BaseModel.class), 
+				new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode == ServerErrorCode.STATUS_SUCCESS){
+					BaseModel baseModel = (BaseModel) resultData;
+					if(ServerErrorCode.INTERFACE_SUCCESS == baseModel.getState()){
+						//保存或者修改动态公告成功
+						if(beforeHasNotice){
+							//更新成功
+							ToastUtils.ToastShort(getContext(), R.string.update_success);
+						}else{
+							ToastUtils.ToastShort(getContext(), R.string.save_clinic_time_success);
+						}
+						if(null != getActivity())
+							getActivity().finish();
+					}else if(ServerErrorCode.TOKEN_INVALID == baseModel.getState()){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext(), baseModel.getErrorMsg());
+					}
+				}else{
+					ToastUtils.ToastShort(getContext(),R.string.network_error);
+				}
+			}
+		});
+	}
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.tv_save_dynamic_notice:
+			saveOrupdateNotice();
+			break;
+		default:
+			break;
+		}
+		
+	}
+}

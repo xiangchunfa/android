@@ -1,0 +1,216 @@
+/*
+ * PersonalizedDtoModel.java
+ * classes : com.qdoc.client.model.PersonalizedDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-19 下午11:59:59
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.PersonalizedDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-19 下午11:59:59
+ */
+public class PersonalizedDtoModel {
+    private int consultFees;
+    private boolean consultStatus;
+    private int dayConsults;
+    private String doctorId;
+    private int id;
+    private String uuid;
+    private String weeklyconsultTime;
+    private String money;
+    private String[] dayReference;
+    private String[] optional;
+    private String maxMoney;
+    private String minMoney;
+    private int maxDayConsults;
+    
+
+   
+
+	/**
+	 * @return the maxDayConsults
+	 */
+	public int getMaxDayConsults() {
+		return maxDayConsults;
+	}
+
+	/**
+	 * @param maxDayConsults the maxDayConsults to set
+	 */
+	public void setMaxDayConsults(int maxDayConsults) {
+		this.maxDayConsults = maxDayConsults;
+	}
+
+	/**
+	 * @return the maxMoney
+	 */
+	public String getMaxMoney() {
+		return maxMoney;
+	}
+
+	/**
+	 * @param maxMoney the maxMoney to set
+	 */
+	public void setMaxMoney(String maxMoney) {
+		this.maxMoney = maxMoney;
+	}
+
+	/**
+	 * @return the minMoney
+	 */
+	public String getMinMoney() {
+		return minMoney;
+	}
+
+	/**
+	 * @param minMoney the minMoney to set
+	 */
+	public void setMinMoney(String minMoney) {
+		this.minMoney = minMoney;
+	}
+
+	/**
+	 * @return the optional
+	 */
+	public String[] getOptional() {
+		return optional;
+	}
+
+	/**
+	 * @param optional the optional to set
+	 */
+	public void setOptional(String[] optional) {
+		this.optional = optional;
+	}
+
+	/**
+	 * @return the dayReference
+	 */
+	public String[] getDayReference() {
+		return dayReference;
+	}
+
+	/**
+	 * @param dayReference the dayReference to set
+	 */
+	public void setDayReference(String[] dayReference) {
+		this.dayReference = dayReference;
+	}
+
+	/**
+     * @return the consultFees
+     */
+    public int getConsultFees() {
+        return consultFees;
+    }
+
+    /**
+     * @param consultFees the consultFees to set
+     */
+    public void setConsultFees(int consultFees) {
+        this.consultFees = consultFees;
+    }
+
+    /**
+     * @return the consultStatus
+     */
+    public boolean isConsultStatus() {
+        return consultStatus;
+    }
+
+    /**
+     * @param consultStatus the consultStatus to set
+     */
+    public void setConsultStatus(boolean consultStatus) {
+        this.consultStatus = consultStatus;
+    }
+
+    /**
+     * @return the dayConsults
+     */
+    public int getDayConsults() {
+        return dayConsults;
+    }
+
+    /**
+     * @param dayConsults the dayConsults to set
+     */
+    public void setDayConsults(int dayConsults) {
+        this.dayConsults = dayConsults;
+    }
+
+    /**
+     * @return the doctorId
+     */
+    public String getDoctorId() {
+        return doctorId;
+    }
+
+    /**
+     * @param doctorId the doctorId to set
+     */
+    public void setDoctorId(String doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * @return the weeklyconsultTime
+     */
+    public String getWeeklyconsultTime() {
+        return weeklyconsultTime;
+    }
+
+    /**
+     * @param weeklyconsultTime the weeklyconsultTime to set
+     */
+    public void setWeeklyconsultTime(String weeklyconsultTime) {
+        this.weeklyconsultTime = weeklyconsultTime;
+    }
+
+    /**
+     * @return the money
+     */
+    public String getMoney() {
+        return money;
+    }
+
+    /**
+     * @param money the money to set
+     */
+    public void setMoney(String money) {
+        this.money = money;
+    }
+
+}

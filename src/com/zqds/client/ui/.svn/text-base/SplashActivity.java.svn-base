@@ -1,0 +1,179 @@
+/*
+ * SplashActivity.java
+ * classes : com.qdoc.client.ui.SplashActivity
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-10 上午12:00:17
+ */
+package com.qdoc.client.ui;
+
+import java.lang.ref.WeakReference;
+import java.util.List;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.db.DatabaseService;
+import com.qdoc.client.db.bean.MessageCount;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.SoftwareUpgradeModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.util.FaceConversionUtil;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.umeng.analytics.MobclickAgent;
+
+/**
+ * com.qdoc.client.ui.SplashActivity
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-10 上午12:00:17
+ */
+public class SplashActivity extends Activity {
+    /**
+     * TAG
+     */
+    private static final String TAG = SplashActivity.class.getSimpleName();
+
+    /**
+     * params
+     */
+    private InnerHandler mHandler = new InnerHandler(this);
+    private static final int DELAY_TIME = 2000;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_splash);
+        //打开调试模式（debug）后，数据实时发送，不受发送策略控制
+        MobclickAgent.setDebugMode(true);
+        //SDK在统计Fragment时，需要关闭Activity自带的页面统计
+        //然后在每个页面中重新集成页面统计的代码(包括调用了 onResume 和 onPause 的Activity)。
+        MobclickAgent.openActivityDurationTrack(false);
+        MobclickAgent.updateOnlineConfig(this);
+        LogUtils.i(TAG, "SplashActivity onCreate");
+        initView();
+        initData();
+        initListener();
+    }
+    
+    @Override
+    protected void onResume() {
+    	super.onResume();
+    	//统计页面
+		MobclickAgent.onPageStart(TAG);
+		//统计时长
+		MobclickAgent.onResume(this);
+		LogUtils.i(TAG, "SplashActivity onResume");
+    }
+    
+    @Override
+    protected void onPause() {
+    	super.onPause();
+    	// 保证 onPageEnd 在onPause 之前调用,因为 onPause 中会保存信息 
+		MobclickAgent.onPageEnd(TAG);
+		MobclickAgent.onPause(this);
+		LogUtils.i(TAG, "SplashActivity onPause");
+    }
+    
+    protected void initData(){
+    	Global.inits(this);
+    	Global.initMetrics(this);
+    	//startUpgradeRequest();
+//    	new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                FaceConversionUtil.getInstace().getFileText(getApplication());
+//            }
+//        }).start();
+    }
+    
+
+    
+    protected void initView() {
+
+    }
+    
+    /**
+     * 软件升级 
+     */
+/*    public void startUpgradeRequest(){
+          HttpTaskManager.startStringRequest(DataRequestUtils.getUpgradeRequestParam(TAG,AppConstants.ANDROID,Global.APP_VERSION_NAME,AppConstants.NEW_VERSION),
+                  JsonParserFactory.parseBaseModel(SoftwareUpgradeModel.class), new IResultReceiver() {
+
+                      @Override
+                      public void onReceiveResult(int resultCode, Object resultData) {
+                          // TODO Auto-generated method stub
+                          if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                              final SoftwareUpgradeModel dataModel = (SoftwareUpgradeModel) resultData;
+                              if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                                  if(dataModel.getNeedUp()){
+                                	  Global.isNeedUpdate = true;
+                                  }
+                              }
+                          } 
+                      }
+                  });
+    }*/
+    
+    protected void initListener() {
+        // TODO Auto-generated method stub
+        mHandler.removeCallbacks(runTask);
+        mHandler.postDelayed(runTask, DELAY_TIME);
+    }
+
+    private Runnable runTask = new Runnable() {
+
+        @Override
+        public void run() {
+            // TODO Auto-generated method stub
+            if (PersonalConfig.hasKey(PersonalConfigKey.EXTRA_TOKEN)) {
+                MainActivity.startActivity(SplashActivity.this);
+                finish();
+            } else {
+                LoginActivity.startActivityFromLauncher(SplashActivity.this);
+                finish();
+            }
+        }
+    };
+
+    private static class InnerHandler extends Handler {
+        private WeakReference<SplashActivity> fragmentReference;
+
+        public InnerHandler(SplashActivity fragment) {
+            fragmentReference = new WeakReference<SplashActivity>(fragment);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            final SplashActivity fragment = fragmentReference.get();
+            if (fragment == null) {
+                return;
+            }
+            switch (msg.what) {
+                default:
+                    break;
+            }
+        }
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+
+        mHandler.removeCallbacks(runTask);
+        mHandler = null;
+        
+        LogUtils.i(TAG, "SplashActivity onDestroy");
+    }
+}

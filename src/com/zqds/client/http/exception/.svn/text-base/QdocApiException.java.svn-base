@@ -1,0 +1,54 @@
+package com.qdoc.client.http.exception;
+
+/**
+ * com.qdoc.client.http.exception.QdocApiException
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-5-28 下午5:24:34
+ */
+public class QdocApiException extends Exception {
+    /**
+     * 序列号ID
+     */
+    private static final long serialVersionUID = -1460894893738016580L;
+
+    /**
+     * 错误代码
+     */
+    private int mErrorState;
+
+    private String mErrorMsg;
+
+    public QdocApiException(int errorCode, String errorMessage) {
+        super(errorMessage);
+        mErrorState = errorCode;
+        mErrorMsg = errorMessage;
+    }
+
+    /**
+     * @return int 服务器返回的错误代码
+     */
+    public int getErrorState() {
+        return mErrorState;
+    }
+
+    /**
+     * @return the mErrorMsg
+     */
+    public String getErrorMsg() {
+        return mErrorMsg;
+    }
+
+    @Override
+    public String getMessage() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("state = ");
+        sb.append(mErrorState);
+        sb.append(" ");
+        sb.append("errorMsg = ");
+        sb.append(mErrorMsg);
+        sb.append(super.getMessage());
+        return sb.toString();
+    }
+
+}

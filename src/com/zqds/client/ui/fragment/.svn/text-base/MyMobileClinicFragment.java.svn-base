@@ -1,0 +1,368 @@
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.AbsListView;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.ClinicTimeDtoModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.OutpatientTimeSettingDto;
+import com.qdoc.client.model.OutpatientTimeSettingModel;
+import com.qdoc.client.ui.ClinicTimeSetActivity;
+import com.qdoc.client.ui.EditMyResumeActivity;
+import com.qdoc.client.ui.adapter.ClinicTimeAdapter;
+import com.qdoc.client.util.AttachUtil;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import de.greenrobot.event.EventBus;
+
+/**
+ * FileName    : MyMobileClinicFragment.java
+ * Description : 我的门诊时间界面类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-5-12 
+ **/
+public class MyMobileClinicFragment extends BaseFragment implements OnClickListener{
+	
+	public static final String TAG = MyMobileClinicFragment.class.getSimpleName();
+
+
+	//private LinearLayout lly_line1;
+	//private EditText et_professional_field;
+	//private EditText et_individual_resume;
+	//private TextView tv_individual_resume_operation;
+	//private TextView tv_professional_field_operation;
+	/**
+	 * view 
+	 */
+	private LinearLayout header;//门诊时间头部部分（个人简介和门诊时间设置布局）
+	private TextView tv_doctor_resume_operation;//编辑个人简介
+	private EditText et_doctor_resume;//个人简介内容
+	private LinearLayout ll_resume_content_layout;//个人简介内容布局
+	private TextView tv_clinic_time_operation;//编辑门诊时间文本按钮
+	private TextView tv_no_clinic_time;//没有设置门诊时间时的提示TextView
+	private ListView lv_clinic_time;//门诊时间列表
+	
+	/**
+	 * params
+	 */
+	private static DoctorModel doctorDto;// 医生对象
+    private ClinicTimeAdapter adapter;
+	
+    public static MyMobileClinicFragment newInstance(Bundle bundle) {
+        final MyMobileClinicFragment fragment = new MyMobileClinicFragment();
+        doctorDto = (DoctorModel) bundle.getSerializable(IntentTools.EXTRA_DOCTOR_INFO);
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_my_mobile_clinic, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initData();
+        initListener();
+    }
+	
+	
+	protected void initView(View view) {
+    	//lly_line1 = (LinearLayout) view.findViewById(R.id.lly_line1);
+		//et_professional_field = (EditText) view.findViewById(R.id.et_professional_field);
+		//et_individual_resume = (EditText) view.findViewById(R.id.et_individual_resume);
+		//tv_professional_field_operation = (TextView) view.findViewById(R.id.tv_professional_field_operation);
+		//tv_individual_resume_operation = (TextView) view.findViewById(R.id.tv_individual_resume_operation);
+		header = (LinearLayout) LayoutInflater.from(getContext()).inflate(R.layout.clinic_time_header_view, null);
+		tv_doctor_resume_operation = (TextView) header.findViewById(R.id.tv_doctor_resume_operation);
+		et_doctor_resume = (EditText) header.findViewById(R.id.et_doctor_resume);
+		ll_resume_content_layout = (LinearLayout) header.findViewById(R.id.ll_resume_content_layout);
+		tv_clinic_time_operation = (TextView) header.findViewById(R.id.tv_clinic_time_operation);
+		tv_no_clinic_time = (TextView) header.findViewById(R.id.tv_no_clinic_time);
+		lv_clinic_time = (ListView) view.findViewById(R.id.lv_clinic_time);
+		lv_clinic_time.addHeaderView(header);
+	}
+	
+	class DirectWebViewClient extends WebViewClient{
+		@Override
+		public boolean shouldOverrideUrlLoading(WebView view, String url) {
+			return true;
+		}
+	}
+	
+	private void initData(){
+		adapter = new ClinicTimeAdapter(getActivity(), null);
+		lv_clinic_time.setAdapter(adapter);
+		if(doctorDto==null)
+			return;
+		String introduction = TextUtils.isEmpty(doctorDto.getIntroduction())?"":doctorDto.getIntroduction();
+		String profession = TextUtils.isEmpty(doctorDto.getProfessional())?"":getString(R.string.professional_field)+"："+doctorDto.getProfessional();
+		handleDoctorResume(introduction, profession);
+	}
+	
+	private void handleDoctorResume(String introduction,String profession){
+		if(TextUtils.isEmpty(introduction)&&TextUtils.isEmpty(profession)){
+			et_doctor_resume.setText("");
+			ll_resume_content_layout.setVisibility(View.GONE);
+		}else if(!TextUtils.isEmpty(introduction)&&TextUtils.isEmpty(profession)){
+			ll_resume_content_layout.setVisibility(View.VISIBLE);
+			et_doctor_resume.setText(introduction);
+		}else if(TextUtils.isEmpty(introduction)&&!TextUtils.isEmpty(profession)){
+			ll_resume_content_layout.setVisibility(View.VISIBLE);
+			et_doctor_resume.setText(profession);
+		}else{
+			ll_resume_content_layout.setVisibility(View.VISIBLE);
+			et_doctor_resume.setText(introduction+"\n\n"+profession);
+		}
+	}
+	
+	protected void initListener() {
+		tv_doctor_resume_operation.setOnClickListener(this);
+		tv_clinic_time_operation.setOnClickListener(this);
+		// attach top，防止下拉时，联动头部一起滑动
+		lv_clinic_time.setOnScrollListener(new AbsListView.OnScrollListener() {
+			@Override
+			public void onScrollStateChanged(AbsListView view, int scrollState) {
+			}
+
+			@Override
+			public void onScroll(AbsListView view, int firstVisibleItem,int visibleItemCount, int totalItemCount) {
+				EventBus.getDefault().post(AttachUtil.isAdapterViewAttach(view));
+			}
+		});
+	}
+	
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+	
+	public ArrayList<String> addHeader(){
+		ArrayList<String> itemList = new ArrayList<String>();
+	    String weeks[]={ "周一", "周二","周三","周四","周五","周六","周日"};
+	    for (String week:weeks) {
+	        itemList.add(week);
+	    }
+	    return itemList;
+	}
+	
+	/**
+	 * 获取门诊时间
+	 */
+	private void getClinicTime(){
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getClinicTime(TAG, token), 
+        		JsonParserFactory.parseBaseModel(OutpatientTimeSettingModel.class), 
+        		new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode == ServerErrorCode.STATUS_SUCCESS){
+					OutpatientTimeSettingModel outpatientTimeSettingModel = (OutpatientTimeSettingModel) resultData;
+					if(null!=outpatientTimeSettingModel && outpatientTimeSettingModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						if(null!=outpatientTimeSettingModel.getOutpatSettings() && outpatientTimeSettingModel.getOutpatSettings().size()>0){
+							ArrayList<ClinicTimeDtoModel> clinicTimes = getClinicTimes(outpatientTimeSettingModel.getOutpatSettings());
+							tv_no_clinic_time.setVisibility(View.GONE);
+							adapter.addListData(clinicTimes);
+						} else {
+							tv_no_clinic_time.setVisibility(View.VISIBLE);
+							adapter.addListData(null);
+						}
+					} 
+				}
+			}
+		});
+	}
+	
+	/**
+	 * 获取门诊时间
+	 */
+	public ArrayList<ClinicTimeDtoModel> getClinicTimes(List<OutpatientTimeSettingDto> list) {
+		ArrayList<ClinicTimeDtoModel> clinicTimes = new ArrayList<ClinicTimeDtoModel>();
+		if (clinicTimes == null || clinicTimes.size() > 0) {
+			return clinicTimes;
+		}
+		for (int i = 0; i < list.size(); i++) {
+			String clinicTime = list.get(i).getOutpatientTime();
+			String clinicTimeTemp = clinicTime.substring(2);
+			StringBuffer sb = new StringBuffer();
+			sb.append(clinicTimeTemp).append(clinicTime.substring(0, 2));
+			clinicTimes.add(getDistinguishAMOrPM(sb.toString(), list.get(i).getOutpatientAddress()));
+		}
+		return clinicTimes;
+	}
+	
+	/**
+	 * 区分上午与下午
+	 * @return
+	 */
+	public ClinicTimeDtoModel getDistinguishAMOrPM(String clinicTime, String outpatientAddress){
+		ClinicTimeDtoModel dto = new ClinicTimeDtoModel();  
+		if(StringUtils.isEmpty(clinicTime) || StringUtils.isEmpty(outpatientAddress) )
+		    return dto;
+		StringBuffer sbAM = new StringBuffer();
+		StringBuffer sbPM = new StringBuffer();
+		for(int i = 0; i < clinicTime.length(); i++){
+			String str = String.valueOf(clinicTime.charAt(i));
+			if(i % 2 == 0){
+				sbAM.append(str);
+			}else{
+				sbPM.append(str);
+			}
+		}
+		dto.setAm(sbAM.toString());
+		dto.setPm(sbPM.toString());
+		dto.setOutpatientAddress(outpatientAddress);
+		return dto;
+	}
+
+	/**
+	 * 设置EditText光标的位置
+	 */
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+/*		case R.id.tv_individual_resume_operation:
+			if (et_individual_resume.isFocused()) {
+				if(StringUtils.isEmpty(et_individual_resume.getText().toString())) {
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.introduction_not_null);
+					return;
+				}
+			    getSaveSingleMyInfoRequest(AppConstants.INTRODUCTION, et_individual_resume.getText().toString());
+			} else {
+				tv_individual_resume_operation.setText(getString(R.string.save));
+				tv_individual_resume_operation.setCompoundDrawablesWithIntrinsicBounds(R.drawable.clinic_time_save_selector, 0, 0,0);
+				et_individual_resume.setFocusable(true);
+				et_individual_resume.setFocusableInTouchMode(true);
+				et_individual_resume.requestFocus();
+				InputTools.KeyBoard(et_individual_resume, InputTools.OPEN);
+			    Tools.setCursorPosition(et_individual_resume.getText(), et_individual_resume.getText().length());
+			}
+			break;*/
+		case R.id.tv_doctor_resume_operation:
+			Intent intent = new Intent(getContext(), EditMyResumeActivity.class);
+			if(doctorDto==null)
+				doctorDto = new DoctorModel();
+			intent.putExtra(IntentTools.EXTRA_DOCTOR_RESUME, doctorDto.getIntroduction());
+			intent.putExtra(IntentTools.EXTRA_DOCTOR_PROFESIONAL, doctorDto.getProfessional());
+			startActivityForResult(intent, IntentTools.START_DOCTOR_RESUME_REQUSTCODE);
+			break;
+		case R.id.tv_clinic_time_operation:
+			ClinicTimeSetActivity.startActivity(getContext(), doctorDto);
+			break;
+		}
+	}
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+		getClinicTime();
+	}
+	
+	/**
+     * 我的个人资料修改（单个属性修改）
+     * @param type :类型
+     * @param value :值
+     */
+/*    private void getSaveSingleMyInfoRequest(final String type, String value) {
+    	Global.progressDialog = ProgressDialog.show(getActivity(), null,getActivity().getString(R.string.modifying), true,true);
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getUpdateMyInfoequestParam(TAG, token, type, value),
+                JsonParserFactory.parseBaseModel(DoctorSingleDataModel.class), new IResultReceiver() {
+					@Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DoctorSingleDataModel dataModel = (DoctorSingleDataModel) resultData;
+                            if(dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	AboutmeFragment.getDoctorInfo = true; 	
+                                if(type == AppConstants.PROFESSIONAL){
+                                	et_professional_field.setFocusable(false);
+                                	tv_professional_field_operation.setText(getString(R.string.edit));
+                                	tv_professional_field_operation.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_edit, 0, 0, 0);
+                                	ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.professional_save_success);
+                                	InputTools.KeyBoard(et_professional_field, InputTools.CLOSE);
+                                }else if(type == AppConstants.INTRODUCTION){
+                                	et_individual_resume.setFocusable(false);
+                                	tv_individual_resume_operation.setText(getString(R.string.edit));
+                                	tv_individual_resume_operation.setCompoundDrawablesWithIntrinsicBounds(R.drawable.icon_edit, 0, 0, 0);
+                                	ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.introduction_save_success);
+                                	InputTools.KeyBoard(et_individual_resume, InputTools.CLOSE);
+                                } 
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+      					    }else{
+      					    	ToastUtils.ToastShort(getContext().getApplicationContext(),dataModel.getErrorMsg());
+      					    }
+                        }else{
+                            if(resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            }else{
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                    }
+                });
+    }*/
+    
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    	super.onActivityResult(requestCode, resultCode, data);
+    	if(resultCode!=Activity.RESULT_OK)
+    		return;
+    	switch (requestCode) {
+		case IntentTools.START_DOCTOR_RESUME_REQUSTCODE:
+			String newDoctorResume = data.getStringExtra(IntentTools.EXTRA_DOCTOR_RESUME);
+			String newDoctorProfesion = data.getStringExtra(IntentTools.EXTRA_DOCTOR_PROFESIONAL);
+			handleDoctorResume(newDoctorResume, getString(R.string.professional_field)+"："+newDoctorProfesion);
+			doctorDto.setIntroduction(newDoctorResume);
+			doctorDto.setProfessional(newDoctorProfesion);
+			break;
+		default:
+			break;
+		}
+    }
+}

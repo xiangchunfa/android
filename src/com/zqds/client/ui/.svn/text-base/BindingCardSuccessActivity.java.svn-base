@@ -1,0 +1,118 @@
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.BankDtoDataModel;
+import com.qdoc.client.model.BankInfoDtoModel;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.StringUtils;
+
+/**
+ * 绑定银行卡成功后的界面
+ * create at 2015-02-06
+ * @author antony
+ *
+ */
+public class BindingCardSuccessActivity extends BaseActivity {
+	
+	private static final String TAG = BindingCardSuccessActivity.class.getSimpleName();
+	/**
+	 * 标题栏
+	 */
+	private TitleBar mTitleBar;
+	//更换银行卡按钮
+	private TextView banding_my_card_tv;
+	//开户银行
+	private TextView bank_name_tv;
+	//持卡人头像(没有设置头像显示默认头像)
+	private ImageView bank_owener_header_image;
+	//持卡人姓名
+	private TextView bank_owener_name;
+	//银行卡号
+	private TextView bank_account_no;
+	//银行卡信息类
+	private BankDtoDataModel bankDtoDataModel;
+	//医生信息
+	private DoctorModel doctorModel;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_bank_card_success);
+		
+		initView();
+		initData();
+		initListener();
+	}
+
+	@Override
+	protected void initView() {
+        mTitleBar = (TitleBar)findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfoWithRightText(R.string.aboutus_bank, R.drawable.icon_back, 0,
+                actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        
+        banding_my_card_tv = (TextView) findViewById(R.id.banding_my_card_tv);
+        bank_name_tv = (TextView) findViewById(R.id.bank_name_tv);
+        bank_owener_header_image = (ImageView) findViewById(R.id.bank_owener_header_image);
+        bank_owener_name = (TextView) findViewById(R.id.bank_owener_name);
+        bank_account_no = (TextView) findViewById(R.id.bank_account_no);
+	}
+	
+	private void initData(){
+		doctorModel = (DoctorModel) getIntent().getExtras().getSerializable(IntentTools.EXTAR_DOCTORMODEL);
+		bankDtoDataModel = (BankDtoDataModel) getIntent().getExtras().getSerializable(IntentTools.EXTAR_BANKDTODATAMODEL);
+		if(bankDtoDataModel != null){
+			BankInfoDtoModel bankInfoDtoModel = bankDtoDataModel.getBankInfo();
+			ImageLoaderHelper.getInstance(this).displayImage(doctorModel.getRealHeadImage(), bank_owener_header_image,R.drawable.bank_owener_default_header);
+			bank_name_tv.setText(bankInfoDtoModel.getBankName());
+			bank_owener_name.setText(bankInfoDtoModel.getName());
+			if(!TextUtils.isEmpty(bankInfoDtoModel.getAccountNo())){
+				bank_account_no.setText(StringUtils.dealWithBankNo(bankInfoDtoModel.getAccountNo()));
+			}
+			//bank_account_no.setText(bankInfoDtoModel.getAccountNo().replaceAll("\\d{4}(?!$)", "$0 "));
+		}
+	}
+
+	@Override
+	protected void initListener() {
+		banding_my_card_tv.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				BankAccountEditActivitiy.startActivity(BindingCardSuccessActivity.this, bankDtoDataModel, doctorModel);
+				finish();
+			}
+		});
+	}
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            finish();
+        }
+    };
+
+	/**
+	 * @param bankDtoDataModel the bankDtoDataModel to set
+	 */
+	public void setBankDtoDataModel(BankDtoDataModel bankDtoDataModel) {
+		this.bankDtoDataModel = bankDtoDataModel;
+	}
+	
+	public static void startActivity(Context context,BankDtoDataModel dataModel,DoctorModel doctorModel){
+		if(context == null)
+			return;
+		context.startActivity(IntentTools.startBindingCardSuccessActivity(context, dataModel,doctorModel));
+	}
+}

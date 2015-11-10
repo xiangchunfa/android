@@ -1,0 +1,28 @@
+package com.qdoc.client.ui;
+
+import android.content.Intent;
+import android.os.Bundle;
+
+public class TransferActivity extends BaseActivity {
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onCreate(savedInstanceState);
+		startActivity(new Intent(TransferActivity.this, ServiceActivity.class));
+	}
+	
+	@Override
+	protected void initView() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+
+}

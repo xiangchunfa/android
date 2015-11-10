@@ -1,0 +1,262 @@
+/*
+ * ConsultActivity.java
+ * classes : com.qdoc.client.ui.ConsultActivity
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-7-8 下午11:02:48
+ */
+package com.qdoc.client.ui;
+
+import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.adapter.PagerAdapter;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.fragment.ConsultListFragment;
+import com.qdoc.client.ui.fragment.MyConsultListFragment;
+import com.qdoc.client.ui.view.MyViewPager;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+
+/**
+ * 咨询act
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-8 下午11:02:48
+ */
+public class ConsultListActivity extends BaseActivity {
+    /**
+     * TAG
+     */
+    private static final String TAG = ConsultListActivity.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private LinearLayout lyTitle;
+    private Button btn_1;//咨询中
+    private Button btn_2;//历史咨询
+	private TitleBar mTitleBar;
+	private BaseFragment mConsultListFragment;
+	private FrameLayout flyConsultList;
+	private ImageView iv_gesture_guide;
+	private MyViewPager myPagerTab;
+	private PagerAdapter mPagerAdapter;
+	
+	
+    public ImageView getIv_gesture_guide() {
+		return iv_gesture_guide;
+	}
+
+	public void setIv_gesture_guide(ImageView iv_gesture_guide) {
+		this.iv_gesture_guide = iv_gesture_guide;
+	}
+
+	@Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_consult);
+        LogUtils.i("info", TAG + "->>onCreate");
+        initFragment();
+        initView();
+        initListener();
+    }
+
+    private void initFragment() {
+    	registeConsultReceiver();
+    }
+
+    @Override
+    protected void initView() {
+    	myPagerTab = (MyViewPager) findViewById(R.id.vp_my);
+    	lyTitle = (LinearLayout) findViewById(R.id.ly_title);
+		mTitleBar = (TitleBar) findViewById(R.id.titlebar);
+		iv_gesture_guide = (ImageView) findViewById(R.id.iv_gesture_guide);
+		mTitleBar.setTitleInfo(R.string.tab1_title, 0, 0, null, null,getResources().getColor(R.color.titlebar_bg));
+		flyConsultList = (FrameLayout) findViewById(R.id.fragment_consult_list);
+		if(Global.getUserStatus() == AppConstants.ALL_PERMISSIONS){
+			initTabViewPager();
+		} else {
+			lyTitle.setVisibility(View.GONE);
+			flyConsultList.setVisibility(View.VISIBLE);
+			FragmentManager fm = getSupportFragmentManager();
+	        FragmentTransaction ft = fm.beginTransaction();
+	        mConsultListFragment = ConsultListFragment.newInstance(null);
+	        ft.add(R.id.fragment_consult_list, mConsultListFragment, ConsultListFragment.TAG);
+	        ft.commitAllowingStateLoss();
+		}
+    }
+
+    @Override
+    protected void initListener() {
+
+    }
+    
+    public void onDestroy() {
+        super.onDestroy();
+    	LogUtils.i("info", TAG + "->>onDestroy");
+        unRegisterConsultReceiver();
+    }
+    
+    @Override
+    protected void onResume() {
+    	super.onResume();
+    	LogUtils.i("info", TAG + "->>onResume");
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+    	LogUtils.i("info", TAG + "->>onStop");
+    }
+    
+    @Override
+    protected void onPause() {
+    	super.onPause();
+    	LogUtils.i("info", TAG + "->>onPause");
+    }
+    
+	/**
+	 * 初始化页签
+	 */
+	private void initTabViewPager() {
+		flyConsultList.setVisibility(View.GONE);
+		lyTitle.setVisibility(View.VISIBLE);
+		btn_1 = (Button) findViewById(R.id.btn_1);
+		btn_2 = (Button) findViewById(R.id.btn_2);
+		mPagerAdapter = new PagerAdapter(this);
+		myPagerTab.setVisibility(View.VISIBLE);
+		mPagerAdapter.addTab(ConsultListFragment.class, null);
+		Bundle bundle = new Bundle();
+		bundle.putString(IntentTools.EXTRA_FROM, ConsultListFragment.TAG);
+		mPagerAdapter.addTab(MyConsultListFragment.class, bundle);
+		myPagerTab.setAdapter(mPagerAdapter);
+		btn_1.setText(getString(R.string.unfinished_consult));
+		btn_2.setText(getString(R.string.history_consult_record));
+		btn_1.setOnClickListener(mainViewPageClickListener);
+		btn_2.setOnClickListener(mainViewPageClickListener);
+		myPagerTab.setOnPageChangeListener(new OnPageChangeListener() {
+
+			@SuppressLint("ResourceAsColor")
+			@Override
+			public void onPageSelected(int position) {
+				btn_1.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_normal));
+				btn_1.setBackgroundResource(R.drawable.recharge_tab_normal); // 删除背景
+				btn_2.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_normal));
+				btn_2.setBackgroundResource(R.drawable.recharge_tab_normal);
+				switch (position) {
+				case 0:
+					btn_1.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_selected));
+					btn_1.setBackgroundResource(R.drawable.recharge_tab_focus);
+					if(MyConsultListFragment.instance != null){
+					    if (StringUtils.isEmpty(MyConsultListFragment.instance.getConsult_search_keyword().getText().toString())) {
+					        MyConsultListFragment.instance.getTop_layout().setVisibility(View.GONE);
+					        MyConsultListFragment.instance.getIbtSearch().setVisibility(View.VISIBLE);
+						}
+					} 
+					break;
+				case 1:
+					btn_2.setTextColor(getResources().getColor(R.color.tab_pager_title_textcolor_selected));
+					btn_2.setBackgroundResource(R.drawable.recharge_tab_focus);
+					break;
+				}
+			}
+
+			@Override
+			public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+			}
+
+			@Override
+			public void onPageScrollStateChanged(int state) {
+			}
+		});
+		switchPage(getIntent());
+	}
+	
+	public void registeConsultReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.UPDATE_USER_STATUS_INTENT_ACTION);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(mConsultReceiver, myIntentFilter);
+	}
+
+	public void unRegisterConsultReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(mConsultReceiver);
+	}
+
+	private BroadcastReceiver mConsultReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			try {
+				String action = intent.getAction();
+				if (AppConstants.UPDATE_USER_STATUS_INTENT_ACTION.equals(action)) {
+					//ANDY 临时修改
+					if(!myPagerTab.isShown())
+					    initTabViewPager();
+				}
+			} catch (Exception e) {
+				LogUtils.d(TAG, "BroadcastReceiver>>" + e.toString());
+			}
+		}
+	};
+	
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+	}
+	
+	OnClickListener mainViewPageClickListener = new OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			TextView clickTextView = (TextView) v;
+			if (clickTextView == btn_1) {
+				myPagerTab.setCurrentItem(0);
+			} else if (clickTextView == btn_2) {
+				myPagerTab.setCurrentItem(1);
+			} 
+		}
+	};
+
+	protected void onActivityResult(int arg0, int arg1, Intent arg2) {
+		System.out.println("1");
+	};
+
+   @Override
+	protected void onNewIntent(Intent intent) {
+		super.onNewIntent(intent);
+		switchPage(intent);
+	}
+   
+   /**
+    * 切换页面
+    */
+   public void switchPage(Intent intent) {
+	    int subpage_tab_index = intent.getIntExtra(MainActivity.EXTRA_SUBPAGE_TAB_INDEX_KEY, -1);
+	    if (subpage_tab_index != -1 && subpage_tab_index == MainActivity.TAB_INDEX_HISTORY_CONSULT) {
+			myPagerTab.setCurrentItem(1);
+		} else {
+			myPagerTab.setCurrentItem(0);
+		}
+   }
+}

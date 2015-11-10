@@ -1,0 +1,489 @@
+package com.qdoc.client.db;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.db.bean.CustomContent;
+import com.qdoc.client.db.bean.Draft;
+import com.qdoc.client.db.bean.MessageCount;
+import com.qdoc.client.db.bean.QuickPhrases;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.push.bean.ConsultRecord;
+import com.qdoc.client.ui.adapter.BenefitListAdapter;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+
+/**
+ * FileName    : DatabaseService.java
+ * Description : 数据库工具类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2014-12-11
+ **/
+public class DatabaseService {
+	private static String TAG = "DatabaseService";
+    private DatabaseHelper dbOpenHelper;
+    private static DatabaseService instance = null;
+
+    public DatabaseService(Context context) {
+        this.dbOpenHelper = DatabaseHelper.getInstance(context, DatabaseHelper.QDOC_DB_NAME);
+    }
+
+    public synchronized static DatabaseService getInstance(Context ctx) {
+        if (null == instance) {
+            instance = new DatabaseService(ctx);
+        }
+        return instance;
+    }
+    
+    /**
+     * 根据账号查询消息统计列表
+     * @param account：账号
+     * @return
+     */
+    public List<MessageCount> getMessageCount(String account) {
+        Cursor cursor = null;
+    	List<MessageCount> counts = new ArrayList<MessageCount>();
+        try {
+        	SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
+        	//咨询ID为空，查询所有的消息统计列表
+        	if(!StringUtils.isEmpty(account)){
+                cursor = db.query(DatabaseHelper.APP_CONSULT_MESSAGE_COUNT,
+                         null,"account = ?", new String[] { account }, null, null, null, null);
+        	}
+            while (cursor.moveToNext()) {
+                counts.add(new MessageCount(cursor.getInt(cursor.getColumnIndex("count")),cursor.getLong(cursor.getColumnIndex("consult_id")),cursor.getString(cursor.getColumnIndex("account"))));
+            }
+        }catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		} finally {
+			if(cursor!=null)
+              cursor.close();
+        }
+        return counts;
+    }
+
+     /**
+      * 保存推送消息统计
+      * @param 
+      */
+    public void saveMessageCount(MessageCount msgCount) {
+        try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			ContentValues values = new ContentValues();
+			values.put("consult_id", String.valueOf(msgCount.getConsultID()));
+			values.put("count", msgCount.getCount());
+			values.put("account", msgCount.getAccount());
+			db.insert(DatabaseHelper.APP_CONSULT_MESSAGE_COUNT, null, values);
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+    }
+
+    /**
+     * 更新推送消息统计
+     * @param 
+     */
+   public void upDateMessageCount(MessageCount msgCount,String account) {
+	   try {
+		SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+		   ContentValues values = new ContentValues();
+		   values.put("consult_id", String.valueOf(msgCount.getConsultID()));
+		   values.put("count", msgCount.getCount());
+		   values.put("account", msgCount.getAccount());
+		   db.update(DatabaseHelper.APP_CONSULT_MESSAGE_COUNT, values, "account = ? ,", new String[]{account});
+	} catch (Exception e) {
+		   LogUtils.i(TAG, e.getMessage());
+	}
+   }
+    
+   /**
+    * 根据consultId删除推送消息统计
+    * @param 
+    */
+  public void delMessageCount(String consultId) {
+	  try {
+		SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+		db.delete(DatabaseHelper.APP_CONSULT_MESSAGE_COUNT, "consult_id = ?", new String[]{consultId});
+	} catch (Exception e) {
+		LogUtils.i(TAG, e.getMessage());
+	}
+  }
+  
+  /**
+   * 删除所有推送消息统计
+   * @param 
+   */
+  public void delAllMessageCount() {
+	  try {
+		SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+		  db.delete(DatabaseHelper.APP_CONSULT_MESSAGE_COUNT, null, null);
+	  } catch (Exception e) {
+		LogUtils.i(TAG, e.getMessage());
+	  }  
+  }
+  
+    /**
+     * 根据账号查询咨询引导标识
+     * @param account 账号
+     * @return  返回引导标识
+     */
+	public boolean queryConsultGuide(String account) {
+		Cursor cursor = null;
+		try {
+			SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
+			cursor = db.query(DatabaseHelper.APP_CONSULT_GUIDE, null,
+					"account = ?", new String[] { account }, null, null, null, null);
+			if (cursor.getCount() > 0) {
+				return true;
+			}
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.toString());
+		}
+        finally {
+        	if(cursor != null)
+              cursor.close();
+        }
+		return false;
+	}
+	
+	/**
+	 * 插入咨询引导标识
+	 * @param account 账号
+	 */
+	public void insertConsultGuide(String account) {
+		try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			ContentValues values = new ContentValues();
+			values.put("account", account);
+			db.insert(DatabaseHelper.APP_CONSULT_GUIDE, null, values);
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+	}
+	
+	/**
+	 * 删除咨询引导标识
+	 * @param account 账号
+	 */
+	public void delConsultGuide(String account) {
+		try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			db.delete(DatabaseHelper.APP_CONSULT_GUIDE, "account = ?", new String[]{account});
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+	}
+	
+	/**
+	 * 保存推送咨询消息
+	 * @param record 咨询记录对象
+	 */
+	public void saveConsultRecord(CustomContent content) {
+	    try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			ContentValues values = new ContentValues();
+			values.put("consult_id",content.getConsultId());
+			values.put("msg_id", content.getMsgId());
+			values.put("content", content.getContent());
+			values.put("update_time", content.getMsgtime());
+			values.put("account", content.getAccount());
+			values.put("msg_type", content.getMsgtype());
+			db.insert(DatabaseHelper.APP_CONSULT_RECORD, null, values);
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+	}
+	
+	/**
+	 * 保存咨询消息列表
+	 * @param records 咨询记录对象列表
+	 */
+	public void saveConsultRecord(List<ElementsModel> records) {
+	    try {
+	    	String accountName = PersonalConfig.getString(PersonalConfigKey.EXTRA_ACCOUNT_HINT);
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+            for(ElementsModel record:records){
+			  ContentValues values = new ContentValues();
+			  values.put("consult_id",record.getConsultMsgDto().getConsultId());
+			  values.put("msg_id", record.getConsultMsgDto().getInmsgid());
+			  values.put("content", record.getContent());
+			  values.put("update_time", record.getMsgTime());
+			  values.put("account", accountName);
+			  values.put("msg_type", record.getMsgType());
+			  db.insert(DatabaseHelper.APP_CONSULT_RECORD, null, values);
+            }	
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+	}
+	
+	/**
+	 * 获取咨询记录
+	 * @param account     ：账号
+	 * @param currentPage ：页码
+	 * @param pageSize    ：每页的大小
+	 * @return
+	 */
+	public List<ElementsModel> getConsultRecord(String account, int currentPage, int pageSize) {
+        String firstResult = String.valueOf((currentPage - 1) * pageSize);
+        SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.APP_CONSULT_RECORD, null,
+            		"account=?", new String[]{account}, null, null, "update_time DESC", firstResult
+                                + "," + pageSize);
+            List<ElementsModel> records = new ArrayList<ElementsModel>();
+            while (cursor.moveToNext()) {
+//            	Integer id, Long msg_id, String content, String update_time, String consult_id
+//              records.add(new ConsultRecord(cursor.getInt(cursor.getColumnIndex("id")), cursor.getLong(cursor
+//                        .getColumnIndex("msg_id")), cursor.getString(cursor.getColumnIndex("content")), cursor.getString(cursor
+//                        .getColumnIndex("update_time")), cursor.getLong(cursor.getColumnIndex("consult_id")), cursor.getString(cursor.getColumnIndex("account"))));
+                ElementsModel model = new ElementsModel();
+                model.setContent(cursor.getString(cursor.getColumnIndex("content")));
+                model.setMsgType(cursor.getString(cursor.getColumnIndex("msg_type")));
+                model.setInmsgid(cursor.getInt(cursor.getColumnIndex("msg_id")));
+                model.setMsgTime(cursor.getString(cursor.getColumnIndex("update_time")));
+                model.setConsultId(cursor.getLong(cursor.getColumnIndex("consult_id")));
+                
+                records.add(model);
+            }
+            return records;
+        }catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+			return null;
+		}finally {
+            cursor.close();
+        }
+    }
+	
+	/**
+	 * 获取快捷短语列表
+	 * @param account     ：账号
+	 * @param currentPage ：页码
+	 * @param pageSize    ：每页的大小
+	 * @return
+	 */
+	public List<QuickPhrases> getQuicPhrases() {
+        SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(DatabaseHelper.APP_QUICK_PHRASES, null,
+            		null, null, null, null, "update_time DESC", null);
+            List<QuickPhrases> records = new ArrayList<QuickPhrases>();
+            while (cursor.moveToNext()) {
+            	QuickPhrases bean = new QuickPhrases();
+            	bean.setContent(cursor.getString(cursor.getColumnIndex("phrases_text")));
+            	bean.setId(cursor.getInt(cursor.getColumnIndex("id")));
+                records.add(bean);
+            }
+            return records;
+        } catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+			return null;
+		} finally {
+            cursor.close();
+        }
+    }
+	
+	/**
+	 * 保存快捷短语
+	 * @param content 快捷短语
+	 */
+	public void saveQuicPhrases(String content) {
+	    try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			ContentValues values = new ContentValues();
+			values.put("phrases_text", content);
+			values.put("update_time", DateUtil.getDate(DateUtil.timeFormat1));
+			db.insert(DatabaseHelper.APP_QUICK_PHRASES, null, values);
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+	}
+	
+	/**
+	 * 删除快捷短语
+	 * @param id 快捷短语编号
+	 */
+	public void deleteQuickPhrases(String id) {
+	    try {
+	    	SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			db.delete(DatabaseHelper.APP_QUICK_PHRASES, "id = ?", new String[]{id});
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+	}
+	
+	/**
+	 * 修改快捷短语
+	 * @param id 快捷短语编号
+	 * @param content 快捷短语
+	 */
+	public void upDateQuicPhrases(String id, String content) {
+	    try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			ContentValues values = new ContentValues();
+			values.put("phrases_text", content);
+			values.put("update_time", DateUtil.getDate(DateUtil.timeFormat1));
+		    db.update(DatabaseHelper.APP_QUICK_PHRASES, values, "id = ?", new String[]{ id });
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+	}
+	
+	/**
+	 * 保存当天新资讯的文章id列表
+	 * @param newArticleIdList
+	 */
+	public void saveNewArticleidList(List<Long> newArticleIdList){
+		try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			ContentValues values = new ContentValues();
+			for(int i=0;i<newArticleIdList.size();i++){
+				values.put("articleid", newArticleIdList.get(i));
+				db.insert(DatabaseHelper.APP_NEW_ARTICLEID, null, values);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 保存单个新资讯文章id
+	 * @param newArticleId
+	 */
+	public void saveNewArticleId(long newArticleId){
+		SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		values.put("articleid", newArticleId);
+		db.insert(DatabaseHelper.APP_NEW_ARTICLEID, null, values);
+	}
+	
+	/**
+	 * 删除旧的的文章标识(删除所有)
+	 */
+	public void deleteOldArticleIdList(){
+		try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			db.delete(DatabaseHelper.APP_NEW_ARTICLEID, null, null);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 删除某条标识文章的id
+	 * @param articleId
+	 */
+	public void deleteOldArticleId(long articleId){
+		try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			db.delete(DatabaseHelper.APP_NEW_ARTICLEID, "articleid = ?", new String[]{String.valueOf(articleId)});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 查询本地存储的新文章编号
+	 * @return
+	 */
+	public List<Long> queryArticleId(){
+		ArrayList<Long> articleIdList = new ArrayList<Long>();
+        SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+			cursor = db.query(DatabaseHelper.APP_NEW_ARTICLEID, null, null, null, null, null, null);
+			if(cursor!=null && cursor.getCount()>0){
+				while(cursor.moveToNext()){
+					articleIdList.add(cursor.getLong(cursor.getColumnIndex("articleid")));
+				}
+			}
+			return articleIdList;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return articleIdList;
+		}finally{
+			if(cursor!=null)
+				cursor.close();
+		}
+	}
+	
+	/**
+	 * 插入草稿
+	 */
+	public void saveDraft(String content, String consult_id) {
+		SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		values.put("draft_text", content);
+		values.put("consult_id", consult_id);
+		if (ListUtils.isEmpty(queryDraft(consult_id))) {
+			db.insert(DatabaseHelper.APP_DRAFT_LIST, null, values);
+		} else {
+			db.update(DatabaseHelper.APP_DRAFT_LIST, values, "consult_id = ?", new String[]{consult_id});
+		}
+	}
+	
+	/**
+	 * 删除草稿
+	 */
+	public void deleteDraft(long consult_id) {
+		try {
+			SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
+			db.delete(DatabaseHelper.APP_DRAFT_LIST, "consult_id = ?", new String[]{String.valueOf(consult_id)});
+		} catch (Exception e) {
+			LogUtils.i(TAG, e.getMessage());
+		}
+	}
+	
+	/**
+	 * 查询所有草稿
+	 * @param consult_id
+	 * @return
+	 */
+	public List<Draft> queryDraft() {
+		return queryDraft("");
+	}
+	
+	/**
+	 * 根据咨询ID查询草稿
+	 * @param consult_id
+	 * @return 
+	 */
+	public List<Draft> queryDraft(String consult_id) {
+		 SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
+	        Cursor cursor = null;
+		try {
+			if (!StringUtils.isEmpty(consult_id))
+			    cursor = db.query(DatabaseHelper.APP_DRAFT_LIST, null, "consult_id = ?", new String[] {consult_id}, null, null, null, null);
+			else 
+				cursor = db.query(DatabaseHelper.APP_DRAFT_LIST, null, null, null, null, null, null, null);
+			List<Draft> records = new ArrayList<Draft>();
+			while (cursor.moveToNext()) {
+				Draft bean = new Draft();
+				bean.setConsult_id(cursor.getString(cursor.getColumnIndex("consult_id")));
+				bean.setDraft_text(cursor.getString(cursor.getColumnIndex("draft_text")));
+				records.add(bean);
+			}
+			return records;
+		} catch (Exception e) {
+				LogUtils.i(TAG, e.getMessage());
+				return null;
+			} finally {
+				if (cursor != null)
+	               cursor.close();
+	        }
+	}
+}

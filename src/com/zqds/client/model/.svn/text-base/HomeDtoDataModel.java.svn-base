@@ -1,0 +1,36 @@
+/*
+ * HomeDtoDataModel.java
+ * classes : com.qdoc.client.model.HomeDtoDataModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-17 下午3:45:29
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.HomeDtoDataModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-17 下午3:45:29
+ */
+public class HomeDtoDataModel extends AbstractBaseModel {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 7700290751594333546L;
+	private HomeDtoModel homeDto;
+
+    /**
+     * @return the homeDto
+     */
+    public HomeDtoModel getHomeDto() {
+        return homeDto;
+    }
+
+    /**
+     * @param homeDto the homeDto to set
+     */
+    public void setHomeDto(HomeDtoModel homeDto) {
+        this.homeDto = homeDto;
+    }
+}

@@ -1,0 +1,35 @@
+/*
+ * ElementsListModel.java
+ * classes : com.qdoc.client.model.ElementsListModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:19:17
+ */
+package com.qdoc.client.model;
+
+
+/**
+ * com.qdoc.client.model.ElementsListModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:19:17
+ */
+//public class ElementsListModel {
+//
+//    private ArrayList<ElementsModel> elements;
+//
+//    /**
+//     * @return the elements
+//     */
+//    public ArrayList<ElementsModel> getElements() {
+//        return elements;
+//    }
+//
+//    /**
+//     * @param elements the elements to set
+//     */
+//    public void setElements(ArrayList<ElementsModel> elements) {
+//        this.elements = elements;
+//    }
+//
+// }

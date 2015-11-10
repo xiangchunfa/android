@@ -1,0 +1,128 @@
+/*
+ * GlobalConfig.java
+ * classes : com.qdoc.client.config.GlobalConfig
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-5-28 下午8:39:29
+ */
+package com.zqds.client.config;
+
+/**
+ * com.qdoc.client.config.GlobalConfig
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-5-28 下午8:39:29
+ */
+public class GlobalConfig {
+    private static final String TAG = "GlobalConfig";
+
+    private static UtilConfig myConfig = new TransitionGlobalConfig();
+
+    public static String getString(String key) {
+        return myConfig.getString(key);
+    }
+
+    public static String getString(String key, String defValue) {
+        return myConfig.getString(key, defValue);
+    }
+
+    public static boolean getBoolean(String key) {
+        return myConfig.getBoolean(key);
+    }
+
+    public static boolean getBoolean(String key, boolean defValue) {
+        return myConfig.getBoolean(key, defValue);
+    }
+
+    public static int getInt(String key) {
+        return myConfig.getInt(key, -1);
+    }
+
+    public static int getInt(String key, Integer defValue) {
+        return myConfig.getInt(key, defValue);
+    }
+
+    public static float getFloat(String key) {
+        return myConfig.getFloat(key);
+    }
+
+    public static float getFloat(String key, float defValue) {
+        return myConfig.getFloat(key, defValue);
+    }
+
+    public static long getLong(String key, long defValue) {
+        return myConfig.getLong(key, defValue);
+    }
+
+    public static long getLong(String key) {
+        return myConfig.getLong(key);
+    }
+
+    public static void putString(String key, String value) {
+        myConfig.putString(key, value);
+    }
+
+    public static void putBoolean(String key, boolean value) {
+        myConfig.putBoolean(key, value);
+    }
+
+    public static void putInt(String key, Integer value) {
+        myConfig.putInt(key, value);
+    }
+
+    public static void putFloat(String key, Float value) {
+        myConfig.putFloat(key, value);
+    }
+
+    public static void putLong(String key, long value) {
+        myConfig.putLong(key, value);
+    }
+
+    /**
+     * 是否包含该key
+     * 
+     * @param key
+     * @return
+     */
+    public static boolean hasKey(String key) {
+        return myConfig.hasKey(key);
+    }
+
+    // 移除键
+    public static void remove(String key) {
+        myConfig.remove(key);
+    }
+
+    public static void commit() {
+        myConfig.commit();
+    }
+
+    /**
+     * 异步提交数据
+     * 
+     * @author libin09 2013-8-15
+     */
+    public static void asyncCommit() {
+        new Thread(new Runnable() {
+
+            public void run() {
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST);
+                GlobalConfig.commit();
+            }
+        }).start();
+    }
+
+    /**
+     * 销毁myconfig对象
+     */
+    public synchronized static void destroyMyConfig() {
+        myConfig = null;
+    }
+
+    public synchronized static void createMyConfig() {
+        if (myConfig == null) {
+            myConfig = new TransitionGlobalConfig();
+        }
+    }
+
+}

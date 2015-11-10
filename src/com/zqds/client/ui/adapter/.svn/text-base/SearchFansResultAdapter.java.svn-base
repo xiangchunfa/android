@@ -1,0 +1,93 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+import com.qdoc.client.R;
+import com.qdoc.client.model.MyFansListDto;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.util.StringUtils;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+/**
+ * 搜索粉丝结果列表的适配器
+ * @author Antony
+ * create at 2015-7-7
+ *
+ */
+public class SearchFansResultAdapter extends BaseAdapter {
+	
+	private LayoutInflater inflater;
+	private Context context;
+	private ArrayList<MyFansListDto> myFansList;
+	
+	/**
+	 * @param myFansList the myFansList to set
+	 */
+	public void setMyFansList(ArrayList<MyFansListDto> myFansList) {
+		if(myFansList==null)
+			this.myFansList = new ArrayList<MyFansListDto>();
+		else
+			this.myFansList = myFansList;
+	}
+	
+	public SearchFansResultAdapter(Context context,ArrayList<MyFansListDto> myFansList){
+		this.context = context;
+		this.inflater = LayoutInflater.from(context);
+		setMyFansList(myFansList);
+	}
+
+	public void changeData(ArrayList<MyFansListDto> myFansList){
+		setMyFansList(myFansList);
+		notifyDataSetChanged();
+	}
+	
+	@Override
+	public int getCount() {
+		return myFansList.size();
+	}
+
+	@Override
+	public Object getItem(int position) {
+		return myFansList.get(position);
+	}
+
+	@Override
+	public long getItemId(int position) {
+		return position;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			holder= new ViewHolder();
+			convertView = inflater.inflate(R.layout.fans_list_search_result_item, null);
+			holder.iv_fans_header_img = (ImageView) convertView.findViewById(R.id.iv_fans_header_img);
+			holder.tv_fans_name = (TextView) convertView.findViewById(R.id.tv_fans_name);
+			holder.tv_consult_count = (TextView) convertView.findViewById(R.id.tv_consult_count);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		MyFansListDto fansDetail = myFansList.get(position);
+		if(fansDetail!=null){
+			//设置名字
+			holder.tv_fans_name.setText(StringUtils.getHighLightSpinner(context, fansDetail.getNicknameStr()));
+			//显示咨询数
+			holder.tv_consult_count.setText(String.valueOf(fansDetail.getConsultNub()));
+			//加载粉丝头像图片
+			ImageLoaderHelper.getInstance(context).displayImage(fansDetail.getHeadimgurl(), holder.iv_fans_header_img, R.drawable.bank_owener_default_header);
+		}
+		return convertView;
+	}
+
+	class ViewHolder{
+		ImageView iv_fans_header_img;
+		TextView tv_fans_name,tv_consult_count;
+	}
+}

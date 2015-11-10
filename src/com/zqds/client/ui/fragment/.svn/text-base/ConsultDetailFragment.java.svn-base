@@ -1,0 +1,1889 @@
+package com.qdoc.client.ui.fragment;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import org.json.JSONException;
+import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Color;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.SimpleAdapter;
+import android.widget.TextView;
+
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.RequestParams;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.http.client.HttpRequest;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.db.DatabaseService;
+import com.qdoc.client.db.bean.CustomContent;
+import com.qdoc.client.db.bean.Draft;
+import com.qdoc.client.db.bean.QuickPhrases;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.AdvanceActivitiesDtoModel;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.ConsultDtoDataModel;
+import com.qdoc.client.model.ConsultDtoModel;
+import com.qdoc.client.model.ConsultListModel;
+import com.qdoc.client.model.ConsultMsgListDataModel;
+import com.qdoc.client.model.ElementsModel;
+import com.qdoc.client.model.FindConsultMsgDataModel;
+import com.qdoc.client.model.OutpatientTimeSettingModel;
+import com.qdoc.client.model.ReplyDataModel;
+import com.qdoc.client.model.UploadDataModel;
+import com.qdoc.client.record.RecordManager;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.AdvanceDetailActivity;
+import com.qdoc.client.ui.AdviceAndLeaveMessgeActivity;
+import com.qdoc.client.ui.ClinicTimeSetActivity;
+import com.qdoc.client.ui.ConsultDetailActivity;
+import com.qdoc.client.ui.EvaluateActivity;
+import com.qdoc.client.ui.FansDetailInfoActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.QuickPhrasesActivity;
+import com.qdoc.client.ui.adapter.ConsultDetailListAdapter;
+import com.qdoc.client.ui.adapter.ConsultDetailListAdapter.DetailItemOnclickListener;
+import com.qdoc.client.ui.adapter.ConsultDetailListAdapter.IMViewType;
+import com.qdoc.client.ui.adapter.QuickPhrasesAdapter;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.view.ConsultDetailPopWindow;
+import com.qdoc.client.ui.view.FaceViewPager;
+import com.qdoc.client.ui.view.KeyboardLayout;
+import com.qdoc.client.ui.view.KeyboardLayout.onKybdsChangeListener;
+import com.qdoc.client.ui.view.MyView;
+import com.qdoc.client.ui.widget.ConsultDetailGuideView;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.FaceConversionUtil;
+import com.qdoc.client.util.InputTools;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.ListUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.UploadImageUtil;
+import com.qdoc.client.util.ViewUtils;
+
+/**
+ * FileName : ConsultDetailFragment.java 
+ * Description : 咨询内容
+ * @Copyright : Keai Software Co.,Ltd.Rights Reserved
+ * @Company : 可爱医生网络技术有限公司
+ * @author : 向春发
+ * @version : 1.0 
+ * Create Date : 2015-1-28
+ **/
+
+public class ConsultDetailFragment extends BaseFragment implements
+		OnClickListener {
+	/**
+	 * TAG
+	 */
+	public static final String TAG = ConsultDetailFragment.class
+			.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private PullRefreshView mListView;
+	private PullListMaskController mViewController;
+	private RelativeLayout rlyReply;
+	private ImageView switchToVoice;
+	private ImageView switchToText;
+	private EditText edInput;
+	private LinearLayout llyVoice;
+	private View mView;// 界面视图
+	private LinearLayout lly_reply_main;
+	private ImageView iv_add_img;
+	private GridView gv_more;
+	private Button btnSend;
+	private FaceViewPager viewPager;
+	private ImageView iv_face;
+	private MyView mv_dot;
+	private LinearLayout lly_face;
+	private LinearLayout lly_blank;
+	private TextView tv_add;
+	private TextView tv_back;
+	private PullRefreshView lv_quick_phrases;
+	private RelativeLayout rly_quick_phrases;
+	private LinearLayout lly_share;
+	private TextView tv_share;
+	private TextView tv_cancel_share;
+	private RelativeLayout rly_already_share;
+    private TextView tv_finish_consult;
+    private TextView tv_consult_time;
+    private TextView tv_consult_cost;
+    private TitleBar mTitleBar;
+	private KeyboardLayout mainView;
+	private RelativeLayout rly_leave_mesage;
+	private TextView tv_leave_message_operation;
+	private TextView tv_leave_message_hint;
+	private FrameLayout fly_share_main;
+	private ConsultDetailGuideView first_guide_view;
+	/**
+	 * params
+	 */
+	private final int DELAYMILLIS = 200;
+	private InnerHandler mHandler = new InnerHandler(this);
+	private ConsultDetailListAdapter mAdapter;
+	private static long consultID;
+	private int mPageIndex = 1;
+	private int pageSize = 10;
+	public static boolean active = false;
+	public static int from;
+	public RecordManager recordManager;
+	private boolean showVocie = false;// 是否显示录音按钮
+	private MediaPlayer mMediaPlayer = new MediaPlayer();
+	private View preDefaultVol;// 上一次默认录音界面
+	private View preAnimVol;// 上一次默认录音播放界面
+	private AnimationDrawable preAnimDrawable;// 上一次播放动画
+	private String prePath;// 播放音频文件路径
+	private long firstMsgId;// 最早消息ID
+	public static final int NEED = 1;// 需要重新获取完整的咨询消息
+	public static final int NO_NEED = 0;// 不需要重新获取完整的咨询消息
+	public boolean isNextPage = true;// 是否有下一页
+	private ConsultDetailActivity consultDetailAct;
+	private static int consultStateDetail;// 咨询服务状态
+	private static int shareStatus;// 分享状态
+	private static String clinicURL;// 移动诊所地址
+	public int mState;// 键盘状态
+	private String[] clinicTimes;// 星期名称数组
+	private UploadImageUtil imageUtil;
+	private static final int REQUEST_GALLERY = 31;// 本地图片
+	private static final int REQUEST_CAMERA = 30;// 拍照
+	public static final int REQUEST_CONSULT_ADVICE = 32;//咨询建议
+	public static final int REQUEST_LEAVE_MESSAGE = 33;//留言
+	
+	private static final String CONSULT_FILE_NAME = "consult.jpg";
+	private static final String IMAGE_UNSPECIFIED = "image/*";
+	private ConsultDetailPopWindow popupWindow;
+	private DatabaseService service;
+	private QuickPhrasesAdapter qpAdapter;
+	private FaceConversionUtil faceConversion;
+	private static final int VOICE_DURATION_DEFAULT = -1;//没有语音时长
+	/** 显示gridview的个数  */
+	private ArrayList<GridView> grids;
+    private ConsultDtoModel mConsultDto;//咨询服务对象
+	private Boolean isShowKeyboard = true;//输入法是否显示
+	/**用户发送满意度时间*/
+	private String mTreatmentTime;
+	/**计时器*/
+	private TimeCount timeCount;
+	/***/
+	
+
+	public RelativeLayout getRly_quick_phrases() {
+		return rly_quick_phrases;
+	}
+
+	public void setRly_quick_phrases(RelativeLayout rly_quick_phrases) {
+		this.rly_quick_phrases = rly_quick_phrases;
+	}
+
+	public LinearLayout getLly_face() {
+		return lly_face;
+	}
+
+	public GridView getGv_more() {
+		return gv_more;
+	}
+
+	public PullRefreshView getmListView() {
+		return mListView;
+	}
+
+	public void setmListView(PullRefreshView mListView) {
+		this.mListView = mListView;
+	}
+
+	public EditText getEdInput() {
+		return edInput;
+	}
+
+	public static ConsultDetailFragment newInstance(Bundle bundle) {
+		final ConsultDetailFragment fragment = new ConsultDetailFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+		super.onCreate(savedInstanceState);
+		registerVolUpdateReceiver();
+	}
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_consult_detail, container, false);
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		try {
+			initView(view);
+			initListener();
+			initParams();
+		} catch (Exception e) {
+			LogUtils.d(TAG, "all exception>>" + e.toString());
+		}
+	}
+
+	private void initParams() {
+		from = getArguments().getInt(IntentTools.EXTRA_FROM);
+		consultID = Long.valueOf(getArguments().getString(IntentTools.EXTRA_CONSULT_ID));
+		service = new DatabaseService(getActivity());
+		List<Draft> drafts = service.queryDraft(String.valueOf(consultID));
+		if (!ListUtils.isEmpty(drafts)) {
+			edInput.setText(faceConversion.getWechatExpressionString(getActivity(), drafts.get(0).getDraft_text()));
+		}
+		recordManager = new RecordManager(getActivity(), mView, consultID);// 创建录音管理器
+	
+		popupWindow = new ConsultDetailPopWindow(getActivity(), this);
+		imageUtil = new UploadImageUtil(getActivity());
+		mAdapter = new ConsultDetailListAdapter(getContext(),
+				new DetailItemOnclickListener() {
+					@Override
+					public void onButtonClick(int type, Object obj, View view1,
+							View view2) {
+						ElementsModel model = (ElementsModel) obj;
+						switch (type) {
+						case AppConstants.BUTTON_VOL:
+							playAudio((model).getRealUrl(), view1, view2);
+							break;
+						
+						case AppConstants.TEXT_COPY:
+							if (popupWindow.isShowing()) {
+								popupWindow.dismiss();
+							}
+							Bundle bundle1 = new Bundle();
+							bundle1.putLong(IntentTools.EXTRA_CONSULT_ID, consultID);
+							bundle1.putInt(IntentTools.EXTRA_CONSULT_STATE , consultStateDetail);
+							bundle1.putString(IntentTools.EXTRA_CONSULT_ADVICE_CONTENT_KEY, model.getContent());
+							popupWindow.setBundle(bundle1);
+							popupWindow.showAsDropDown(view1);
+							break;
+						case AppConstants.TEXT_CLICK:
+							InputTools.HideKeyboard(view1);
+							gv_more.setVisibility(View.GONE);
+							break;
+						case AppConstants.CHECK_EVALUATE:
+							Bundle bundle = new Bundle();
+							bundle.putLong(IntentTools.EXTRA_CONSULT_ID, consultID);
+							EvaluateActivity.startActivity(getActivity(), bundle);
+							break;
+						}
+					}
+
+					@Override
+					public void onButtonClick(int type, Object obj, View view1, View view2, int position) {
+						ElementsModel model = (ElementsModel) obj;
+						switch (type) {
+						case AppConstants.BUTTON_RETRY:
+							uploadText(consultID, model.getContent(), AppConstants.TEXT, -1, position);
+							break;
+						case AppConstants.INVITE_EVALUATE:
+							startInvaluateEvaluateRequest(consultID, position);
+							break;	
+						}
+					}
+
+					@Override
+					public void onButtonClick(int type, Object obj, View view1,
+							View view2, ConsultDtoModel consultDto) {
+						switch (type) {
+						case AppConstants.BUTTON_USER_INFO: 
+							 if (null != consultDto.getwUserDto() && consultDto.getwUserDto().getOpenId() != null && !consultDto.getConsultCaseDto().getAnonymity()) {
+								FansDetailInfoActivity.startActivity(getActivity(), consultDto.getwUserDto().getOpenId());
+							 }
+						     break;
+						}
+					}
+				}, mListView, popupWindow);
+		mListView.setAdapter(mAdapter);
+		List<QuickPhrases> list = service.getQuicPhrases();
+		qpAdapter = new QuickPhrasesAdapter(getActivity(), list);
+		lv_quick_phrases.setAdapter(qpAdapter);
+		getConsultDetailRequest(consultID);
+	}
+
+	private void initView(View view) {
+		tv_finish_consult = (TextView) view.findViewById(R.id.tv_finish_consult);
+		tv_consult_cost = (TextView) view.findViewById(R.id.tv_consult_cost);
+		tv_consult_time = (TextView) view.findViewById(R.id.tv_consult_time);
+		consultDetailAct = (ConsultDetailActivity) getActivity();
+		faceConversion = FaceConversionUtil.getInstace(getActivity());
+		mView = view;
+		mListView = (PullRefreshView) view.findViewById(R.id.listView);
+		mListView.setmIsEnablePullUp(false);
+		// 自定义emptyview
+		ErrorMaskView maskView = (ErrorMaskView) view.findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(mListView, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+		rlyReply = (RelativeLayout) view.findViewById(R.id.rly_reply);
+		edInput = (EditText) view.findViewById(R.id.btn_input);
+		llyVoice = (LinearLayout) view.findViewById(R.id.lly_voice);
+		switchToVoice = (ImageView) view.findViewById(R.id.switch_to_voice);
+		lly_reply_main = (LinearLayout) view.findViewById(R.id.lly_reply_main);
+		iv_face = (ImageView) view.findViewById(R.id.iv_face);
+		rlyReply.setVisibility(View.VISIBLE);
+		llyVoice.setVisibility(View.GONE);
+		edInput.setHorizontallyScrolling(false);
+		btnSend = (Button) view.findViewById(R.id.send);
+		switchToText = (ImageView) view.findViewById(R.id.iv_switch_to_text);
+		iv_add_img = (ImageView) view.findViewById(R.id.iv_add_img);
+		viewPager = (FaceViewPager) view.findViewById(R.id.viewpager);
+		gv_more = (GridView) view.findViewById(R.id.gv_more);
+		gv_more.setSelector(new ColorDrawable(Color.TRANSPARENT));
+		mv_dot = (MyView) view.findViewById(R.id.mv_dot);
+		lly_face = (LinearLayout) view.findViewById(R.id.lly_face);
+		lly_blank = (LinearLayout) view.findViewById(R.id.lly_blank);
+		tv_back = (TextView) view.findViewById(R.id.tv_back);
+		tv_add = (TextView) view.findViewById(R.id.tv_add);
+		lv_quick_phrases = (PullRefreshView) view.findViewById(R.id.lv_quick_phrases);
+		rly_quick_phrases = (RelativeLayout) view.findViewById(R.id.rly_quick_phrases);
+		lly_share = (LinearLayout) view.findViewById(R.id.lly_share);
+		tv_cancel_share = (TextView) view.findViewById(R.id.tv_cancel_share);
+		tv_share = (TextView) view.findViewById(R.id.tv_share);
+		rly_already_share = (RelativeLayout) view.findViewById(R.id.rly_already_share);
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.consult_detail_title, R.drawable.icon_back, 0, actionBarLeftBtnListener, null,getResources().getColor(R.color.titlebar_bg));
+		rly_leave_mesage = (RelativeLayout) view.findViewById(R.id.rly_leave_mesage);
+		tv_leave_message_operation = (TextView) view.findViewById(R.id.tv_leave_message_operation);
+		tv_leave_message_hint = (TextView) view.findViewById(R.id.tv_leave_message_hint);
+		fly_share_main = (FrameLayout) view.findViewById(R.id.fly_share_main);
+		initMore();
+		faceConversion.initFace(getActivity(), R.layout.grid1, edInput, viewPager, mv_dot);
+	    mainView = (KeyboardLayout) view.findViewById(R.id.main_layout);
+	    first_guide_view = (ConsultDetailGuideView) view.findViewById(R.id.first_guide_view);
+	}
+
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() { 
+
+		@Override
+		public void onClick(View v) {
+			consultDetailAct.finishActivity();
+		}
+	};
+	
+	/**
+	 * 加载更多
+	 */
+	public void initMore() {
+		ArrayList<HashMap<String, Object>> items = new ArrayList<HashMap<String, Object>>();
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		map.put("ItemImage", R.drawable.selected_photo_seletor);
+		map.put("ItemText", getActivity().getString(R.string.photo));
+		items.add(map);
+
+		map = new HashMap<String, Object>();
+		map.put("ItemImage", R.drawable.shortcut_clinic_time_selector);
+		map.put("ItemText", getActivity().getString(R.string.clinic_time));
+		items.add(map);
+
+		map = new HashMap<String, Object>();
+		map.put("ItemImage", R.drawable.selector_quick_phrases);
+		map.put("ItemText", getActivity().getString(R.string.str_quick_reply));
+		items.add(map);
+
+		SimpleAdapter sa = new SimpleAdapter(getActivity(), items,
+				R.layout.main_grid_item, new String[] { "ItemImage", "ItemText" }, new int[] {R.id.iv_img, R.id.tv_text });
+		gv_more.setAdapter(sa);
+	}
+
+	protected void initListener() {
+		iv_add_img.setOnClickListener(this);
+		iv_face.setOnClickListener(this);
+		lly_blank.setOnClickListener(this);
+		tv_add.setOnClickListener(this);
+		tv_back.setOnClickListener(this);
+		tv_cancel_share.setOnClickListener(this);
+		tv_share.setOnClickListener(this);
+		lly_share.setOnClickListener(this);
+		tv_finish_consult.setOnClickListener(this);
+		tv_leave_message_operation.setOnClickListener(this);
+		edInput.addTextChangedListener(new TextWatcher() {
+
+			@Override
+			public void onTextChanged(CharSequence input, int arg1, int arg2, int arg3) {
+				if (!StringUtils.isEmpty(input)) {
+					iv_add_img.setVisibility(View.GONE);
+					btnSend.setVisibility(View.VISIBLE);
+				} else {
+					iv_add_img.setVisibility(View.VISIBLE);
+					btnSend.setVisibility(View.GONE);
+				}
+			}
+
+			@Override
+			public void beforeTextChanged(CharSequence arg0, int arg1,
+					int arg2, int arg3) {
+			}
+
+			@Override
+			public void afterTextChanged(Editable arg0) {
+			}
+		});
+
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				// TODO Auto-generated method stub
+				// 避免频繁发送请求
+				mHandler.removeCallbacks(taskRunnable);
+				mHandler.postDelayed(taskRunnable, DELAYMILLIS);
+			}
+		});
+
+		mViewController.setOnRefreshListener(new OnRefreshListener() {
+			@Override
+			public void onRefresh() {
+				// startConsultListRefreshRequest(consultId);
+				if (isNextPage)
+					startConsultListLoadMoreRequest(consultID, firstMsgId, pageSize);
+				else
+					mViewController.showViewStatus(ListViewState.LIST_REFRESH_MORE_COMPLETE);
+			}
+		});
+
+		// 添加焦点监听器
+		edInput.setOnFocusChangeListener(new OnFocusChangeListener() {
+
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				// 文字编辑框没有获取到焦点的时候隐藏软键盘
+				InputMethodManager imm = (InputMethodManager) getContext()
+						.getSystemService(Context.INPUT_METHOD_SERVICE);
+				if (!hasFocus && imm.isActive()) {
+					imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+				}
+			}
+		});
+
+		// 发送咨询消息
+		btnSend.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String content = edInput.getText().toString().trim();
+				if (TextUtils.isEmpty(content)) {
+					ToastUtils.ToastShort(getActivity().getApplicationContext(), "请输入内容");
+					return;
+				}
+				btnSend.setEnabled(false);
+				FaceConversionUtil faceConversion = FaceConversionUtil.getInstace(getActivity());
+				mAdapter.addData(getReply(AppConstants.MSG_TEXT, faceConversion.WeChatConvertQDOC(content)));
+				uploadText(consultID, faceConversion.getReplaceTag(content), AppConstants.TEXT, VOICE_DURATION_DEFAULT, mAdapter.getCount() - 1);
+				service.deleteDraft(consultID);
+				edInput.setText("");
+			}
+		});
+
+		switchToVoice.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// 切换语音
+				rlyReply.setVisibility(View.GONE);
+				llyVoice.setVisibility(View.VISIBLE);
+				iv_add_img.setVisibility(View.VISIBLE);
+				gv_more.setVisibility(View.GONE);
+				lly_face.setVisibility(View.GONE);
+				rly_quick_phrases.setVisibility(View.GONE);
+				showVocie = true;
+			}
+		});
+
+		switchToText.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				// 切换文字
+				rlyReply.setVisibility(View.VISIBLE);
+				llyVoice.setVisibility(View.GONE);
+				showVocie = false;
+			}
+		});
+
+		gv_more.setOnItemClickListener(new OnItemClickListener() {
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				switch (arg2) {
+				case 0:
+					FragmentManager fm = getFragmentManager();
+					ChooseImageDialogFragment chooseDialog = new ChooseImageDialogFragment(
+							new com.qdoc.client.ui.fragment.ChooseImageDialogFragment.OnDialogclickListener() {
+
+								@Override
+								public void onButtonClick(int type,
+										DialogFragment dialog) {
+									switch (type) {
+									case AppConstants.CAMERA:
+										imageUtil.chooseCamera(
+												ConsultDetailFragment.this,
+												CONSULT_FILE_NAME,
+												REQUEST_CAMERA);
+										dialog.dismiss();
+										break;
+
+									case AppConstants.PHOTO_ALBUM:
+										imageUtil.chooseLocalImage(
+												ConsultDetailFragment.this,
+												IMAGE_UNSPECIFIED,
+												REQUEST_GALLERY);
+										dialog.dismiss();
+										break;
+									}
+								}
+							});
+					chooseDialog.show(fm, ChooseImageDialogFragment.TAG);
+					break;
+				case 1:// 门诊时间
+					String content = getString(R.string.not_set_clinic_time);
+					String title = getString(R.string.dialog_hint_title);
+					String btnLeftText = getString(R.string.no_set_clinic_time);
+					String btnRightText = getString(R.string.set_clinic_time);
+					if (StringUtils.isBlank(PersonalConfig.getString(PersonalConfigKey.EXTAR_CLINIC_TIME))) {
+						new HintDlg(getActivity(), content, title, btnLeftText,
+								btnRightText, new OnDialogclickListener() {
+
+									@Override
+									public void onButtonClick(int type, Dialog dialog) {
+										switch (type) {
+										case AppConstants.LEFT_BUTTON:
+											// 稍后再说
+											dialog.dismiss();
+											break;
+										case AppConstants.RIGHT_BUTTON:
+											// 设置门诊时间
+											ClinicTimeSetActivity.startActivity(getActivity(), null);
+											dialog.dismiss();
+											break;
+										}
+									}
+								}, R.layout.print_card_dialog).show();
+					} else {
+						StringBuffer strBuffer = new StringBuffer();
+						strBuffer.append(getString(R.string.str_clinic_time));
+						strBuffer.append(showClinicTime(PersonalConfig
+								.getString(PersonalConfigKey.EXTAR_CLINIC_TIME)));
+						edInput.setText(strBuffer.toString());
+					}
+					break;
+				case 2:// 快捷回复
+					rly_quick_phrases.setVisibility(View.VISIBLE);
+					break;
+				}
+			}
+		});
+
+		mListView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				hideFaceAndMore();
+			}
+		});
+
+		lv_quick_phrases.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
+					long arg3) {
+				QuickPhrases bean = (QuickPhrases) arg0.getAdapter().getItem(arg2);
+				edInput.setText(bean.getContent());
+				InputTools.KeyBoard(edInput, InputTools.OPEN);
+				gv_more.setVisibility(View.GONE);
+				lly_face.setVisibility(View.GONE);
+				rly_quick_phrases.setVisibility(View.GONE);
+			}
+		});
+		
+		mainView.setOnkbdStateListener(new onKybdsChangeListener() {
+			public void onKeyBoardStateChange(int state) {
+				switch (state) {
+				case KeyboardLayout.KEYBOARD_STATE_HIDE:
+					isShowKeyboard = false;
+					break;
+
+				case KeyboardLayout.KEYBOARD_STATE_SHOW:
+					if (isShowKeyboard) {
+						break;
+					}
+					isShowKeyboard = true;
+					new Handler().postDelayed(new Runnable() {
+						public void run() {
+							gv_more.setVisibility(View.GONE);
+							lly_face.setVisibility(View.GONE);
+							rly_quick_phrases.setVisibility(View.GONE);
+						}
+					}, 200); 
+					new Handler().postDelayed(new Runnable() {
+						public void run() {
+							mListView.setSelection(mListView.getCount() - 1);
+						}
+					}, 200);   
+					break;
+				}
+			}
+		});
+	}
+
+	/**
+	 * 获取回复消息实体类
+	 * 
+	 * @param msgType
+	 *            消息类型
+	 * @param content
+	 *            内容
+	 */
+	private ElementsModel getReply(String msgType, String content) {
+		ElementsModel model = new ElementsModel();
+		if (AppConstants.MSG_TEXT.equals(msgType)) {
+			model.setContent(content);
+		} else if (AppConstants.MSG_VOICE.equals(msgType)) {
+			model.setRealContentUrl(content);
+			model.setRealUrl(content);
+		} else if (AppConstants.MSG_IMAGE.equals(msgType)) {
+			model.setRealUrl(content);
+		}
+		model.setType(AppConstants.MSG_TYPE_DOCTOR);
+		model.setMsgType(msgType);
+		model.setMsgTime(DateUtil.formatDate());
+		model.setReplying(true);
+		model.setReplySuccess(true);
+		model.setElementModelViewType(IMViewType.IM_DOCTOR_MSG);
+		return model;
+	}
+
+	/**
+	 * 隐藏表情和更多
+	 */
+	public void hideFaceAndMore() {
+		InputTools.KeyBoard(edInput, InputTools.CLOSE);
+		gv_more.setVisibility(View.GONE);
+		lly_face.setVisibility(View.GONE);
+		rly_quick_phrases.setVisibility(View.GONE);
+		iv_face.setImageResource(R.drawable.face_selector);
+	}
+
+	/**
+	 * 显示文本模式
+	 */
+	public void showToText() {
+		rlyReply.setVisibility(View.VISIBLE);
+		llyVoice.setVisibility(View.GONE);
+		showVocie = false;
+	}
+
+	/**
+	 * 显示语音模式
+	 */
+	public void showToVoice() {
+		rlyReply.setVisibility(View.GONE);
+		llyVoice.setVisibility(View.VISIBLE);
+		gv_more.setVisibility(View.GONE);
+		showVocie = true;
+	}
+
+	PagerAdapter mPagerAdapter = new PagerAdapter() {
+		@Override
+		public boolean isViewFromObject(View arg0, Object arg1) {
+			return arg0 == arg1;
+		}
+
+		@Override
+		public int getCount() {
+			return grids.size();
+		}
+
+		@Override
+		public void destroyItem(View container, int position, Object object) {
+			((ViewPager) container).removeView(grids.get(position));
+		}
+
+		@Override
+		public Object instantiateItem(View container, int position) {
+			((ViewPager) container).addView(grids.get(position));
+			return grids.get(position);
+		}
+	};
+
+	/**
+	 * 显示门诊时间
+	 */
+	public String showClinicTime(String clinicTime) {
+		if (StringUtils.isBlank(clinicTime)) {
+			return "";
+		}
+		StringBuffer strBuffer = new StringBuffer();
+		clinicTimes = getResources().getStringArray(R.array.clinic_time);
+		if (clinicTimes.length != clinicTime.length()) {
+			return strBuffer.toString();
+		}
+		String clinicTimeTemp = clinicTime.substring(2)
+				+ clinicTime.substring(0, 2);
+		String preWeek = null;
+		for (int i = 0; i < clinicTimeTemp.length(); i++) {
+			char ch = clinicTimeTemp.charAt(i);
+			int consultSet = Integer.valueOf(String.valueOf(ch));
+			if (consultSet == 1) {
+				String currentWeek = clinicTimes[i].substring(0, 2);
+				if (!currentWeek.equals(preWeek)) {
+					strBuffer.append(clinicTimes[i]).append("，");
+				} else {
+					strBuffer.delete(strBuffer.length() - 1, strBuffer.length());
+					strBuffer.append(clinicTimes[i].substring(2)).append("，");
+				}
+				preWeek = currentWeek;
+			}
+			if (strBuffer.length() != 0 && i == clinicTimeTemp.length() - 1) {
+				strBuffer.delete(strBuffer.length() - 1, strBuffer.length())
+						.append("。");
+			}
+		}
+		return strBuffer.toString();
+	}
+
+	private void startConsultListInitRequest(final long consultId, final ConsultDtoModel consultDto) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		mPageIndex = 1;
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getConsultDetailRequestParam(TAG, token, consultId, mPageIndex, pageSize), JsonParserFactory
+				.parseBaseModel(ConsultListModel.class), new IResultReceiver() {
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (Global.progressDialog.isShowing()) {
+					Global.progressDialog.dismiss();
+				}
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final ConsultListModel dataModel = (ConsultListModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						Global.countMap.remove(consultId);
+						service.delMessageCount(String.valueOf(consultId));
+						// 清除咨询列表页的未读消息提示数
+						LocalBroadcastManager.getInstance(QdocApplication.getInstance())
+							.sendBroadcast(new Intent(AppConstants.UPDATE_MESSAGE_AMOUNT_INTENT_ACTION));
+						// 当咨询列表页所有的消息都已读，则去掉咨询菜单的红点
+						if (Global.countMap.isEmpty()) {
+							LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(
+							new Intent(AppConstants.HIDE_CONSULT_REDOT_INTENT_ACTION));
+						}
+					    ArrayList<ElementsModel> elementsList = dataModel.getPager().getElements();
+						if (elementsList != null && elementsList.size() > 0) {
+							firstMsgId = elementsList.get(elementsList.size() - 1).getId();
+						}
+						if (dataModel.getPager().isHasNext()) {
+							isNextPage = true;
+							mAdapter.setListData(elementsList, consultDto);
+						} else {
+							isNextPage = false;
+							mAdapter.setListDataAddConsultSingle(elementsList, consultDto);
+						}
+						mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+				mListView.setSelection(mListView.getCount() - 1);// 定位到尾部
+			}
+		});
+	}
+
+	private void startConsultListLoadMoreRequest(long consultId, long msgId, int count) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getConsultMsgs(TAG,
+				token, msgId, consultId, count), JsonParserFactory
+				.parseBaseModel(ConsultMsgListDataModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final ConsultMsgListDataModel dataModel = (ConsultMsgListDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+							    ArrayList<ElementsModel> elementsList = dataModel.getList();
+								if (elementsList != null && elementsList.size() > 0) {
+									firstMsgId = elementsList.get(elementsList.size() - 1).getId();
+								}
+								if (dataModel.isIfNextPage()) {
+									isNextPage = true;
+									mViewController.showViewStatus(ListViewState.LIST_REFRESH_MORE_COMPLETE);
+									mAdapter.addMoreListData(elementsList);
+								} else {
+									isNextPage = false;
+									mViewController.showViewStatus(ListViewState.LIST_REFRESH_NO_MORE);
+									mAdapter.addMoreListDataAddConsultSingle(elementsList, mConsultDto);
+								}
+
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+							}
+							mViewController.showViewStatus(ListViewState.LIST_REFRESH_MORE_COMPLETE);
+						}
+					}
+				});
+	}
+
+	/**
+	 * 获取门诊时间
+	 */
+	private void getClinicTime() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getClinicTime(TAG,
+				token), JsonParserFactory
+				.parseBaseModel(OutpatientTimeSettingModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							OutpatientTimeSettingModel outpatientTimeSettingModel = (OutpatientTimeSettingModel) resultData;
+							if (null != outpatientTimeSettingModel
+									&& outpatientTimeSettingModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if (null != outpatientTimeSettingModel.getOutpatSettings() && outpatientTimeSettingModel.getOutpatSettings().size() > 0) {
+									PersonalConfig.putString(PersonalConfigKey.EXTAR_CLINIC_TIME,outpatientTimeSettingModel.getOutpatSettings()
+									.get(0).getOutpatientTime());
+								} else {
+									PersonalConfig.remove(PersonalConfigKey.EXTAR_CLINIC_TIME);
+								}
+								PersonalConfig.putBoolean(PersonalConfigKey.EXTAR_CALL_CLINIC_TIME,false);
+								PersonalConfig.asyncCommit();
+							}
+						}
+					}
+				});
+	}
+
+	private Runnable taskRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+			startConsultListInitRequest(consultID, mConsultDto);
+		}
+	};
+
+	public void bindIntentBean(ArrayList<ElementsModel> elementsList) {
+		for (ElementsModel model : elementsList) {
+			if (model.getType() == AppConstants.MSG_TYPE_USER) {
+				model.setElementModelViewType(IMViewType.IM_USER_MSG);
+			} else if (model.getType() == AppConstants.MSG_TYPE_DOCTOR) {
+				model.setElementModelViewType(IMViewType.IM_DOCTOR_MSG);
+			}
+		}
+	}
+
+	OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+		}
+	};
+
+	public void onDestroy() {
+		super.onDestroy();
+		unRegisterVolUpdateReceiver();
+		Global.countMap.remove(consultID);
+		// 清除咨询列表页的未读消息提示数
+		LocalBroadcastManager
+				.getInstance(QdocApplication.getInstance())
+				.sendBroadcast(
+						new Intent(
+								AppConstants.UPDATE_MESSAGE_AMOUNT_INTENT_ACTION));
+		// 当咨询列表页所有的消息都已读，则去掉咨询菜单的红点
+		if (Global.countMap.isEmpty()) {
+			LocalBroadcastManager
+					.getInstance(QdocApplication.getInstance())
+					.sendBroadcast(
+							new Intent(
+									AppConstants.HIDE_CONSULT_REDOT_INTENT_ACTION));
+		}
+		HttpTaskManager.stop(TAG);
+		if (timeCount != null) {
+			timeCount.cancel();  
+		}
+	}
+
+	@Override
+	public void onClick(View view) {
+		switch (view.getId()) {
+		case R.id.iv_add_img:// 隐藏或者显示更多
+			InputTools.KeyBoard(edInput, InputTools.CLOSE);
+			iv_face.setImageResource(R.drawable.face_selector);
+			if (View.VISIBLE == switchToText.getVisibility()) {
+				showToText();
+			}
+			if (View.VISIBLE == gv_more.getVisibility()) {
+				gv_more.setVisibility(View.GONE);
+			} else {
+				if (View.VISIBLE == lly_face.getVisibility()) {
+					lly_face.setVisibility(View.GONE);
+				}
+				gv_more.setVisibility(View.VISIBLE);
+			}
+			rly_quick_phrases.setVisibility(View.GONE);
+			break;
+
+		case R.id.tv_finish_consult: {// 完成咨询
+			Bundle bundle = new Bundle();
+			bundle.putLong(IntentTools.EXTRA_CONSULT_ID, consultID);
+			bundle.putInt(IntentTools.EXTRA_CONSULT_STATE , consultStateDetail);
+			AdviceAndLeaveMessgeActivity.startActivityForResult(getActivity(), this, bundle, AdviceAndLeaveMessgeActivity.ADVICE, REQUEST_CONSULT_ADVICE);
+			break;
+		}
+
+		case R.id.iv_face:// 显示与隐藏表情
+			if (rly_quick_phrases.getVisibility() == View.VISIBLE) {
+				rly_quick_phrases.setVisibility(View.GONE);
+			}
+			if (lly_face.getVisibility() == View.VISIBLE) {
+				iv_face.setImageResource(R.drawable.face_selector);
+				edInput.requestFocus();
+				InputTools.KeyBoard(edInput, InputTools.OPEN);
+				lly_face.setVisibility(View.GONE);
+			} else {
+				if (gv_more.getVisibility() == View.VISIBLE) {
+					gv_more.setVisibility(View.GONE);
+				}
+				InputTools.KeyBoard(edInput, InputTools.CLOSE);
+				iv_face.setImageResource(R.drawable.switch_keyboard_selector);
+				lly_face.setVisibility(View.VISIBLE);
+			}
+			break;
+
+		case R.id.lly_blank:// 隐藏表情或者更多
+			hideFaceAndMore();
+			break;
+
+		case R.id.tv_add:// 添加快捷短语
+			QuickPhrasesActivity.startActivity(getActivity());
+			break;
+
+		case R.id.tv_back:
+			rly_quick_phrases.setVisibility(View.GONE);
+			gv_more.setVisibility(View.VISIBLE);
+			break;
+
+		case R.id.lly_share:// 分享咨询
+			String title1 = getActivity().getString(R.string.dialog_hint_title);
+			String content1 = getActivity().getString(R.string.str_share_hint);
+			String confirm1 = getActivity().getString(R.string.confirm);
+			String cancel1 = getActivity().getString(R.string.str_cancel);
+			new HintDlg(getActivity(), content1, title1, cancel1, confirm1,
+					new OnDialogclickListener() {
+						@Override
+						public void onButtonClick(int type, Dialog dialog) {
+							switch (type) {
+							case AppConstants.RIGHT_BUTTON:
+								getShareConsult(consultID,
+										AppConstants.SHARE_MOBILE_CLINIC);
+								dialog.dismiss();
+								break;
+							case AppConstants.LEFT_BUTTON:
+								dialog.dismiss();
+								break;
+							}
+						}
+					}, R.layout.dialog_hint).show();
+			break;
+
+		case R.id.tv_share:// 查看移动诊所
+			AdvanceActivitiesDtoModel dataModel = new AdvanceActivitiesDtoModel();
+			dataModel.setTitle(getActivity().getResources().getString(
+					R.string.str_mobile_clinics));
+			dataModel.setActivityUrl(clinicURL);
+			AdvanceDetailActivity.startActivity(getActivity(), dataModel);
+			break;
+
+		case R.id.tv_cancel_share:// 取消分享咨询
+			String title2 = getActivity().getString(R.string.dialog_hint_title);
+			String content2 = getActivity().getString(
+					R.string.str_cancel_share_hint);
+			String confirm2 = getActivity().getString(R.string.confirm);
+			String cancel2 = getActivity().getString(R.string.str_cancel);
+			new HintDlg(getActivity(), content2, title2, cancel2, confirm2,
+					new OnDialogclickListener() {
+						@Override
+						public void onButtonClick(int type, Dialog dialog) {
+							switch (type) {
+							case AppConstants.RIGHT_BUTTON:
+								getCancelShareConsult(consultID,
+										AppConstants.SHARE_MOBILE_CLINIC);
+								dialog.dismiss();
+								break;
+							case AppConstants.LEFT_BUTTON:
+								dialog.dismiss();
+								break;
+							}
+						}
+					}, R.layout.dialog_hint).show();
+			break;
+		case R.id.tv_leave_message_operation://留言
+			Bundle bundle = new Bundle();
+			bundle.putLong(IntentTools.EXTRA_CONSULT_ID, consultID);
+			bundle.putSerializable(IntentTools.EXTRA_CONSULT_MODEL, mConsultDto);
+			AdviceAndLeaveMessgeActivity.startActivityForResult(getActivity(), this, bundle, AdviceAndLeaveMessgeActivity.LEAVE_MESSAGE, REQUEST_LEAVE_MESSAGE);	
+            break;
+		}
+	}
+
+	public void onResume() {
+		super.onResume();
+		if (PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_CALL_CLINIC_TIME, true))
+			getClinicTime();
+	}
+
+	public void registerVolUpdateReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.VOICE_CREATE_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.CONSULT_UPDATE_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.TEXT_CREATE_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.PUSH_CONSULT_MESSAGE_ACTION);
+		myIntentFilter.addAction(AppConstants.UPDATE_LISTVIEWS_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.ACTION_QUICK_PHRASES);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(receiver, myIntentFilter);
+	}
+
+	public void unRegisterVolUpdateReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(receiver);
+	}
+
+	private BroadcastReceiver receiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if (AppConstants.VOICE_CREATE_INTENT_ACTION.equals(action)) {
+				String path = intent.getStringExtra(IntentTools.EXTRA_PATH);
+				int duition = intent.getIntExtra(IntentTools.EXTRA_DURTION, -1);
+				upLocalFile(consultID, path, AppConstants.VOICE, duition);
+			} else if (AppConstants.CONSULT_UPDATE_INTENT_ACTION.equals(action)) {
+				startConsultListInitRequest(consultID, mConsultDto);
+			} else if (AppConstants.PUSH_CONSULT_MESSAGE_ACTION.equals(action)) {
+				CustomContent content = (CustomContent) intent.getSerializableExtra(IntentTools.EXTAR_CONSULT_UPDATE);
+				updataConsult(content);
+			} else if (AppConstants.UPDATE_LISTVIEWS_INTENT_ACTION.equals(action)) {
+				startConsultListLoadMoreRequest(consultID, firstMsgId, pageSize);
+			} else if (AppConstants.ACTION_QUICK_PHRASES.equals(action)) {
+				List<QuickPhrases> list = service.getQuicPhrases();
+				qpAdapter.changeData(list);
+			}
+		}
+	};
+
+	/**
+	 * 获取单个咨询消息接口
+	 * 
+	 * @param model
+	 *            :元素对象
+	 */
+	private void startFindConsultMsg(final ElementsModel model) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager
+				.startStringRequest(DataRequestUtils.findConsultMsg(TAG, token,
+						model.getMsgId()), JsonParserFactory
+						.parseBaseModel(FindConsultMsgDataModel.class),
+						new IResultReceiver() {
+							@Override
+							public void onReceiveResult(int resultCode,
+									Object resultData) {
+								// TODO Auto-generated method stub
+								if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+									final FindConsultMsgDataModel dataModel = (FindConsultMsgDataModel) resultData;
+									if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+										// 对象转换
+										if (dataModel.getMsgDto() == null)
+											return;
+										model.setContent(dataModel.getMsgDto().getContent());
+										model.setMsgType(dataModel.getMsgDto().getMsgType());
+										model.setRealContentUrl(dataModel.getMsgDto().getRealContentUrl());
+										model.setRealUrl(dataModel.getMsgDto().getRealUrl());
+										if (dataModel.getMsgDto().getConsultId() != null)
+											model.setConsultId(dataModel.getMsgDto().getConsultId());
+										if (dataModel.getMsgDto().getId() != null)
+											model.setId(dataModel.getMsgDto().getId());
+										if (dataModel.getMsgDto().getInmsgid() != null)
+											model.setInmsgid(dataModel.getMsgDto().getInmsgid());
+										model.setMediaUrl(dataModel.getMsgDto().getMediaUrl());
+										model.setMsgTime(dataModel.getMsgDto().getMsgTime());
+										model.setOpenid(dataModel.getMsgDto().getOpenid());
+										if (dataModel.getMsgDto().getReadType() != null)
+											model.setReadType(dataModel.getMsgDto().getReadType());
+										if (dataModel.getMsgDto().getType() != null)
+											model.setType(dataModel.getMsgDto().getType());
+										if (dataModel.getMsgDto().getMediaDura() != null)
+											model.setMediaDura(dataModel.getMsgDto().getMediaDura());
+										mAdapter.addData(model);
+									} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+										LoginActivity.startActivity(getActivity());
+									}
+								}
+							}
+						});
+	}
+
+	/**
+	 * 更新咨询消息
+	 */
+	public void updataConsult(CustomContent content) {
+		if (TextUtils.isEmpty(content.getMsgtype()))
+			return;
+		if (consultID != content.getConsultId())
+			return;
+		ElementsModel model = new ElementsModel();
+		model.setMsgType(content.getMsgtype());
+		model.setElementModelViewType(IMViewType.IM_USER_MSG);
+		model.setMsgId(content.getMsgId());
+		model.setType(IMViewType.IM_USER_MSG);
+		if (content.getReFreshMsg() == NEED) {
+			startFindConsultMsg(model);
+		} else {
+			model.setContent(content.getContent());
+			mAdapter.addData(model);
+		}
+	}
+
+	public void upLocalFile(final long consultId, String path,
+			final String fileType) {
+		upLocalFile(consultId, path, fileType, 0);
+	}
+
+	/**
+	 * 上传本地文件
+	 * 
+	 * @param consultId 咨询ID
+	 * @param path 路径
+	 * @param fileType 文件类型
+	 * @param mediaDura 录音时长
+	 * @param
+	 */
+	public void upLocalFile(final long consultId, String path,
+			final String fileType, final Integer mediaDura) {
+		if (!Global.isNetworkAvailable(getActivity())) {
+			ToastUtils.ToastLong(getActivity(), getResources().getString(R.string.network_unavailable));
+			return;
+		}
+		final String uploadUrl = DataRequestUtils.getUploadUrl();
+		final String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		RequestParams params = new RequestParams();
+		params.addQueryStringParameter("token", token);
+		params.addQueryStringParameter("fileType", fileType);
+		if (AppConstants.UPLOAD_CONSULT_IAMGE.equals(fileType)) {
+			params.addBodyParameter("file",new File(imageUtil.uploadImageCompressAndRotate(getActivity(), path)));
+		} else {
+			params.addBodyParameter("file", new File(path));
+		}
+		HttpUtils http = new HttpUtils();
+		// 上传过程显示进度条
+		Global.progressDialog = ProgressDialog.show(getActivity(), null,
+				getActivity().getString(R.string.upload_ing), true, true);
+		http.send(HttpRequest.HttpMethod.POST, uploadUrl, params,
+				new RequestCallBack<String>() {
+					@Override
+					public void onStart() {
+						LogUtils.d(TAG, "conn...");
+					}
+
+					@Override
+					public void onLoading(long total, long current,
+							boolean isUploading) {
+						if (isUploading) {
+							LogUtils.d(TAG, "upload: " + current + "/" + total);
+						} else {
+							LogUtils.d(TAG, "reply: " + current + "/" + total);
+						}
+					}
+
+					@Override
+					public void onSuccess(ResponseInfo<String> responseInfo) {
+						LogUtils.d(TAG, "reply: " + responseInfo.result);
+						UploadDataModel uploadModel = null;
+						try {
+							uploadModel = JsonParserFactory.parseStringJson(
+									UploadDataModel.class, responseInfo.result);
+						} catch (JSONException e) {
+							LogUtils.e(TAG, "exception break out!!!", e);
+						} catch (IOException e) {
+							LogUtils.e(TAG, "exception break out!!!", e);
+						} catch (Exception e) {
+							LogUtils.e(TAG, "exception break out!!!", e);
+						} finally {
+							if (uploadModel == null) {
+								LogUtils.e(TAG,
+										"uploadLocalVoiceFile uploadModel == null");
+								return;
+							}
+							if (uploadModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+								return;
+							}
+							// 通知server
+							String content = uploadModel.getPath()
+									+ uploadModel.getRealName();
+							if (fileType.equals(AppConstants.UPLOAD_VOICE)) {
+								uploadText(consultId, content, AppConstants.VOICE, mediaDura, -1);
+							} else {
+								uploadText(consultId, content, AppConstants.IMAGE);
+							}
+						}
+					}
+
+					@Override
+					public void onFailure(HttpException error, String msg) {
+						LogUtils.d(TAG, error.getExceptionCode() + ":" + msg);
+						Global.progressDialog.dismiss();
+					}
+				});
+	}
+	
+	/**
+	 * 上传文本
+	 * 
+	 * @param consultId:咨询ID
+	 * @param content:内容
+	 * @param msgType:消息类型
+	 */
+	public void uploadText(long consultId, String content, String msgType) {
+		uploadText(consultId, content, msgType, -1, -1);
+	}
+
+	/**
+	 * 上传文本
+	 * 
+	 * @param consultId:咨询ID
+	 * @param content:内容
+	 * @param msgType:消息类型
+	 * @param mediaDura:音频时间长度,如果消息类型为voice语音则必填
+	 * @param position:位置
+	 */
+	public void uploadText(long consultId, String content, final String msgType, int mediaDura, final int position) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getSaveRequestParam(TAG, token, consultId, content, msgType, mediaDura), JsonParserFactory
+				.parseBaseModel(ReplyDataModel.class), new IResultReceiver() {
+
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (Global.progressDialog != null && Global.progressDialog.isShowing()) {
+					Global.progressDialog.dismiss();
+				}
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final ReplyDataModel dataModel = (ReplyDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						if (AppConstants.TEXT.equals(msgType)) {
+							mAdapter.refreshSuccess(position);
+						} else {
+							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(new Intent(AppConstants.CONSULT_UPDATE_INTENT_ACTION));
+						}
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					mAdapter.refreshFail(position);
+				}
+				btnSend.setEnabled(true);
+			}
+		});
+	}
+	
+	public static class InnerHandler extends Handler {
+		private WeakReference<ConsultDetailFragment> fragmentReference;
+
+		public InnerHandler(ConsultDetailFragment fragment) {
+			fragmentReference = new WeakReference<ConsultDetailFragment>(
+					fragment);
+		}
+
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			final ConsultDetailFragment fragment = fragmentReference.get();
+			if (fragment == null) {
+				return;
+			}
+			switch (msg.what) {
+			default:
+				break;
+			}
+		}
+	}
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+	/**
+	 * 取消咨询
+	 * 
+	 * @author andy
+	 * @param consultID
+	 *            ：咨询服务ID Create Date : 2014-11-26
+	 */
+	public void startRevocationConsultRequest(String id) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getRevocationConsultRequestParam(TAG, token, id),
+				JsonParserFactory.parseBaseModel(BaseModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						try {
+							if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+								final BaseModel dataModel = (BaseModel) resultData;
+								if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+									ToastUtils
+											.ToastShort(
+													getActivity(),
+													getResources()
+															.getString(
+																	R.string.order_cancel_success));
+									// 停留1秒，然后关闭咨询内容页面
+									new Handler().postDelayed(new Runnable() {
+										public void run() {
+											getActivity().finish();
+										}
+									}, 1000);
+									Intent intent = new Intent(
+											AppConstants.CANCEL_CONSULT_INTENT_ACTION);
+									intent.putExtra(
+											IntentTools.EXTRA_CONSULT_ID,
+											consultID);
+									LocalBroadcastManager.getInstance(
+											getActivity())
+											.sendBroadcast(intent);
+								} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+									LoginActivity.startActivity(getActivity());
+								}
+							} else {
+								if (resultData == null) {
+									ToastUtils.ToastShort(getContext()
+											.getApplicationContext(),
+											R.string.network_error);
+								} else {
+									ToastUtils.ToastShort(getContext()
+											.getApplicationContext(),
+											(String) resultData);
+								}
+							}
+						} catch (Exception e) {
+							LogUtils.d(TAG, "startRevocationConsultRequest>>"
+									+ e.toString());
+						}
+					}
+				});
+	}
+
+	/**
+	 * @return the showVocie
+	 */
+	public boolean isShowVocie() {
+		return showVocie;
+	}
+
+	/**
+	 * @param showVocie
+	 *            the showVocie to set
+	 */
+	public void setShowVocie(boolean showVocie) {
+		this.showVocie = showVocie;
+	}
+
+	/**
+	 * 播放音频文件
+	 * 
+	 * @param name
+	 *            ：音频文件名称
+	 * @param currentDefaultVol
+	 *            :当前默认音频界面
+	 * @param currentAnimVol
+	 *            ：当前动画音频界面
+	 */
+	private void playAudio(String path, final View currentDefaultVol,
+			final View currentAnimVol) {
+		try {
+			// 当有音频文件正在播放时，先停止播放
+			if (mMediaPlayer.isPlaying()) {
+				mMediaPlayer.stop();
+				preAnimDrawable.stop();
+				ViewUtils.setVisibility(preAnimVol, View.GONE);
+				ViewUtils.setVisibility(preDefaultVol, View.VISIBLE);
+				if (prePath.equals(path)) {// 两次播放的路径相同，表示播放的是同一个音频文件，然后停止播放
+					return;
+				}
+			}
+			mMediaPlayer.reset();
+			mMediaPlayer.setDataSource(path);
+			mMediaPlayer.prepare();
+			mMediaPlayer.start();// 播放当前的音频文件
+			final AnimationDrawable currentAnimDrawable = (AnimationDrawable) currentAnimVol
+					.getBackground();
+			currentAnimDrawable.start();
+			ViewUtils.setVisibility(currentDefaultVol, View.GONE);
+			ViewUtils.setVisibility(currentAnimVol, View.VISIBLE);
+			// 动画播放完成监听器
+			mMediaPlayer.setOnCompletionListener(new OnCompletionListener() {
+				public void onCompletion(MediaPlayer mp) {
+					if (currentAnimDrawable != null) {
+						currentAnimDrawable.stop();
+					}
+					if (currentDefaultVol != null && currentAnimVol != null) {
+						ViewUtils.setVisibility(currentAnimVol, View.GONE);
+						ViewUtils.setVisibility(currentDefaultVol, View.VISIBLE);
+					}
+				}
+			});
+			// 记录当前播放的情况
+			preAnimDrawable = currentAnimDrawable;
+			preAnimVol = currentAnimVol;
+			preDefaultVol = currentDefaultVol;
+			prePath = path;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	class GuidePageChangeListener implements OnPageChangeListener {
+
+		@Override
+		public void onPageScrollStateChanged(int arg0) {
+		}
+
+		@Override
+		public void onPageScrolled(int arg0, float arg1, int arg2) {
+		}
+
+		@Override
+		public void onPageSelected(int arg0) {
+			mv_dot.setSeletion(arg0);
+		}
+	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		switch (requestCode) {
+		case REQUEST_GALLERY://相册
+			if (data == null || resultCode != Activity.RESULT_OK) {
+				return;
+			}
+			upLocalFile(consultID, imageUtil.getLocalImagePath(getActivity(), data.getData()), AppConstants.UPLOAD_CONSULT_IAMGE);
+			break;
+
+		case REQUEST_CAMERA://拍照
+			if (resultCode != Activity.RESULT_OK) {
+				return;
+			}
+			// 设置文件保存路径
+			File picture = new File(Environment.getExternalStorageDirectory() + File.separator + CONSULT_FILE_NAME);
+			upLocalFile(consultID, picture.getAbsolutePath(), AppConstants.UPLOAD_CONSULT_IAMGE);
+			break;
+			
+		case REQUEST_CONSULT_ADVICE://咨询建议
+			if (AdviceFragment.RESULT_CODE_CANCEL_CONSULT_SUCCESS == resultCode) {
+			    getActivity().finish();
+			} else if (AdviceFragment.RESULT_CODE_SAVE_ADVICE_SUCCESS == resultCode) {
+				if (data == null) {
+					return;
+				}
+				String consultAcvice = data.getStringExtra(IntentTools.EXTRA_CONSULT_ADVICE);
+				String treatmentTime = data.getStringExtra(IntentTools.EXTRA_CONSULT_ADVICE_CREATE_TIME);
+				String msgCreateTime = "";
+				if (StringUtils.isEmpty(mTreatmentTime)) {
+					tv_finish_consult.setText(getActivity().getString(R.string.update_advice));
+					mTreatmentTime = treatmentTime;
+					mAdapter.setTreatmentTime(treatmentTime);
+					msgCreateTime = treatmentTime;
+					setCountDown(treatmentTime);
+				} else {
+					msgCreateTime = DateUtil.formatDate();
+				}
+				mAdapter.addData(getConsultAdviceModel(consultAcvice, msgCreateTime));
+			}
+			break;
+			
+		case REQUEST_LEAVE_MESSAGE://留言
+			if (data == null) {
+				return;
+			}
+			int leaveMessageStatus = data.getIntExtra(IntentTools.EXTRA_LEAVE_MESSAGE_STATUS, AppConstants.LEAVE_MESSAGE_ALREADY);
+			mConsultDto.setLeaveMessageStatus(leaveMessageStatus);
+			tv_leave_message_hint.setText(getResources().getString(R.string.cancel_consult_hint_2));
+			tv_leave_message_operation.setText(getResources().getString(R.string.str_check_advice)); 
+			break;
+		}
+	}
+	
+    /**
+     * 获取咨询建议对象
+     * @param consultAcvice 咨询建议
+     * @param treatmentTime 发送咨询建议时间
+     */
+    public ElementsModel getConsultAdviceModel (String consultAcvice, String treatmentTime) {
+    	ElementsModel model = new ElementsModel();
+		model.setMsgType(AppConstants.MSG_TREAT);
+	    model.setContent(consultAcvice);
+		model.setElementModelViewType(IMViewType.IM_DOCTOR_MSG);
+		model.setReplying(false);
+		model.setReplySuccess(true);
+		model.setMsgTime(treatmentTime);
+		return model;
+    }
+	
+
+	/**
+	 * 取消分享咨询
+	 */
+	public void getCancelShareConsult(long consultId, int type) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.deleteConsultShare(
+				TAG, token, consultId, type), JsonParserFactory
+				.parseBaseModel(BaseModel.class), new IResultReceiver() {
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final BaseModel dataModel = (BaseModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						Intent intent = new Intent(
+								AppConstants.SHARE_MOBILE_CLINIC_STATUS_ACTION);
+						intent.putExtra(IntentTools.EXTRA_SHARE_STATUS,
+								AppConstants.MAY_SHARE);
+						LocalBroadcastManager.getInstance(getActivity())
+								.sendBroadcast(intent);
+						switchView(AppConstants.MAY_SHARE);
+						ToastUtils.ToastShort(getActivity(), getActivity()
+								.getString(R.string.str_already_cancel));
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext()
+								.getApplicationContext(),
+								R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext()
+								.getApplicationContext(), (String) resultData);
+					}
+				}
+			}
+		});
+	}
+
+	/**
+	 * 分享咨询
+	 */
+	public void getShareConsult(long consultId, int type) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(
+				DataRequestUtils.saveConsultShare(TAG, token, consultId, type),
+				JsonParserFactory.parseBaseModel(BaseModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final BaseModel dataModel = (BaseModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								Intent intent = new Intent(AppConstants.SHARE_MOBILE_CLINIC_STATUS_ACTION);
+								intent.putExtra(IntentTools.EXTRA_SHARE_STATUS,AppConstants.ALREADY_SHARE);
+								LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+								ToastUtils.ToastShort(getActivity(),getActivity().getString(R.string.str_share_success));
+								switchView(AppConstants.ALREADY_SHARE);
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+						}
+					}
+				});
+	}
+
+	/**
+	 * 切换显示
+	 * @param shareStatus 状态
+	 */
+	public void switchView(int shareStatus) {
+		if (shareStatus == AppConstants.MAY_SHARE) {
+			lly_share.setVisibility(View.VISIBLE);
+			rly_already_share.setVisibility(View.GONE);
+		} else if (shareStatus == AppConstants.ALREADY_SHARE) {
+			lly_share.setVisibility(View.GONE);
+			rly_already_share.setVisibility(View.VISIBLE);
+		}
+	}
+	
+	/**
+	 * 设置咨询单内容
+	 */
+	public void setConsultDetailHead() {
+		if(mConsultDto == null)
+			return;
+        // 咨询费用
+		if(mConsultDto.getConsultFee() > 0){
+			tv_consult_cost.setText(mConsultDto.getConsultFeeStr());
+			tv_consult_cost.setBackgroundResource(0);
+		}else{
+			tv_consult_cost.setText(getActivity().getString(R.string.free_diagnosis));
+		}
+		setCountDown(mConsultDto.getTreatmentTime());
+	}
+	
+	/**
+	 * 设置倒计时
+	 */
+	public void setCountDown(String treatmentTime) {
+		if(mConsultDto == null)
+			return;
+		// 显示倒计时
+		if (!StringUtils.isEmpty(treatmentTime) && mConsultDto.getOpenNumber() != null && consultStateDetail == AppConstants.CONSULT_ING) {
+			tv_consult_time.setCompoundDrawablesWithIntrinsicBounds(R.drawable.count_down_clock, 0, 0, 0);
+			String endConsultTime = DateUtil.addDate(treatmentTime, Calendar.HOUR_OF_DAY, mConsultDto.getOpenNumber());
+			String now = DateUtil.getDate(DateUtil.timeFormat1);
+			long differTime = DateUtil.dateDiff(now, endConsultTime);
+			if (differTime > 1000) {
+				timeCount = new TimeCount(differTime, 1000, tv_consult_time, mConsultDto.getAcceptTime());// 构造CountDownTimer对象
+				timeCount.start();// 开始计时
+			} else {
+				tv_consult_time.setText(mConsultDto.getAcceptTime());
+			}
+		} else {
+			tv_consult_time.setText(mConsultDto.getAcceptTime());
+		}
+	}
+	
+	 private void getConsultDetailRequest(final long id) {
+			String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		    Global.progressDialog = ProgressDialog.show(getActivity(), null,this.getString(R.string.load_data), true, true);
+			HttpTaskManager.startStringRequest(DataRequestUtils.getFindConsultDetailRequestParam(String.valueOf(id), token, id),
+					JsonParserFactory.parseBaseModel(ConsultDtoDataModel.class),
+					new IResultReceiver() {
+						@Override
+						public void onReceiveResult(int resultCode,Object resultData) {
+							if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+								final ConsultDtoDataModel dataModel = (ConsultDtoDataModel) resultData;
+								if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+									mConsultDto = dataModel.getConsultDto();
+									if (mConsultDto == null) {
+							    		ToastUtils.ToastLong(getActivity(), R.string.server_exception);
+							    		return;
+							    	}
+									shareStatus = dataModel.getConsultDto().getShareStatus();
+									clinicURL = dataModel.getClinicUrl(); 
+									consultStateDetail = dataModel.getConsultDto().getConsultStateDetail();
+									mTreatmentTime = dataModel.getConsultDto().getTreatmentTime();
+                                    mAdapter.setTreatmentTime(mTreatmentTime);
+                                    mAdapter.setOpenNumber(dataModel.getConsultDto().getOpenNumber());
+                                    mAdapter.setSatisfactionStatus(dataModel.getConsultDto().getSatisfactionStatus());
+                                    mAdapter.setSatisfactionTime(dataModel.getConsultDto().getSatisfactionTime());
+                                    mAdapter.setConsultStateDetail(consultStateDetail);
+									setConsultDetailBottom();
+									setConsultDetailHead();
+									startConsultListInitRequest(consultID, dataModel.getConsultDto());
+								} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+									Global.progressDialog.dismiss();
+									LoginActivity.startActivity(getActivity());
+								}
+							} else { 
+								if (resultData == null) {
+									ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+								} else {
+									ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+								}
+								//异常情况，在这里关闭加载的圆形进度条
+								Global.progressDialog.dismiss();
+							}
+						}
+			});
+		}
+	 
+		/* 定义一个倒计时的内部类 */
+		class TimeCount extends CountDownTimer {
+			private TextView tv_count_down;
+			private String acceptTime;
+			
+			public TimeCount(long millisInFuture, long countDownInterval, TextView tv_count_down, String acceptTime) {
+				super(millisInFuture, countDownInterval);// 参数依次为总时长,和计时的时间间隔
+				this.tv_count_down = tv_count_down;
+				this.acceptTime = acceptTime;
+			}
+
+			@Override
+			public void onFinish() {// 计时完毕时触发
+				tv_count_down.setText(acceptTime);
+			}
+
+			@Override
+			public void onTick(long millisUntilFinished) {// 计时过程显示
+				tv_count_down.setText(getActivity().getResources().getString(R.string.str_auto_close, 
+						DateUtil.formatTime(millisUntilFinished)));
+			}
+		}
+		
+		public void setConsultDetailBottom() {
+			if (consultStateDetail == AppConstants.CONSULT_ING) {//咨询中
+				if (from == AppConstants.FROM_REPLY) {
+					edInput.requestFocus();
+				}
+				if (!StringUtils.isEmpty(mTreatmentTime)) {
+					tv_finish_consult.setText(getResources().getString(R.string.update_advice));
+				} else {
+					tv_finish_consult.setText(getResources().getString(R.string.end_consult));
+					if (!PersonalConfig.getBoolean(PersonalConfigKey.EXTAR_CONSULT_DETAIL_GUIDE)) {
+					    first_guide_view.showFirstGuide();
+					    PersonalConfig.putBoolean(PersonalConfigKey.EXTAR_CONSULT_DETAIL_GUIDE, true);
+					    PersonalConfig.asyncCommit();
+					} 
+				}
+				lly_reply_main.setVisibility(View.VISIBLE);
+				fly_share_main.setVisibility(View.GONE);
+				rly_leave_mesage.setVisibility(View.GONE);
+			} else if (consultStateDetail == AppConstants.CONSULT_FINISH){//咨询完成
+				lly_reply_main.setVisibility(View.GONE);
+				rly_leave_mesage.setVisibility(View.GONE);
+			    tv_finish_consult.setText(getResources().getString(R.string.str_check_advice));
+				if (shareStatus == AppConstants.MAY_SHARE) {//可分享
+					fly_share_main.setVisibility(View.VISIBLE);
+					lly_share.setVisibility(View.VISIBLE);
+					rly_already_share.setVisibility(View.GONE);
+				} else if (shareStatus == AppConstants.ALREADY_SHARE) {//已分享
+					fly_share_main.setVisibility(View.VISIBLE);
+					lly_share.setVisibility(View.GONE);
+					rly_already_share.setVisibility(View.VISIBLE);
+				} else if (shareStatus == AppConstants.NOT_SHARE){//不能分享
+					fly_share_main.setVisibility(View.GONE);
+				}
+			} else if (consultStateDetail == AppConstants.CONSULT_CANCLE) {//咨询取消
+				tv_finish_consult.setVisibility(View.GONE);
+				lly_reply_main.setVisibility(View.GONE);
+				rly_leave_mesage.setVisibility(View.VISIBLE);
+				fly_share_main.setVisibility(View.GONE);
+				if (mConsultDto.getLeaveMessageStatus() == AppConstants.LEAVE_MESSAGE_NO) {//未留言
+					tv_leave_message_hint.setText(getResources().getString(R.string.cancel_consult_hint_1));
+					tv_leave_message_operation.setText(getResources().getString(R.string.str_send_advice)); 
+				} else if (mConsultDto.getLeaveMessageStatus() == AppConstants.LEAVE_MESSAGE_ALREADY) {//已留言
+					tv_leave_message_hint.setText(getResources().getString(R.string.cancel_consult_hint_2));
+					tv_leave_message_operation.setText(getResources().getString(R.string.str_check_advice)); 
+				}
+			} else {
+				tv_finish_consult.setVisibility(View.GONE);
+				lly_reply_main.setVisibility(View.GONE);
+				rly_leave_mesage.setVisibility(View.GONE);
+				rly_already_share.setVisibility(View.GONE);
+			}
+		}
+		
+		/**
+		 * 邀请评价
+		 */
+		public void startInvaluateEvaluateRequest(long consultID, final int position) {
+			String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+			HttpTaskManager.startStringRequest(DataRequestUtils.getInviteEvaluate(TAG, token, consultID),
+					JsonParserFactory.parseBaseModel(BaseModel.class),
+					new IResultReceiver() {
+						@Override
+						public void onReceiveResult(int resultCode,Object resultData) {
+							if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+								final BaseModel dataModel = (BaseModel) resultData;
+								if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+									mAdapter.refreshAlreadyIntive(position);
+								} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+									LoginActivity.startActivity(getActivity());
+								}
+							} else { 
+								if (resultData == null) {
+									ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+								} else {
+									ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+								}
+							}
+						}
+			});
+		}
+		
+		@Override
+		public void onDestroyView() {
+			super.onDestroyView();
+			HttpTaskManager.stop(TAG);
+		}
+}

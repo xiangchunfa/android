@@ -1,0 +1,44 @@
+package com.qdoc.client.model;
+
+import java.util.List;
+
+/**
+ * 医生动态公告展示类
+ * @author Antony
+ * create at 2015-08-19
+ *
+ */
+public class ShowBulletin extends AbstractBaseModel {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6776105792492839120L;
+
+	private String bulletin;
+	private List<String> reference;
+	/**
+	 * @return the bulletin
+	 */
+	public String getBulletin() {
+		return bulletin;
+	}
+	/**
+	 * @param bulletin the bulletin to set
+	 */
+	public void setBulletin(String bulletin) {
+		this.bulletin = bulletin;
+	}
+	/**
+	 * @return the reference
+	 */
+	public List<String> getReference() {
+		return reference;
+	}
+	/**
+	 * @param reference the reference to set
+	 */
+	public void setReference(List<String> reference) {
+		this.reference = reference;
+	}
+}

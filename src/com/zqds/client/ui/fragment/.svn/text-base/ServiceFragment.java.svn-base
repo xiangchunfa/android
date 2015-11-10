@@ -1,0 +1,866 @@
+package com.qdoc.client.ui.fragment;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import org.json.JSONException;
+import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.ViewPager;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.SimpleAdapter;
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.RequestParams;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.http.client.HttpRequest;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.db.bean.CustomContent;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.model.FindSystemMsgDataModel;
+import com.qdoc.client.model.GetSystemMsgsDataModel;
+import com.qdoc.client.model.ReplyDataModel;
+import com.qdoc.client.model.SystemMessageDto;
+import com.qdoc.client.model.UploadDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.QdocApplication;
+import com.qdoc.client.ui.EvaluateActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.MainActivity;
+import com.qdoc.client.ui.ServiceActivity;
+import com.qdoc.client.ui.adapter.ServiceDetailListAdapter;
+import com.qdoc.client.ui.adapter.ServiceDetailListAdapter.DetailItemOnclickListener;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.view.CopyPopWindow;
+import com.qdoc.client.ui.view.KeyboardLayout;
+import com.qdoc.client.ui.view.KeyboardLayout.onKybdsChangeListener;
+import com.qdoc.client.ui.view.MyView;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.PullListMaskController.ListViewState;
+import com.qdoc.client.ui.widget.PullRefreshView;
+import com.qdoc.client.ui.widget.PullRefreshView.OnRefreshListener;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.DateUtil;
+import com.qdoc.client.util.FaceConversionUtil;
+import com.qdoc.client.util.InputTools;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+import com.qdoc.client.util.UploadImageUtil;
+
+/**
+ * FileName    : ServiceFragment.java
+ * Description : 客户服务类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-3-23 
+ **/
+public class ServiceFragment extends BaseFragment implements OnClickListener{
+	/**
+	 * TAG
+	 */
+	public static final String TAG = ServiceFragment.class.getSimpleName();
+    private static final int REQUEST_GALLERY = 1;//本地图片
+    private static final int REQUEST_CAMERA = 2;// 拍照
+	private static final String SERVICE_FILE_NAME = "service.jpg";
+    private static final String IMAGE_UNSPECIFIED = "image/*";
+    
+	/**
+	 * view
+	 */
+	private TitleBar mTitleBar;
+	private PullRefreshView mListView;
+	private PullListMaskController mViewController;
+	private Button btnSend;
+	private EditText edInput;
+	private KeyboardLayout mainView;
+	private ImageView iv_add_img;
+	private GridView gv_more;
+	private ImageView iv_face;
+	private LinearLayout lly_face;
+	private ViewPager vp_face;
+	private MyView mv_dot;
+	
+	/**
+	 * params
+	 */
+	private final int DELAYMILLIS = 200;
+	private InnerHandler mHandler = new InnerHandler(this);
+	private List<SystemMessageDto> elementsList = new ArrayList<SystemMessageDto>();
+	private ServiceDetailListAdapter mAdapter;
+	private long consultID = 2548;
+	private String consultIdFromPush;
+	public static boolean active = false;
+	public int from;
+	private Boolean isMoveToBottom = true;//listView是否定位到最后
+	private int pageSize = 10;
+	private boolean showVocie = false;//是否显示录音按钮
+    private long firstMsgId;//最早消息ID
+	public static final int NEED = 1;//需要重新获取完整的咨询消息
+	public static final int NO_NEED = 0;//不需要重新获取完整的咨询消息
+	public boolean isNextPage = true;//是否有下一页
+	public int mState;//键盘状态
+	private UploadImageUtil imageUtil;
+	private CopyPopWindow popupWindow;
+	private DoctorModel doctorDto;// 医生对象
+	private FaceConversionUtil faceUtil;
+	
+	public ServiceDetailListAdapter getmAdapter() {
+		return mAdapter;
+	}
+
+	public void setmAdapter(ServiceDetailListAdapter mAdapter) {
+		this.mAdapter = mAdapter;
+	}
+
+	public static ServiceFragment newInstance(Bundle bundle) {
+		final ServiceFragment fragment = new ServiceFragment();
+		fragment.setArguments(bundle);
+		return fragment;
+	}
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+		super.onCreate(savedInstanceState);
+		registerVolUpdateReceiver();
+	}
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_service_detail, container, false);
+	}
+
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+			initView(view);
+			initParams();
+			initListener();
+	}
+
+	private void initParams() {
+		faceUtil = FaceConversionUtil.getInstace(getActivity());
+		if(getArguments() != null)
+		    doctorDto = (DoctorModel) getArguments().getSerializable(IntentTools.EXTRA_DOCTOR_INFO);
+		popupWindow = new CopyPopWindow(getActivity());
+		imageUtil = new UploadImageUtil(getActivity());
+		mAdapter = new ServiceDetailListAdapter(getContext(),
+				new DetailItemOnclickListener() {
+
+					@Override
+					public void onButtonClick(int type, Object obj, View view1,View view2) {
+						switch (type) {
+						case AppConstants.TEXT_COPY:
+							if(popupWindow.isShowing()){
+								popupWindow.dismiss();
+							}
+						    popupWindow.setContent(((SystemMessageDto) obj).getContent());
+							popupWindow.showAsDropDown(view1);
+							break;
+						case AppConstants.CHECK_EVALUATE:
+							SystemMessageDto dto = ((SystemMessageDto) obj);
+							Bundle bundle1 = new Bundle();
+							bundle1.putLong(IntentTools.EXTRA_CONSULT_ID, dto.getConsultId());
+							EvaluateActivity.startActivity(getActivity(), bundle1);
+							break;
+						case AppConstants.LAYOUT_ITEM:
+							if(View.VISIBLE == gv_more.getVisibility()){
+								gv_more.setVisibility(View.GONE);
+							}
+							if(mState == KeyboardLayout.KEYBOARD_STATE_SHOW){
+								InputTools.KeyBoard(edInput, InputTools.CLOSE);
+							}
+							break;
+						}
+					}
+		},
+		mListView, popupWindow);
+		mListView.setAdapter(mAdapter);
+		startServiceListInitRequest();
+        initMore();
+        faceUtil.initFace(getActivity(), R.layout.grid1, edInput, vp_face, mv_dot);
+	}
+
+	/**
+	 * 加载更多
+	 */
+    public void initMore() {
+    	ArrayList<HashMap<String, Object>> items = new ArrayList<HashMap<String, Object>>();
+    	
+    	HashMap<String, Object> map = new HashMap <String, Object>();
+		map.put("ItemImage", R.drawable.selected_photo_seletor);
+		map.put("ItemText", getActivity().getString(R.string.photo));
+		items.add(map);
+		
+		map = new HashMap <String, Object>();
+		map.put("ItemImage", R.drawable.service_help_selector);
+		map.put("ItemText", getActivity().getString(R.string.common_question));
+		items.add(map);
+		
+		SimpleAdapter sa = new SimpleAdapter(getActivity(), items,
+				R.layout.main_grid_item, new String[] { "ItemImage", "ItemText" },
+				new int[] { R.id.iv_img, R.id.tv_text });
+		gv_more.setAdapter(sa);
+    }
+	
+	private void initView(View view) {
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.service_title,
+				R.drawable.icon_back, R.drawable.icon_call, actionBarLeftBtnListener, actionBarRightBtnListener,
+				getResources().getColor(R.color.titlebar_bg));
+		mListView = (PullRefreshView) view.findViewById(R.id.listView);
+		mListView.setmIsEnablePullUp(false);
+		// 自定义emptyview
+		ErrorMaskView maskView = (ErrorMaskView) view.findViewById(R.id.maskView);
+		mViewController = new PullListMaskController(mListView, maskView);
+		mViewController.showViewStatus(ListViewState.EMPTY_LOADING);
+		edInput = (EditText) view.findViewById(R.id.et_input);
+		mainView = (KeyboardLayout) view.findViewById(R.id.main_layout);
+		edInput.setHorizontallyScrolling(false);
+		btnSend = (Button) view.findViewById(R.id.send); 
+		iv_add_img = (ImageView) view.findViewById(R.id.iv_add_img);
+		gv_more = (GridView) view.findViewById(R.id.gv_more);
+        iv_face = (ImageView) view.findViewById(R.id.iv_face);
+        lly_face = (LinearLayout) view.findViewById(R.id.lly_face);
+        vp_face = (ViewPager) view.findViewById(R.id.vp_face);
+        mv_dot = (MyView) view.findViewById(R.id.mv_dot);
+	}
+
+	protected void initListener() {
+		iv_add_img.setOnClickListener(this);
+		iv_face.setOnClickListener(this);
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				// TODO Auto-generated method stub
+				// 避免频繁发送请求
+				mHandler.removeCallbacks(taskRunnable);
+				mHandler.postDelayed(taskRunnable, DELAYMILLIS); 
+			}
+		});
+
+		mViewController.setOnRefreshListener(new OnRefreshListener() {
+			@Override
+			public void onRefresh() {
+				// startConsultListRefreshRequest(consultId);
+				if(isNextPage)
+				    startConsultListLoadMoreRequest(consultID, firstMsgId, pageSize);
+				else
+					mViewController.showViewStatus(ListViewState.LIST_REFRESH_MORE_COMPLETE);
+			}
+		});
+
+		mainView.setOnkbdStateListener(new onKybdsChangeListener() {
+			public void onKeyBoardStateChange(int state) {
+				mState = state;
+				switch (state) {
+				case KeyboardLayout.KEYBOARD_STATE_HIDE:
+					isMoveToBottom = true;
+					break;
+				case KeyboardLayout.KEYBOARD_STATE_SHOW:
+					if(isMoveToBottom){
+						isMoveToBottom = false;
+						new Handler().postDelayed(new Runnable(){   
+				            public void run() {   
+				            	gv_more.setVisibility(View.GONE);
+				            }   
+				            }, 100); 
+						new Handler().postDelayed(new Runnable(){   
+					        public void run() {   
+					            mListView.setSelection(mListView.getCount()-1);
+					        }   
+					    }, 200);   
+					}
+					break;
+				}
+			}
+		});
+		
+		//添加焦点监听器
+		edInput.setOnFocusChangeListener(new OnFocusChangeListener() {
+			
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				//文字编辑框没有获取到焦点的时候隐藏软键盘
+				InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+				if(!hasFocus && imm.isActive()){
+					imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+				}
+			}
+		});
+
+		//发送咨询消息
+		btnSend.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String content = edInput.getText().toString().trim();
+				if (TextUtils.isEmpty(content)) {
+					ToastUtils.ToastShort(getActivity().getApplicationContext(), "请输入内容");
+					return;
+				}
+				FaceConversionUtil faceConversion = FaceConversionUtil.getInstace(getActivity());
+				replyServiceMsg(consultID, faceConversion.getReplaceTag(content), AppConstants.TEXT);
+				btnSend.setEnabled(false);
+			}
+		});
+		
+	    edInput.addTextChangedListener(new TextWatcher() {
+
+			@Override
+			public void onTextChanged(CharSequence input, int arg1, int arg2,
+					int arg3) {
+				if(!StringUtils.isEmpty(input)) {
+                    iv_add_img.setVisibility(View.GONE);
+					btnSend.setVisibility(View.VISIBLE);
+				}else{
+					iv_add_img.setVisibility(View.VISIBLE);
+					btnSend.setVisibility(View.GONE);
+				}
+			}
+
+			@Override
+			public void beforeTextChanged(CharSequence arg0, int arg1,
+					int arg2, int arg3) {
+			}
+
+			@Override
+			public void afterTextChanged(Editable arg0) {
+			}
+		});
+	    
+	    gv_more.setOnItemClickListener(new OnItemClickListener() {
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				switch(arg2) {
+				case 0://图片
+					FragmentManager fm = getFragmentManager();
+		            ChooseImageDialogFragment chooseDialog = new ChooseImageDialogFragment(new com.qdoc.client.ui.fragment.ChooseImageDialogFragment.OnDialogclickListener() {
+						
+						@Override
+						public void onButtonClick(int type, DialogFragment dialog) {
+							switch (type) {
+							case AppConstants.CAMERA:
+								imageUtil.chooseCamera(ServiceFragment.this, SERVICE_FILE_NAME, REQUEST_CAMERA);
+								dialog.dismiss();
+								break;
+
+							case AppConstants.PHOTO_ALBUM:
+								imageUtil.chooseLocalImage(ServiceFragment.this, IMAGE_UNSPECIFIED, REQUEST_GALLERY);
+								dialog.dismiss();
+								break;
+							}
+						}
+					});
+		            chooseDialog.show(fm, ChooseImageDialogFragment.TAG);
+					break;
+				case 1://常见问题
+					ServiceActivity act = (ServiceActivity)getActivity();
+				    act.switchToCommonQuestionFragment(CommonQuestionFragment.TAG);
+				    gv_more.setVisibility(View.GONE);
+				    break;
+				}
+			}
+		});
+	}
+
+
+	private void startServiceListInitRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getSystemMsgs(TAG, token, null, pageSize), JsonParserFactory
+				.parseBaseModel(GetSystemMsgsDataModel.class), new IResultReceiver() {
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final GetSystemMsgsDataModel dataModel = (GetSystemMsgsDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						if (dataModel.getList().size() > 0) {
+							elementsList =  dataModel.getList();
+							firstMsgId = elementsList.get(elementsList.size()-1).getId();
+						} 
+						isNextPage = dataModel.isIfNextPage();
+						mAdapter.setListData(elementsList);
+						mViewController.showViewStatus(ListViewState.LIST_NO_MORE);
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+					}
+					mViewController.showViewStatus(ListViewState.EMPTY_RETRY);
+				}
+				mListView.setSelection(mListView.getCount() - 1);//定位到尾部
+			}
+		});
+	}
+
+
+	private void startConsultListLoadMoreRequest(long consultId,long msgId,int count) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.getSystemMsgs(TAG, token, msgId, pageSize),
+				JsonParserFactory.parseBaseModel(GetSystemMsgsDataModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final GetSystemMsgsDataModel dataModel = (GetSystemMsgsDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								if(dataModel.getList() != null && dataModel.getList().size() > 0) {
+									elementsList = dataModel.getList();
+								    firstMsgId = elementsList.get(elementsList.size()-1).getId();
+								    mAdapter.addMoreListData(elementsList);
+								}     
+								if(dataModel.isIfNextPage()){
+									isNextPage = true;
+								}else{
+									isNextPage = false;
+								} 
+								mViewController.showViewStatus(ListViewState.LIST_REFRESH_MORE_COMPLETE);
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+							} else {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+							}
+							mViewController.showViewStatus(ListViewState.LIST_REFRESH_MORE_COMPLETE);
+						}
+					}
+				});
+	}
+
+	private Runnable taskRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+			startServiceListInitRequest();
+		}
+	};
+
+
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			if (!TextUtils.isEmpty(consultIdFromPush)) {
+				MainActivity.startActivity(getActivity());
+				getActivity().finish();
+			} else {
+				getActivity().finish();
+			}
+		}
+	};
+	
+	OnClickListener actionBarRightBtnListener = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			  String content = getResources().getString(R.string.service_call_content);
+			  String title = getResources().getString(R.string.service_call_title);
+			  String cancel = getResources().getString(R.string.str_dialog_cancel);
+			  String ok = getResources().getString(R.string.str_dialog_ok);
+			  new HintDlg(getActivity(), content, title, cancel, ok, new OnDialogclickListener() {
+				@Override
+				public void onButtonClick(int type, Dialog dialog) {
+				     switch(type){
+				     case AppConstants.RIGHT_BUTTON:
+				    	Global.callPhone(getContext(), AppConstants.SERVICE_PHONE);
+						dialog.dismiss();
+						break;
+					 case AppConstants.LEFT_BUTTON:
+						dialog.dismiss();
+						break;
+				 }
+				}
+			}, R.layout.dialog_hint).show();
+		}
+	};
+
+	public void onDestroy() {
+		super.onDestroy();
+		unRegisterVolUpdateReceiver();
+		Global.countMap.remove(consultID);
+		//清除咨询列表页的未读消息提示数
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(
+	                new Intent(AppConstants.UPDATE_MESSAGE_AMOUNT_INTENT_ACTION));
+		//当咨询列表页所有的消息都已读，则去掉咨询菜单的红点
+		if(Global.countMap.isEmpty()){
+			LocalBroadcastManager.getInstance(QdocApplication.getInstance()).sendBroadcast(
+	                new Intent(AppConstants.HIDE_CONSULT_REDOT_INTENT_ACTION));
+		}
+		HttpTaskManager.stop(TAG);
+	}
+
+	@Override
+	public void onClick(View view) {
+		// save to sharepreference
+		switch (view.getId()) {
+		case R.id.iv_add_img:
+			iv_face.setImageResource(R.drawable.face_selector);
+			if (View.VISIBLE == gv_more.getVisibility()) {
+				gv_more.setVisibility(View.GONE);
+			} else {
+				if (View.VISIBLE == lly_face.getVisibility()) {
+					lly_face.setVisibility(View.GONE);
+				}
+				gv_more.setVisibility(View.VISIBLE);
+			}
+			InputTools.KeyBoard(edInput, InputTools.CLOSE);
+			break;
+		case R.id.iv_face:
+			if (lly_face.getVisibility() == View.VISIBLE) {
+				iv_face.setImageResource(R.drawable.face_selector);
+				edInput.requestFocus();
+				InputTools.KeyBoard(edInput, InputTools.OPEN);
+				lly_face.setVisibility(View.GONE);
+			} else {
+				if (gv_more.getVisibility() == View.VISIBLE) {
+					gv_more.setVisibility(View.GONE);
+				}
+				InputTools.KeyBoard(edInput, InputTools.CLOSE);
+				iv_face.setImageResource(R.drawable.switch_keyboard_selector);
+				lly_face.setVisibility(View.VISIBLE);
+			}
+		    break;
+	}
+}
+
+	public void onResume() {
+		super.onResume();
+	}
+
+	public void registerVolUpdateReceiver() {
+		IntentFilter myIntentFilter = new IntentFilter();
+		myIntentFilter.addAction(AppConstants.UPDATE_SERVICE_INTENT_ACTION);
+		myIntentFilter.addAction(AppConstants.UPDATE_SERVICE_INFO_INTENT_ACTION);
+		// 注册广播
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).registerReceiver(receiver, myIntentFilter);
+	}
+
+	public void unRegisterVolUpdateReceiver() {
+		LocalBroadcastManager.getInstance(QdocApplication.getInstance()).unregisterReceiver(receiver);
+	}
+
+	private BroadcastReceiver receiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if(AppConstants.UPDATE_SERVICE_INTENT_ACTION.equals(action)) {
+				startServiceListInitRequest();
+			} else if (AppConstants.UPDATE_SERVICE_INFO_INTENT_ACTION.equals(action)) {
+				CustomContent content = (CustomContent) intent.getSerializableExtra(IntentTools.EXTAR_CONSULT_UPDATE);
+				updataService(content);
+			}
+		}
+	};
+	
+    /**
+     * 获取单个咨询消息接口
+     * @param model :元素对象
+     */
+	private void startFindConsultMsg(final SystemMessageDto model) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.findSystemMsg(TAG, token, model.getId()), JsonParserFactory
+				.parseBaseModel(FindSystemMsgDataModel.class), new IResultReceiver() {
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final FindSystemMsgDataModel dataModel = (FindSystemMsgDataModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                        mAdapter.addData(dataModel.getMsgDto()); 						  
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						LoginActivity.startActivity(getActivity());
+					}
+				}
+			  }
+		     }
+			);
+	}
+ 
+	/**
+	 * 更新客服消息
+	 */
+	public void updataService(CustomContent content){
+		 SystemMessageDto model = new SystemMessageDto();
+		 model.setSourceType(AppConstants.SERVICE_TYPE_SYSTEM);
+		 model.setId(content.getMsgId());
+		 model.setMsgType(content.getMsgtype());
+		 model.setCreateDate(content.getMsgtime());
+		 if(content.getReFreshMsg() == NEED){
+			 startFindConsultMsg(model);
+		 } else {
+			 model.setContent(content.getContent());			 
+			 mAdapter.addData(model);	
+		 }
+	}
+	
+	/**
+	 * 回复客服消息
+	 * @param consultId :咨询ID
+	 * @param content   :消息内容
+	 * @param msgType   :消息类型
+	 */
+	private void replyServiceMsg(long consultId, String content, String msgType) {
+		if(AppConstants.TEXT.equals(msgType)){// 上传文本
+			uploadText(content, msgType);
+		}
+	}
+	
+	/**
+	 * 上传文本
+	 * @param consultId :咨询ID
+	 * @param content   :内容
+	 * @param msgType   :消息类型
+	 */
+	private void uploadText(String content,String msgType) {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.saveSystemMessage(TAG, token, msgType, content),
+				JsonParserFactory.parseBaseModel(ReplyDataModel.class),
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						// TODO Auto-generated method stub
+						if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+							final ReplyDataModel dataModel = (ReplyDataModel) resultData;
+							if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+								edInput.setText("");
+								mListView.setSelection(mListView.getCount() - 1);
+								LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(new Intent(AppConstants.UPDATE_SERVICE_INTENT_ACTION));
+								ToastUtils.ToastShort(getContext(),R.string.consult_reply_success);
+							} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+							}
+						} else {
+							if (resultData == null) {
+								ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.consult_reply_fail);
+							} else {
+								ToastUtils.ToastShort(getActivity().getApplicationContext(),(String) resultData);
+							}
+						}
+						btnSend.setEnabled(true);
+					}
+				});
+	}
+
+	public static class InnerHandler extends Handler {
+		private WeakReference<ServiceFragment> fragmentReference;
+
+		public InnerHandler(ServiceFragment fragment) {
+			fragmentReference = new WeakReference<ServiceFragment>(fragment);
+		}
+
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+			final ServiceFragment fragment = fragmentReference.get();
+			if (fragment == null) {
+				return;
+			}
+			switch (msg.what) {
+			default:
+				break;
+			}
+		}
+	}
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return TAG;
+	}
+
+	/**
+	 * @return the showVocie
+	 */
+	public boolean isShowVocie() {
+		return showVocie;
+	}
+
+	/**
+	 * @param showVocie the showVocie to set
+	 */
+	public void setShowVocie(boolean showVocie) {
+		this.showVocie = showVocie;
+	}
+
+  	@Override
+  	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+  		// TODO Auto-generated method stub
+  		super.onActivityResult(requestCode, resultCode, data);
+  		if (resultCode != Activity.RESULT_OK) {
+			return;
+		}
+		switch (requestCode) {
+		case REQUEST_GALLERY:
+			if (data == null) {
+				return;
+			}
+			uploadLocalImageFile(imageUtil.getLocalImagePath(getActivity(), data.getData()), AppConstants.UPLOAD_SYSTEM_MESSAGE);
+			break;
+
+		case REQUEST_CAMERA:// 拍照
+			// 设置文件保存路径
+			File picture = new File(Environment.getExternalStorageDirectory() + File.separator + SERVICE_FILE_NAME);
+			uploadLocalImageFile(picture.getAbsolutePath(), AppConstants.UPLOAD_SYSTEM_MESSAGE);
+			break;
+		}
+  	}
+  	
+  	private void uploadLocalImageFile(String path, final String fileType) {
+		final String uploadUrl = DataRequestUtils.getUploadUrl();
+		final String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+
+		RequestParams params = new RequestParams();
+		params.addQueryStringParameter("token", token);
+		params.addQueryStringParameter("fileType", fileType);
+		params.addBodyParameter("file", new File(imageUtil.uploadImageCompressAndRotate(getActivity(), path)));
+
+		HttpUtils http = new HttpUtils();
+		// 上传过程显示进度条
+		Global.progressDialog = ProgressDialog.show(getActivity(), null, getActivity().getString(R.string.upload_ing), true, true);
+		Global.progressDialog.setCanceledOnTouchOutside(false);
+		http.send(HttpRequest.HttpMethod.POST, uploadUrl, params,
+				new RequestCallBack<String>() {
+
+					@Override
+					public void onStart() {
+						LogUtils.d(TAG, "conn...");
+					}
+
+					@Override
+					public void onLoading(long total, long current,
+							boolean isUploading) {
+						if (isUploading) {
+							LogUtils.d(TAG, "upload: " + current + "/" + total);
+						} else {
+							LogUtils.d(TAG, "reply: " + current + "/" + total);
+						}
+					}
+
+					@Override
+					public void onSuccess(ResponseInfo<String> responseInfo) {
+						// 上传文件成功,根据返回的状态刷新界面
+						if(Global.progressDialog != null && Global.progressDialog.isShowing()) {
+							Global.progressDialog.dismiss();
+						}
+						UploadDataModel uploadModel = null;
+						try {
+							uploadModel = JsonParserFactory.parseStringJson(UploadDataModel.class, responseInfo.result);
+						} catch (JSONException e) {
+							LogUtils.e(TAG, "exception break out!!!", e);
+						} catch (IOException e) {
+							LogUtils.e(TAG, "exception break out!!!", e);
+						} catch (Exception e) {
+							LogUtils.e(TAG, "exception break out!!!", e);
+						} finally {
+							if (uploadModel == null) {
+								LogUtils.e(TAG,"uploadLocalVoiceFile uploadModel == null");
+								return;
+							}
+							if (uploadModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+								LoginActivity.startActivity(getActivity());
+								return;
+							}
+							// 通知server
+							String content = uploadModel.getPath() + uploadModel.getRealName();
+							uploadText(content, AppConstants.IMAGE);
+						}
+					}
+
+					@Override
+					public void onFailure(HttpException error, String msg) {
+						LogUtils.d(TAG, error.getExceptionCode() + ":" + msg);
+						Global.progressDialog.dismiss();
+					}
+				});
+	}
+  	
+  	 /**
+     * 添加常见问题到小可列表
+     */
+    public void addCommonQuestion(String question, String answer) {
+    	SystemMessageDto questionDto = new SystemMessageDto();
+    	questionDto.setAction("10");
+    	questionDto.setContent(question);
+    	questionDto.setMsgType(AppConstants.MSG_TEXT);
+     	if(doctorDto != null && !StringUtils.isEmpty(doctorDto.getRealHeadImage()))
+    	    questionDto.setHeadImage(doctorDto.getRealHeadImage());
+    	else if (!StringUtils.isEmpty(mAdapter.docHeadImg))
+    		questionDto.setHeadImage(mAdapter.docHeadImg);
+    	questionDto.setCreateDate(DateUtil.getDate("yyyy-MM-dd HH:MM:ss"));
+    	questionDto.setSourceType(AppConstants.SERVICE_TYPE_DOCTOR); 
+    	mAdapter.addData(questionDto);
+
+    	final SystemMessageDto answerDto = new SystemMessageDto();
+    	answerDto.setAction("10");
+    	answerDto.setContent(answer);
+    	answerDto.setMsgType(AppConstants.MSG_TEXT);
+    	answerDto.setCreateDate(DateUtil.getDate("yyyy-MM-dd HH:MM:ss"));
+    	answerDto.setSourceType(AppConstants.SERVICE_TYPE_SYSTEM);
+        new Handler().postDelayed(new Runnable() {
+			
+			@Override
+			public void run() {
+				 mAdapter.addData(answerDto);
+			}
+		}, 1000);
+     }
+}

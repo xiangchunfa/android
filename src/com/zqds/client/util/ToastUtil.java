@@ -1,0 +1,86 @@
+package com.zqds.client.util;
+
+import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Gravity;
+import android.widget.Toast;
+
+/**
+ * update at 2014-12-04 17:48
+ * @author antony
+ *解决了多次点击按钮，多次弹出Toast的体验上的BUG
+ */
+public class ToastUtil {
+	
+	private static String oldMsg;  
+    protected static Toast mToast   = null;  
+    private static long oneTime=0;  
+    private static long twoTime=0;
+    
+    public static void showToast(Context context, String s,int gravity, int xOffset, int yOffset,int duration){
+        if(mToast==null){
+        	mToast =Toast.makeText(context, s, duration);
+        	mToast.setGravity(gravity, xOffset, yOffset);
+        	mToast.show();  
+            oneTime=System.currentTimeMillis();  
+        }else{  
+            twoTime=System.currentTimeMillis();  
+            if(s.equals(oldMsg)){  
+                if(twoTime-oneTime>duration){ 
+                	mToast.setGravity(gravity, xOffset, yOffset);
+                	mToast.show();  
+                }  
+            }else{  
+                oldMsg = s;  
+                mToast.setText(s);  
+                mToast.show();  
+            }         
+        }  
+        oneTime=twoTime;  
+    }
+    
+    public static void showToast(Context context, int resId,int gravity, int xOffset, int yOffset,int duration){     
+        showToast(context, context.getString(resId),gravity,xOffset,yOffset,duration);  
+    }
+	
+	public static void show(final Context aContext, final String aMessage) {
+		showToast(aContext, aMessage, Gravity.CENTER, 0, 0,Toast.LENGTH_LONG);
+		/*Handler handler = new Handler(Looper.getMainLooper()); 
+		handler.post(new Runnable() {
+			@Override
+			public void run() {
+				Toast toast = Toast.makeText(aContext, aMessage, Toast.LENGTH_LONG);
+				toast.setGravity(Gravity.CENTER, 0, 0);
+				toast.show();
+			}
+		})*/;
+	}
+
+	public static void show(final Context aContext, final String aMessage,final int gravity) {
+		showToast(aContext, aMessage, gravity, 0, 200,Toast.LENGTH_LONG);
+		/*Handler handler = new Handler(Looper.getMainLooper()); 
+		handler.post(new Runnable() {
+			@Override
+			public void run() {
+				Toast toast = Toast.makeText(aContext, aMessage, Toast.LENGTH_LONG);
+				toast.setGravity(gravity,0,200);
+				toast.show();
+			}
+		});*/
+	}
+	
+	public static void show(final Context aContext, final int resourceID) {
+		showToast(aContext, resourceID, Gravity.CENTER, 0, 0,Toast.LENGTH_LONG);
+		/*Handler handler = new Handler(Looper.getMainLooper()); 
+		handler.post(new Runnable() {
+			@Override
+			public void run() {
+				String message = aContext.getResources().getString(resourceID);
+				Toast toast = Toast.makeText(aContext, message, Toast.LENGTH_LONG);
+				toast.setGravity(Gravity.CENTER, 0, 0);
+				toast.show();
+			}
+		});*/
+	}
+}

@@ -1,0 +1,64 @@
+/*
+ * MessageModel.java
+ * classes : com.qdoc.client.model.MessageModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午6:16:33
+ */
+package com.qdoc.client.model;
+
+/**
+ * com.qdoc.client.model.MessageModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午6:16:33
+ */
+public class MessageModel {
+
+    private int icon;
+    private String name;
+    private String size;
+
+    /**
+     * @return the size
+     */
+    public String getSize() {
+        return size;
+    }
+
+    /**
+     * @param size the size to set
+     */
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    /**
+     * @return the icon
+     */
+    public int getIcon() {
+        return icon;
+    }
+
+    /**
+     * @param icon the icon to set
+     */
+    public void setIcon(int icon) {
+        this.icon = icon;
+    }
+
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @param name the name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+}

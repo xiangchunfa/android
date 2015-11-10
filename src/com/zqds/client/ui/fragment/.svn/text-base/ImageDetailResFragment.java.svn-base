@@ -1,0 +1,69 @@
+/*
+ * ImageDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ImageDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-22 下午9:07:45
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import com.qdoc.client.R;
+import com.qdoc.client.ui.view.photoview.PhotoViewAttacher;
+import com.qdoc.client.ui.view.photoview.PhotoViewAttacher.OnPhotoTapListener;
+import com.qdoc.client.util.IntentTools;
+
+/**
+ * FileName    : ImageDetailResFragment.java
+ * Description : 输入法工具类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-3-13 
+ **/
+public class ImageDetailResFragment extends Fragment {
+    private int imageResId;
+    private ImageView mImageView; 
+    private PhotoViewAttacher mAttacher;
+    
+    public static ImageDetailResFragment newInstance(int imageResId) {
+        final ImageDetailResFragment f = new ImageDetailResFragment();
+        final Bundle args = new Bundle();
+        args.putInt(IntentTools.EXTAR_IMAGE_RES_ID, imageResId);
+        f.setArguments(args);
+        return f;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        imageResId = getArguments() != null ? getArguments().getInt(IntentTools.EXTAR_IMAGE_RES_ID) : null;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        final View v = inflater.inflate(R.layout.fragment_image_detail, container, false);
+        mImageView = (ImageView) v.findViewById(R.id.image);
+        mAttacher = new PhotoViewAttacher(mImageView);
+        mAttacher.setOnPhotoTapListener(new OnPhotoTapListener() {
+
+            @Override
+            public void onPhotoTap(View arg0, float arg1, float arg2) {
+                getActivity().finish();
+            }
+        });
+        return v;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        mImageView.setImageResource(imageResId);
+    }
+}

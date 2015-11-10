@@ -1,0 +1,28 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class UserFocusDoctorCategoryModel extends AbstractBaseModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1840811812556247249L;
+	
+	private Pagination<UserFocusDoctorDto> pager;
+
+	/**
+	 * @return the pager
+	 */
+	public Pagination<UserFocusDoctorDto> getPager() {
+		return pager;
+	}
+
+	/**
+	 * @param pager the pager to set
+	 */
+	public void setPager(Pagination<UserFocusDoctorDto> pager) {
+		this.pager = pager;
+	}
+
+}

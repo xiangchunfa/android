@@ -1,0 +1,462 @@
+/*
+ * ConsultDetailFragment.java
+ * classes : com.qdoc.client.ui.fragment.ConsultDetailFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-16 上午2:00:13
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.DoctorCardDataModel;
+import com.qdoc.client.model.DoctorCardModel;
+import com.qdoc.client.model.ImprintCardNewModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.view.HorizontalLine;
+import com.qdoc.client.ui.view.PhoneClearEditText;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.DisplayUtils;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.OnKeyDownUtil;
+import com.qdoc.client.util.PinyinUtil;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.MyCardFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-16 上午2:00:13
+ *         
+ *         update at 2014-11-27 15:30 by antony
+ */
+public class TenderCardFragment extends BaseFragment{
+    /**
+     * TAG
+     */
+    public static final String TAG = TenderCardFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private ImageView mycard;//医生二维码图片空间
+    private TextView wechat_scan_ask;//显示“微信扫一扫，问诊”文案的TextView
+    private TextView doc_first_name;//医生的姓
+    private TextView name_pinyin;//医生的姓的拼音
+    private HorizontalLine dotted_line;//虚线分割线
+    private TextView name;//医生的全名
+    private TextView post;//職務
+    private TextView tv_telPhone;//显示手机号码
+    private TextView hospital;//医生从属的医院
+    private TextView detail;//医生的职称
+    private EditText et_card_post;//职务编辑框
+    private PhoneClearEditText et_card_phone;//手机号码编辑框
+    private TextView card_arrive_time;//卡片預計到達時間
+    private TextView apply_card;//免費申請按鈕
+    //private DoctorCardModel mDoctorCardData;
+
+    /**
+     * params
+     */
+    private StringBuffer strBuffer = new StringBuffer();
+
+    public static TenderCardFragment newInstance(Bundle bundle) {
+        final TenderCardFragment fragment = new TenderCardFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(TAG, "onCreate:" + savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_tender_card, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        
+        initView(view);
+        initListener();
+        initParams();
+        
+    }
+
+    private void initParams() {
+    	card_arrive_time.setText(getString(R.string.plan_arrival_time));
+        startHttpRequest();
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        mTitleBar.setTitleInfo(R.string.apply_for_free, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+        mycard = (ImageView) view.findViewById(R.id.mycard);
+        wechat_scan_ask = (TextView) view.findViewById(R.id.wechat_scan_and_ask);
+        doc_first_name = (TextView) view.findViewById(R.id.doc_first_name);
+        name_pinyin = (TextView) view.findViewById(R.id.name_pinyin);
+        dotted_line = (HorizontalLine) view.findViewById(R.id.dotted_line);
+        name = (TextView) view.findViewById(R.id.name);
+        post = (TextView) view.findViewById(R.id.post);
+        tv_telPhone = (TextView) view.findViewById(R.id.tv_telphone);
+        hospital = (TextView) view.findViewById(R.id.hospital);
+        detail = (TextView) view.findViewById(R.id.detail);
+        et_card_post = (EditText) view.findViewById(R.id.et_card_post);
+        et_card_phone = (PhoneClearEditText) view.findViewById(R.id.et_card_phone);
+        card_arrive_time = (TextView) view.findViewById(R.id.card_arrive_time);
+        apply_card = (TextView) view.findViewById(R.id.apply_card); 
+    }
+
+    protected void initListener() {
+    	LogUtils.d(TAG, "名片二维码的图片大小："+DisplayUtils.pxToDip(getContext(), 138));
+    	et_card_post.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				if(et_card_post.getText().toString().trim().length()>0)
+					post.setVisibility(View.VISIBLE);
+				else
+					post.setVisibility(View.GONE);
+				post.setText(et_card_post.getText().toString().trim());
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,int after) {
+			}
+			
+			@Override
+			public void afterTextChanged(Editable s) {}
+		});
+    	
+    	//手机号码编辑监听器
+    	et_card_phone.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				if(et_card_phone.getText().toString().trim().length()>0)
+					tv_telPhone.setVisibility(View.VISIBLE);
+				else
+					tv_telPhone.setVisibility(View.GONE);
+				tv_telPhone.setText("+86 "+et_card_phone.getText().toString());
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,int after) {}
+			
+			@Override
+			public void afterTextChanged(Editable s) {}
+		});
+    	
+    	apply_card.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(OnKeyDownUtil.isValidClick())
+					applyTenderCardForFree();
+			}
+		});
+    }
+
+    public void startHttpRequest() {
+    	getMyCardRequest();
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        HttpTaskManager.stop(TAG);
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+           getActivity().finish();
+        }
+    };
+
+    /**
+     * 加载医生名片二维码信息
+     */
+    private void getMyCardRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(getActivity(), null, null, true, true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getMyCradRequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(DoctorCardDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DoctorCardDataModel dataModel = (DoctorCardDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	if ((dataModel != null) && (dataModel.getDoctorCard() != null)) {
+                            		 DoctorCardModel doctorDto = dataModel.getDoctorCard();
+                            		 name.setText(doctorDto.getDoctorName());
+                            		 post.setText(TextUtils.isEmpty(doctorDto.getPositionName())?"":doctorDto.getPositionName());
+/*                            		 if(TextUtils.isEmpty(doctorDto.getTelphone())){
+                            			 tv_telPhone.setText("");
+                            		 }else{
+                            			 StringBuffer sb = new StringBuffer(doctorDto.getTelphone());
+                            			 sb.insert(3, "-");
+                            			 sb.insert(8, "-");
+                            			 tv_telPhone.setText("+86 "+sb.toString());
+                            		 }*/
+                        			 wechat_scan_ask.setVisibility(View.VISIBLE);
+                         	    	 doc_first_name.setVisibility(View.VISIBLE);
+                         	    	 name_pinyin.setVisibility(View.VISIBLE);
+                         	    	 dotted_line.setVisibility(View.VISIBLE);
+                         	    	 hospital.setVisibility(View.VISIBLE);
+                         	    	 detail.setVisibility(View.VISIBLE);
+                        			 ImageLoaderHelper.getInstance(getActivity()).displayImage(doctorDto.getRealQzCodeUrl(), mycard);
+                        			 String first_name = doctorDto.getDoctorName().substring(0, 1);//得到姓
+                        			 String first_name_to_pinyin = null;
+                        			 if(TextUtils.isEmpty(doctorDto.getEnName())){
+                        				 //后台没有返回拼音,使用本地拼音工具处理
+                            			 if("单秋妹".equals(doctorDto.getDoctorName())){
+                            				 first_name_to_pinyin = "Shan";
+                            			 }else{
+                            				 first_name_to_pinyin = PinyinUtil.getPinYinFirstWordToUpperCase(first_name);//得到姓的拼音
+                            			 }
+                        			 }else{
+                        				 //没处理的多音字，后台有返回拼音
+                        				 first_name_to_pinyin = doctorDto.getEnName();
+                        			 }
+
+                        			 doc_first_name.setText(TextUtils.isEmpty(first_name)?"":first_name+"医生");
+                        			 name_pinyin.setText(TextUtils.isEmpty(first_name_to_pinyin)?"":"Dr."+first_name_to_pinyin);
+                        			 hospital.setText(TextUtils.isEmpty(doctorDto.getHospitalName())?"":doctorDto.getHospitalName());
+                        			 strBuffer.setLength(0);
+                        			 strBuffer.append(TextUtils.isEmpty(doctorDto.getDepartName()) ? "" : doctorDto.getDepartName());
+                        			 strBuffer.append(" | ");
+                            		 strBuffer.append(TextUtils.isEmpty(doctorDto.getDictinoaryLable()) ? "" : doctorDto.getDictinoaryLable());
+                            		 detail.setText(strBuffer.toString());
+                            	}
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}else{
+          						ToastUtils.ToastShort(getContext(), dataModel.getErrorMsg());
+          					}
+                        } else {
+                        	ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+/*    private void getPrintCardReviewStatus(){
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	HttpTaskManager.startStringRequest(DataRequestUtils.getPrintCardStatusRequestParam(TAG, token,AppConstants.MYCARD_TYPE_VALUE_TENDER), JsonParserFactory.parseBaseModel(PrintCardStatusModel.class), new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				Global.progressDialog.dismiss();
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					final PrintCardStatusModel dataModel = (PrintCardStatusModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						switch (dataModel.getStatus()) {
+						case PrintCardStatusModel.PRINT_CARD_STATUS_REFUSE_ACCEPT://-1：不受理
+							print_card_status_tips_tv.setVisibility(View.VISIBLE);
+							print_card_status_tips_tv.setText(R.string.tips_apply_refuse);
+							addcard.setText(R.string.print_card);
+							addcard.setBackgroundResource(R.drawable.addcard_able_corner_bg);
+							addcard.setClickable(true);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_NOT_YET_ACCEPT://0:受理中
+							print_card_status_tips_tv.setVisibility(View.INVISIBLE);
+							addcard.setText(R.string.apply_accepted);
+							addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							addcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_PRINTING://1:印刷中
+							print_card_status_tips_tv.setVisibility(View.VISIBLE);
+							StringBuffer sb_printing = new StringBuffer();
+							sb_printing.append(getContext().getString(R.string.tips_card_status_left));
+							sb_printing.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_printing.append(getContext().getString(R.string.tips_card_status_right));
+							print_card_status_tips_tv.setText(sb_printing.toString());
+							addcard.setText(R.string.card_printing);
+							addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							addcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_FINISH://2:印刷完
+							print_card_status_tips_tv.setVisibility(View.VISIBLE);
+							StringBuffer sb_print_finish = new StringBuffer();
+							sb_print_finish.append(getContext().getString(R.string.tips_card_status_left));
+							sb_print_finish.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_print_finish.append(getContext().getString(R.string.tips_card_status_right));
+							print_card_status_tips_tv.setText(sb_print_finish.toString());
+							addcard.setText(R.string.card_print_finish_is_distribution);
+							addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							addcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_SENDING://3:寄送中
+							print_card_status_tips_tv.setVisibility(View.VISIBLE);
+							StringBuffer sb_card_sending = new StringBuffer();
+							sb_card_sending.append(getContext().getString(R.string.tips_card_status_left));
+							sb_card_sending.append(null==dataModel.getPlanSendDate()?"":dataModel.getPlanSendDate());
+							sb_card_sending.append(getContext().getString(R.string.tips_card_status_right));
+							print_card_status_tips_tv.setText(sb_card_sending.toString());
+							addcard.setText(R.string.card_is_sending_please_check);
+							addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+							addcard.setClickable(false);
+							break;
+						case PrintCardStatusModel.PRINT_CARD_STATUS_CAN_APPLY://4：已寄出5天，可以再申请；或者没有申请过
+							String lastSendTime = null==dataModel.getLastSendDate()?"":dataModel.getLastSendDate();
+							if(lastSendTime.length()<=0){
+								print_card_status_tips_tv.setVisibility(View.INVISIBLE);
+							}else{
+								print_card_status_tips_tv.setVisibility(View.VISIBLE);
+								StringBuffer sb_can_apply = new StringBuffer();
+								sb_can_apply.append(getContext().getString(R.string.tips_card_status_sended_left));
+								sb_can_apply.append(dataModel.getLastSendDate());
+								sb_can_apply.append(getContext().getString(R.string.tips_card_status_sended_right));
+								print_card_status_tips_tv.setText(sb_can_apply.toString());
+							}
+							addcard.setText(R.string.print_card);
+							addcard.setBackgroundResource(R.drawable.addcard_able_corner_bg);
+							addcard.setClickable(true);
+							break;
+						}
+					}else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+						 LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getActivity(), dataModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }*/
+
+    /**
+     * 点击加印名片操作
+     */
+/*    private void getPrintMyCardRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getPrintMyCradRequestParam(TAG, token , AppConstants.CARD_APPLY),
+                JsonParserFactory.parseBaseModel(PrintCardDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                        // TODO Auto-generated method stub
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final PrintCardDataModel dataModel = (PrintCardDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	ToastUtils.ToastShort(getActivity(), dataModel.getResultMsg());
+                            	print_card_status_tips_tv.setVisibility(View.INVISIBLE);
+                            	addcard.setText(R.string.apply_accepted);
+                            	addcard.setBackgroundResource(R.drawable.addcard_unable_corner_bg);
+                            	addcard.setClickable(false);
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                            	LoginActivity.startActivity(getActivity());
+                            }else{
+                            	ToastUtils.ToastLong(getActivity(), dataModel.getErrorMsg());
+                            }
+                        } else {
+                        	if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }*/
+    
+    /**
+     * 免费申请我的名片
+     */
+    private void applyTenderCardForFree(){
+    	if(!NetworkUtils.isOnline(getContext())){
+    		ToastUtils.ToastShort(getContext(), R.string.network_unavaible);
+    		return;
+    	}
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	String telPhone = tv_telPhone.getText().toString();
+    	if(!TextUtils.isEmpty(telPhone)){
+    		telPhone = telPhone.substring("+86 ".length()).replace("-", "");
+    	}
+    	if(telPhone.length()>0 && telPhone.length()!=11){
+    		ToastUtils.ToastShort(getContext(), R.string.wrong_phone_number);
+    		return;
+    	}
+    	HttpTaskManager.startStringRequest(DataRequestUtils.applyCardForFree(TAG, token, post.getText().toString().trim(),telPhone, AppConstants.MYCARD_TYPE_VALUE_TENDER), 
+    			JsonParserFactory.parseBaseModel(ImprintCardNewModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					ImprintCardNewModel imprintCardModel = (ImprintCardNewModel) resultData;
+					if(null!=imprintCardModel&&imprintCardModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						ToastUtils.ToastShort(getContext(), getString(R.string.print_card_request_access));
+						LocalBroadcastManager.getInstance(getContext()).sendBroadcast(new Intent(AppConstants.REFRESH_CARD_APPLY_STATUS));
+						getActivity().finish();
+					}else if(null!=imprintCardModel&&imprintCardModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), imprintCardModel.getErrorMsg());
+					}
+				}else{
+                    if (resultData == null) {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                    } else {
+                        ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                    }
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+    
+
+
+    @Override
+    public String getReqestTag() {
+        return TAG;
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    }
+}

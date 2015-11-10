@@ -1,0 +1,52 @@
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import com.qdoc.client.R;
+import com.qdoc.client.model.DoctorModel;
+import com.qdoc.client.ui.fragment.KindlyFeelingsFragment;
+import com.qdoc.client.util.IntentTools;
+
+public class KindlyFeelingsActivity extends BaseActivity {
+	
+	private KindlyFeelingsFragment mKindlyFeelingsFragment;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_kindly_feelings);
+		
+		parseIntent();
+		initView();
+		initListener();
+	}
+	
+    private void parseIntent() {
+    	DoctorModel doctorModel = (DoctorModel) getIntent().getSerializableExtra(IntentTools.EXTAR_DOCTORMODEL);
+        Bundle cacheBundle = getIntent().getExtras();
+        cacheBundle.putSerializable(IntentTools.EXTAR_DOCTORMODEL, doctorModel);
+        mKindlyFeelingsFragment = KindlyFeelingsFragment.getNewInstance(cacheBundle);
+    }
+
+	@Override
+	protected void initView() {
+		FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.fragment_kindly_feelings, mKindlyFeelingsFragment, KindlyFeelingsFragment.TAG);
+        ft.commitAllowingStateLoss();
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+
+	}
+
+	public static void startActivity(Context context,DoctorModel doctorModel){
+		if(context==null)
+			return;
+		context.startActivity(IntentTools.startKindlyFeelingsActivity(context,doctorModel));
+	}
+}

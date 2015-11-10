@@ -1,0 +1,75 @@
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+public class DataVersionDtoModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private String dataVersion;
+	private String deviceUrl;
+	private Integer versionType;
+	private Integer deviceType;
+	private String deviceImprint;
+	private long deviceNub;
+	private boolean forcedUpdates;
+	public String getDataVersion() {
+		return dataVersion;
+	}
+	public void setDataVersion(String dataVersion) {
+		this.dataVersion = dataVersion;
+	}
+	public String getDeviceUrl() {
+		return deviceUrl;
+	}
+	public void setDeviceUrl(String deviceUrl) {
+		this.deviceUrl = deviceUrl;
+	}
+	public Integer getVersionType() {
+		return versionType;
+	}
+	public void setVersionType(Integer versionType) {
+		this.versionType = versionType;
+	}
+	public Integer getDeviceType() {
+		return deviceType;
+	}
+	public void setDeviceType(Integer deviceType) {
+		this.deviceType = deviceType;
+	}
+	public String getDeviceImprint() {
+		return deviceImprint;
+	}
+	public void setDeviceImprint(String deviceImprint) {
+		this.deviceImprint = deviceImprint;
+	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+	/**
+	 * @return the deviceNub
+	 */
+	public long getDeviceNub() {
+		return deviceNub;
+	}
+	/**
+	 * @param deviceNub the deviceNub to set
+	 */
+	public void setDeviceNub(long deviceNub) {
+		this.deviceNub = deviceNub;
+	}
+	/**
+	 * @return the forcedUpdates
+	 */
+	public boolean isForcedUpdates() {
+		return forcedUpdates;
+	}
+	/**
+	 * @param forcedUpdates the forcedUpdates to set
+	 */
+	public void setForcedUpdates(boolean forcedUpdates) {
+		this.forcedUpdates = forcedUpdates;
+	}
+}

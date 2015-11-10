@@ -1,0 +1,63 @@
+/*
+ * BankDtoModel.java
+ * classes : com.qdoc.client.model.BankDtoModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-8-20 上午12:19:03
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+
+/**
+ * com.qdoc.client.model.BankDtoModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-8-20 上午12:19:03
+ */
+public class BankDtoModel implements Serializable{
+	
+	
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -2968058950592688626L;
+	
+	private String bankName;
+    private int bankState;
+    private int bankType;
+    private int id;
+    private int uuid;
+	public String getBankName() {
+		return bankName;
+	}
+	public void setBankName(String bankName) {
+		this.bankName = bankName;
+	}
+	public int getBankState() {
+		return bankState;
+	}
+	public void setBankState(int bankState) {
+		this.bankState = bankState;
+	}
+	public int getBankType() {
+		return bankType;
+	}
+	public void setBankType(int bankType) {
+		this.bankType = bankType;
+	}
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public int getUuid() {
+		return uuid;
+	}
+	public void setUuid(int uuid) {
+		this.uuid = uuid;
+	}
+
+    
+}

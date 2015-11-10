@@ -1,0 +1,135 @@
+/*
+ * ConsultActivity.java
+ * classes : com.qdoc.client.ui.ConsultActivity
+ * @author xiangyutian
+ * V 4.5.0
+ * Create at 2014-7-8 下午11:02:48
+ */
+package com.qdoc.client.ui;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.GainGiftBagStatusDataModel;
+import com.qdoc.client.model.GiftbagSaveApplyDataModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.fragment.BaseFragment;
+import com.qdoc.client.ui.fragment.GetGiftBagFragment;
+import com.qdoc.client.ui.fragment.GetGiftBagNoQualifiedFragment;
+import com.qdoc.client.ui.fragment.GetGiftBagSuccessFragment;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.tencent.android.tpush.XGPushManager;
+
+/**
+ * 
+ * @author xiangchunfa <br/>
+ *         create at 2014-9-29 下午11:02:48
+ */
+public class GiftBagActivity extends BaseActivity {
+	/**
+	 * TAG
+	 */
+	private static final String TAG = GiftBagActivity.class.getSimpleName();
+
+	/**
+	 * view
+	 */
+	private BaseFragment mGetGiftBagFragment;
+	private BaseFragment mGetGiftBagSuccessFragment;
+	private BaseFragment mGetGiftBagNoQualifiedFragment;
+    private GainGiftBagStatusDataModel  giftModel;
+    private Bundle bundle;
+    private int status ;//礼品包状态
+	/**
+	 * params
+	 */
+	private int laucherFrom;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_base);
+        LogUtils.d(TAG, "onCreate");
+		parseIntent();
+		initView();
+		initListener();
+	}
+
+	public void onResume() {
+		LogUtils.d(TAG, "onResume");
+		super.onResume();
+	}
+
+	@Override
+	protected void onPause() {
+		LogUtils.d(TAG, "onPause");
+		super.onPause();
+		XGPushManager.onActivityStoped(this);
+	}
+
+	@Override
+	protected void onStop() {
+		// TODO Auto-generated method stub
+		LogUtils.d(TAG, "onStop");
+		super.onStop();
+	}
+	
+	private void parseIntent() {
+		// TODO Auto-generated method stub
+		// startConsultListRequest();
+		bundle =  getIntent().getExtras();
+//		giftModel = (GainGiftBagStatusDataModel)bundle.getSerializable(IntentTools.EXTRA_GIFI_BAG);
+		status = Integer.valueOf(bundle.getString(IntentTools.EXTAR_GIFT_BAG_STATUS));
+	}
+
+	@Override
+	protected void initView() {
+		// TODO Auto-generated method stub
+		FragmentManager fm = getSupportFragmentManager();
+		FragmentTransaction ft = fm.beginTransaction();
+		if(status==AppConstants.NO_CONDITION){
+			mGetGiftBagNoQualifiedFragment = GetGiftBagNoQualifiedFragment.newInstance(bundle);
+			addContent(R.id.fragment_base, mGetGiftBagNoQualifiedFragment, GetGiftBagNoQualifiedFragment.TAG);
+			LogUtils.d(TAG, "GetGiftBagNoQualifiedFragment");
+		}else if(status==AppConstants.SEND_FINISH){
+			mGetGiftBagSuccessFragment = GetGiftBagSuccessFragment.newInstance(bundle);
+	        addContent(R.id.fragment_base, mGetGiftBagSuccessFragment, GetGiftBagSuccessFragment.TAG);
+	        LogUtils.d(TAG, "GetGiftBagSuccessFragment"); 
+		}else if(status==AppConstants.CAN_GET){
+			mGetGiftBagFragment = GetGiftBagFragment.newInstance(bundle);
+	        addContent(R.id.fragment_base, mGetGiftBagFragment, GetGiftBagFragment.TAG);
+	        LogUtils.d(TAG, "GetGiftBagFragment"); 
+		}
+		ft.commitAllowingStateLoss();
+	}
+
+	@Override
+	protected void initListener() {
+		// TODO Auto-generated method stub
+	}
+
+	public void onDestroy() {
+		super.onDestroy();
+        LogUtils.d(TAG, "onDestroy");
+	}
+
+
+	public static void startActivity(Context context, String status) {
+		if (context == null) {
+			return;
+		}
+		context.startActivity(IntentTools.getGiftBagIntent(context, status));
+	}
+
+	public void switchToGetGiftBagSuccessFragment(
+			GiftbagSaveApplyDataModel dataModel) {
+		mGetGiftBagSuccessFragment=GetGiftBagSuccessFragment.newInstance(bundle);
+	    addContent(R.id.fragment_base, mGetGiftBagSuccessFragment, GetGiftBagSuccessFragment.TAG);
+	}
+   
+	
+}

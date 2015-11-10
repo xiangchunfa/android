@@ -1,0 +1,607 @@
+/*
+ * ElementsModel.java
+ * classes : com.qdoc.client.model.ElementsModel
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-15 上午1:15:18
+ */
+package com.qdoc.client.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+
+import com.qdoc.client.util.LogUtils;
+
+/**
+ * com.qdoc.client.model.ElementsModel
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-15 上午1:15:18
+ */
+public class ElementsModel implements Cloneable, Serializable {
+
+    /**  **/
+    private static final long serialVersionUID = 4588736669698591534L;
+
+    private static final String TAG = "ElementsModel";
+
+    private String acceptTime;
+    private ConsultCaseDtoModel consultCaseDto;
+    private ConsultMsgDtoModel consultMsgDto;
+    private int consultState;
+    private int consultType;
+    private int doctorId;
+    private Long id;
+    private ArrayList<ImageDtoModel> imageDto;
+    private String openid;
+    private int readType;
+    private int shareStatus;
+    private String tradeNo;
+    private String uuid;
+    private int consultFee;  
+    private String consultFeeStr;
+    private WuserDtoModel wUserDto;
+
+    private int elementModelViewType = -1;
+
+    private long consultId;
+    private String content;
+    private long inmsgid;
+    private String mediaUrl;
+    private String msgTime;
+    private String msgType;
+    private String realUrl;
+    private String realContentUrl;
+    private int type = -1;
+    private int favoritesStatus;
+    private long msgId;//咨询消息ID
+    // 我的咨询使用
+    private String headImageUrl;
+    private String userName;
+
+    // 咨询案例使用
+    private String createTime;
+    private ConsultDtoModel consultDto;
+
+    // 关注粉丝
+    private String focusTime;
+    //是否回复中
+	private boolean replying  = false;
+	//是否回复成功
+	private boolean isReplySuccess = true;
+	//语音消息的时间长度
+	private int mediaDura;
+	//该咨询发送咨询建议时间(未发送为空)
+	private String treatmentTime;
+	//咨询多久后自动关闭，单位小时（目前默认5小时）
+	private Integer openNumber;
+	//草稿
+	private String draft;
+	/**用户评价状态（0未邀请， 1已邀请  2已评价），评价为发送满意度*/
+	private int satisfactionStatus;
+
+	public int getSatisfactionStatus() {
+		return satisfactionStatus;
+	}
+
+	public void setSatisfactionStatus(int satisfactionStatus) {
+		this.satisfactionStatus = satisfactionStatus;
+	}
+
+	public boolean isReplying() {
+		return replying;
+	}
+
+	public void setReplying(boolean replying) {
+		this.replying = replying;
+	}
+
+	public String getDraft() {
+		return draft;
+	}
+
+	public void setDraft(String draft) {
+		this.draft = draft;
+	}
+
+	public String getTreatmentTime() {
+		return treatmentTime;
+	}
+
+	public void setTreatmentTime(String treatmentTime) {
+		this.treatmentTime = treatmentTime;
+	}
+	
+	public Integer getOpenNumber() {
+		return openNumber;
+	}
+
+	public void setOpenNumber(Integer openNumber) {
+		this.openNumber = openNumber;
+	}
+
+	public int getMediaDura() {
+		return mediaDura;
+	}
+
+	public void setMediaDura(int mediaDura) {
+		this.mediaDura = mediaDura;
+	}
+
+	public boolean isReplySuccess() {
+		return isReplySuccess;
+	}
+
+	public void setReplySuccess(boolean isReplySuccess) {
+		this.isReplySuccess = isReplySuccess;
+	}
+
+	public long getMsgId() {
+		return msgId;
+	}
+
+	public void setMsgId(long msgId) {
+		this.msgId = msgId;
+	}
+
+	public String getRealContentUrl() {
+		return realContentUrl;
+	}
+
+	public void setRealContentUrl(String realContentUrl) {
+		this.realContentUrl = realContentUrl;
+	}
+
+	/**
+	 * @return the consultFee
+	 */
+	public int getConsultFee() {
+		return consultFee;
+	}
+
+	/**
+	 * @param consultFee the consultFee to set
+	 */
+	public void setConsultFee(int consultFee) {
+		this.consultFee = consultFee;
+	}
+
+	public String getConsultFeeStr() {
+		return consultFeeStr;
+	}
+
+	public void setConsultFeeStr(String consultFeeStr) {
+		this.consultFeeStr = consultFeeStr;
+	}
+
+	/**
+     * @return the consultId
+     */
+    public long getConsultId() {
+        return consultId;
+    }
+
+    /**
+     * @param consultId the consultId to set
+     */
+    public void setConsultId(long consultId) {
+        this.consultId = consultId;
+    }
+
+    /**
+     * @return the content
+     */
+    public String getContent() {
+        return content;
+    }
+
+    /**
+     * @param content the content to set
+     */
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    /**
+     * @return the inmsgid
+     */
+    public long getInmsgid() {
+        return inmsgid;
+    }
+
+    /**
+     * @param inmsgid the inmsgid to set
+     */
+    public void setInmsgid(long inmsgid) {
+        this.inmsgid = inmsgid;
+    }
+
+    /**
+     * @return the mediaUrl
+     */
+    public String getMediaUrl() {
+        return mediaUrl;
+    }
+
+    /**
+     * @param mediaUrl the mediaUrl to set
+     */
+    public void setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+    }
+
+    /**
+     * @return the msgTime
+     */
+    public String getMsgTime() {
+        return msgTime;
+    }
+
+    /**
+     * @param msgTime the msgTime to set
+     */
+    public void setMsgTime(String msgTime) {
+        this.msgTime = msgTime;
+    }
+
+    /**
+     * @return the msgType
+     */
+    public String getMsgType() {
+        return msgType;
+    }
+
+    /**
+     * @param msgType the msgType to set
+     */
+    public void setMsgType(String msgType) {
+        this.msgType = msgType;
+    }
+
+    /**
+     * @return the realUrl
+     */
+    public String getRealUrl() {
+        return realUrl;
+    }
+
+    /**
+     * @param realUrl the realUrl to set
+     */
+    public void setRealUrl(String realUrl) {
+        this.realUrl = realUrl;
+    }
+
+    /**
+     * @return the type
+     */
+    public int getType() {
+        return type;
+    }
+
+    /**
+     * @param type the type to set
+     */
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    /**
+     * @return the elementModelViewType
+     */
+    public int getElementModelViewType() {
+        return elementModelViewType;
+    }
+
+    /**
+     * @param elementModelViewType the elementModelViewType to set
+     */
+    public void setElementModelViewType(int elementModelViewType) {
+        this.elementModelViewType = elementModelViewType;
+    }
+
+    /**
+     * @return the acceptTime
+     */
+    public String getAcceptTime() {
+        return acceptTime;
+    }
+
+    /**
+     * @param acceptTime the acceptTime to set
+     */
+    public void setAcceptTime(String acceptTime) {
+        this.acceptTime = acceptTime;
+    }
+
+    /**
+     * @return the consultCaseDto
+     */
+    public ConsultCaseDtoModel getConsultCaseDto() {
+        return consultCaseDto;
+    }
+
+    /**
+     * @param consultCaseDto the consultCaseDto to set
+     */
+    public void setConsultCaseDto(ConsultCaseDtoModel consultCaseDto) {
+        this.consultCaseDto = consultCaseDto;
+    }
+
+    /**
+     * @return the consultMsgDto
+     */
+    public ConsultMsgDtoModel getConsultMsgDto() {
+        return consultMsgDto;
+    }
+
+    /**
+     * @param consultMsgDto the consultMsgDto to set
+     */
+    public void setConsultMsgDto(ConsultMsgDtoModel consultMsgDto) {
+        this.consultMsgDto = consultMsgDto;
+    }
+
+    /**
+     * @return the consultState
+     */
+    public int getConsultState() {
+        return consultState;
+    }
+
+    /**
+     * @param consultState the consultState to set
+     */
+    public void setConsultState(int consultState) {
+        this.consultState = consultState;
+    }
+
+    /**
+     * @return the consultType
+     */
+    public int getConsultType() {
+        return consultType;
+    }
+
+    /**
+     * @param consultType the consultType to set
+     */
+    public void setConsultType(int consultType) {
+        this.consultType = consultType;
+    }
+
+    /**
+     * @return the doctorId
+     */
+    public int getDoctorId() {
+        return doctorId;
+    }
+
+    /**
+     * @param doctorId the doctorId to set
+     */
+    public void setDoctorId(int doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    /**
+     * @return the id
+     */
+    public Long getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the imageDto
+     */
+    public ArrayList<ImageDtoModel> getImageDto() {
+        return imageDto;
+    }
+
+    /**
+     * @param imageDto the imageDto to set
+     */
+    public void setImageDto(ArrayList<ImageDtoModel> imageDto) {
+        this.imageDto = imageDto;
+    }
+
+    /**
+     * @return the openid
+     */
+    public String getOpenid() {
+        return openid;
+    }
+
+    /**
+     * @param openid the openid to set
+     */
+    public void setOpenid(String openid) {
+        this.openid = openid;
+    }
+
+    /**
+     * @return the readType
+     */
+    public int getReadType() {
+        return readType;
+    }
+
+    /**
+     * @param readType the readType to set
+     */
+    public void setReadType(int readType) {
+        this.readType = readType;
+    }
+
+    /**
+     * @return the tradeNo
+     */
+    public String getTradeNo() {
+        return tradeNo;
+    }
+
+    /**
+     * @param tradeNo the tradeNo to set
+     */
+    public void setTradeNo(String tradeNo) {
+        this.tradeNo = tradeNo;
+    }
+
+    /**
+     * @return the uuid
+     */
+    public String getUuid() {
+        return uuid;
+    }
+
+    /**
+     * @param uuid the uuid to set
+     */
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    /**
+     * @return the wUserDto
+     */
+    public WuserDtoModel getwUserDto() {
+        return wUserDto;
+    }
+
+    /**
+     * @param wUserDto the wUserDto to set
+     */
+    public void setwUserDto(WuserDtoModel wUserDto) {
+        this.wUserDto = wUserDto;
+    }
+
+    @Override
+    public Object clone() {
+        ElementsModel model = null;
+        try {
+            model = (ElementsModel) super.clone();
+        } catch (CloneNotSupportedException e) {
+            LogUtils.e(TAG, "copy ElementsModel break out exception!", e);
+        }
+        return model;
+    }
+
+    /**
+     * @return
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return "ElementsModel [acceptTime=" + acceptTime + ", consultCaseDto=" + consultCaseDto + ", consultMsgDto="
+                + consultMsgDto + ", consultState=" + consultState + ", consultType=" + consultType + ", doctorId="
+                + doctorId + ", id=" + id + ", imageDto=" + imageDto + ", openid=" + openid + ", readType=" + readType
+                + ", tradeNo=" + tradeNo + ", uuid=" + uuid + ", wUserDto=" + wUserDto + ", elementModelViewType="
+                + elementModelViewType + "]";
+    }
+
+    /**
+     * @return the headImageUrl
+     */
+    public String getHeadImageUrl() {
+        return headImageUrl;
+    }
+
+    /**
+     * @param headImageUrl the headImageUrl to set
+     */
+    public void setHeadImageUrl(String headImageUrl) {
+        this.headImageUrl = headImageUrl;
+    }
+
+    /**
+     * @return the userName
+     */
+    public String getUserName() {
+        return userName;
+    }
+
+    /**
+     * @param userName the userName to set
+     */
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    /**
+     * @return the createTime
+     */
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    /**
+     * @param createTime the createTime to set
+     */
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    /**
+     * @return the consultDto
+     */
+    public ConsultDtoModel getConsultDto() {
+        return consultDto;
+    }
+
+    /**
+     * @param consultDto the consultDto to set
+     */
+    public void setConsultDto(ConsultDtoModel consultDto) {
+        this.consultDto = consultDto;
+    }
+
+    /**
+     * @return the focusTime
+     */
+    public String getFocusTime() {
+        return focusTime;
+    }
+
+    /**
+     * @param focusTime the focusTime to set
+     */
+    public void setFocusTime(String focusTime) {
+        this.focusTime = focusTime;
+    }
+
+    /**
+     * @return the favoritesStatus
+     */
+    public int getFavoritesStatus() {
+        return favoritesStatus;
+    }
+
+    /**
+     * @param favoritesStatus the favoritesStatus to set
+     */
+    public void setFavoritesStatus(int favoritesStatus) {
+        this.favoritesStatus = favoritesStatus;
+    }
+
+    /**
+     * @return the shareStatus
+     */
+    public int getShareStatus() {
+        return shareStatus;
+    }
+
+    /**
+     * @param shareStatus the shareStatus to set
+     */
+    public void setShareStatus(int shareStatus) {
+        this.shareStatus = shareStatus;
+    }
+
+}

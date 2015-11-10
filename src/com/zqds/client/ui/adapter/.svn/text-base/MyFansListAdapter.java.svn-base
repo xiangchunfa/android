@@ -1,0 +1,102 @@
+package com.qdoc.client.ui.adapter;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.model.MyFansListDto;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.util.StringUtils;
+
+public class MyFansListAdapter extends BaseAdapter {
+	
+	private LayoutInflater inflater;
+	private Context context;
+	private ArrayList<MyFansListDto> myFansList;
+
+	/**
+	 * @param myFansList the myFansList to set
+	 */
+	public void setMyFansList(ArrayList<MyFansListDto> myFansList) {
+		if(myFansList==null)
+			this.myFansList = new ArrayList<MyFansListDto>();
+		else
+			this.myFansList = myFansList;
+	}
+	
+	public MyFansListAdapter(Context context,ArrayList<MyFansListDto> myFansList){
+		this.context = context;
+		this.inflater = LayoutInflater.from(context);
+		setMyFansList(myFansList);
+	}
+	
+	public void changeData(ArrayList<MyFansListDto> myFansList){
+		setMyFansList(myFansList);
+		notifyDataSetChanged();
+	}
+
+	@Override
+	public int getCount() {
+		return myFansList.size();
+	}
+
+	@Override
+	public Object getItem(int arg0) {
+		return myFansList.get(arg0);
+	}
+
+	@Override
+	public long getItemId(int arg0) {
+		return arg0;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		ViewHolder holder = null;
+		if(convertView==null){
+			holder= new ViewHolder();
+			convertView = inflater.inflate(R.layout.my_fans_list_item, null);
+			holder.fans_header_img = (ImageView) convertView.findViewById(R.id.fans_header_img);
+			holder.fans_name = (TextView) convertView.findViewById(R.id.fans_name);
+			holder.focus_soure = (TextView) convertView.findViewById(R.id.fans_focus_soure);
+			holder.consult_count = (TextView) convertView.findViewById(R.id.consultation_count);
+			convertView.setTag(holder);
+		}else{
+			holder = (ViewHolder) convertView.getTag();
+		}
+		MyFansListDto fansDetail = myFansList.get(position);
+		if(fansDetail!=null){
+			//设置名字
+			holder.fans_name.setText(StringUtils.getHighLightSpinner(context, fansDetail.getNicknameStr()));
+			//显示关注来源
+			if(AppConstants.FOCUS_CHANNEL_QRCODE==fansDetail.getFocusChannel()){
+				holder.focus_soure.setText(context.getString(R.string.focus_soure)+context.getString(R.string.qrcode));
+			}else if(AppConstants.FOCUS_CHANNEL_PLATFORM_SEARCH==fansDetail.getFocusChannel()){
+				holder.focus_soure.setText(context.getString(R.string.focus_soure)+context.getString(R.string.wechat_public));
+			}
+			//显示咨询数
+			if(fansDetail.getConsultNub()>0){
+				holder.consult_count.setVisibility(View.VISIBLE);
+				holder.consult_count.setText(context.getText(R.string.consult_count)+String.valueOf(fansDetail.getConsultNub()));
+			}else{
+				holder.consult_count.setVisibility(View.INVISIBLE);
+			}
+			//加载粉丝头像图片
+			ImageLoaderHelper.getInstance(context).displayImage(fansDetail.getHeadimgurl(), holder.fans_header_img, R.drawable.bank_owener_default_header);
+		}
+		return convertView;
+	}
+
+	public class ViewHolder{
+		ImageView fans_header_img;
+		TextView fans_name,focus_soure,consult_count;
+	}
+}

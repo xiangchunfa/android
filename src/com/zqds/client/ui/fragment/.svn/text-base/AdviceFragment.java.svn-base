@@ -1,0 +1,463 @@
+/*
+ * ShareDialogFragment.java
+ * classes : com.qdoc.client.ui.fragment.ShareDialogFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-18 上午2:31:20
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.BaseModel;
+import com.qdoc.client.model.ConsultTreatmentModel;
+import com.qdoc.client.model.TreateModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.ui.AdviceAndLeaveMessgeActivity;
+import com.qdoc.client.ui.ConsultDetailActivity;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.dialog.HintDlg;
+import com.qdoc.client.ui.dialog.HintDlg.OnDialogclickListener;
+import com.qdoc.client.ui.view.MyEditText;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtil;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * FileName    : AdviceFragment.java
+ * Description : 咨询建议类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-9-1 
+ **/
+public class AdviceFragment extends BaseFragment implements OnClickListener{
+    /**M
+     * TAG
+     */
+    public static final String TAG = AdviceFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private MyEditText met_input_consult_advice;
+    private TextView tv_update_advice;
+    private TextView tv_hint_title;
+    private TextView tv_hint_content;
+    private TitleBar titlebar;
+    
+    /**
+     * params
+     */ 
+    private static long consultId;
+    private boolean isSendAdvice = false;//是否发送过咨询建议
+    private ConsultTreatmentModel mConsultTreatmentModel;
+    public static AdviceFragment instance;
+    public AdviceAndLeaveMessgeActivity act;
+    private int consultStateDetail;//咨询状态
+    private String copyConsultStr;
+    
+    /**
+     * 诊疗单状态 
+     */
+    public static final int TREATMENT_DRAFT= 0;//草稿
+    public static final int TREATMENT_OFFICIAL= 1;//直接发送
+    
+    /**
+     * 返回结果状态
+     */
+    public static final int RESULT_CODE_SAVE_ADVICE_SUCCESS = 1; //保存咨询建议成功
+    public static final int RESULT_CODE_CANCEL_CONSULT_SUCCESS = 2;//取消咨询成功
+    
+    public MyEditText getEt_cure_advice() {
+		return met_input_consult_advice;
+	}
+
+	public void setEt_cure_advice(MyEditText et_cure_advice) {
+		this.met_input_consult_advice = et_cure_advice;
+	}
+
+	public static AdviceFragment newInstance(Bundle bundle) {
+        final AdviceFragment fragment = new AdviceFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    }
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_advice, container, false);
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initParams();
+        initListener();
+    }
+
+    private void initParams() {
+    	consultId = getArguments().getLong(IntentTools.EXTRA_CONSULT_ID);
+   	    consultStateDetail = getArguments().getInt(IntentTools.EXTRA_CONSULT_STATE);
+   	    copyConsultStr = getArguments().getString(IntentTools.EXTRA_CONSULT_ADVICE_CONTENT_KEY);
+   	    if (consultStateDetail != ConsultDetailActivity.CONSULT_ING) {
+     	    met_input_consult_advice.setEnabled(false);
+     	    tv_update_advice.setVisibility(View.GONE);
+     	    tv_hint_title.setVisibility(View.GONE);
+     	    tv_hint_content.setVisibility(View.GONE);
+        }
+    	SpannableString consultAdviceHint = new SpannableString(getActivity().getString(R.string.consult_advice_hint));
+        consultAdviceHint.setSpan(new ClickableSpan()
+        {
+          	 @Override
+               public void updateDrawState(TextPaint ds) {
+                   super.updateDrawState(ds);
+                   ds.setUnderlineText(false);      //设置下划线
+               }
+  	
+             @Override
+              public void onClick(View widget)
+              {
+            	   cancelConsult();
+              }
+        }, 16, 22, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        consultAdviceHint.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.c_2482c0)),  16, 22, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);  //设置前景色为洋红色  
+        //在单击链接时凡是有要执行的动作，都必须设置MovementMethod对象
+        tv_hint_content.setText(consultAdviceHint);
+        tv_hint_content.setMovementMethod(LinkMovementMethod.getInstance());
+        startShowCureAdviceReuqest();
+    }
+
+    private void initView(View view) {
+    	instance = this;
+    	act = (AdviceAndLeaveMessgeActivity) getActivity();
+        tv_update_advice = (TextView) view.findViewById(R.id.tv_update_advice);
+        tv_hint_title = (TextView) view.findViewById(R.id.tv_hint_title);
+        tv_hint_content = (TextView) view.findViewById(R.id.tv_hint_content);
+        met_input_consult_advice = (MyEditText) view.findViewById(R.id.met_input_consult_advice);
+        titlebar = (TitleBar) view.findViewById(R.id.titlebar);
+        titlebar.setTitleInfo(R.string.consult_detail_title, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+    }
+
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	exitAdvice();
+        }
+    };
+    
+    /**
+     * 退出咨询建议
+     */
+	private void exitAdvice() {
+		if (!isSendAdvice) {
+			startSaveCureAdviceReuqest(TREATMENT_DRAFT);
+		} else {
+			if (isModifyText()) {
+				saveCureAdviceDlg();
+			} else if (null != getActivity()) {
+				getActivity().finish();
+			}
+		}
+	}
+
+    private void startShowCureAdviceReuqest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+	    Global.progressDialog = ProgressDialog.show(getActivity(), null,this.getString(R.string.load_data), true, true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getTreatmentRequestParam(TAG, token, consultId),
+                JsonParserFactory.parseBaseModel(ConsultTreatmentModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+        				Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                             mConsultTreatmentModel = (ConsultTreatmentModel) resultData;
+                            if (mConsultTreatmentModel.getState()==ServerErrorCode.INTERFACE_SUCCESS) {
+                            	setShowView();
+                            }else if(mConsultTreatmentModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+        					} else {
+                                ToastUtils.ToastShort(getActivity().getApplicationContext(), mConsultTreatmentModel.getErrorMsg());
+                            }
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getActivity().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getActivity().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                    }
+                });
+    }
+    
+    /**
+     * 设置显示界面
+     */
+    private void setShowView() {
+        if (mConsultTreatmentModel.getTreatmentDto() != null) {
+        	String cureAdvise = mConsultTreatmentModel.getTreatmentDto().getCureAdvise();	
+        	String diagnosis = mConsultTreatmentModel.getTreatmentDto().getDiagnosis();
+        	if (!StringUtils.isEmpty(copyConsultStr)) {
+        		met_input_consult_advice.getEt_input().setText(copyConsultStr);
+        	} else if (!StringUtils.isEmpty(diagnosis)) {
+        		met_input_consult_advice.getEt_input().setText(diagnosis + "\n" + cureAdvise);
+        	} else {
+        		met_input_consult_advice.getEt_input().setText(cureAdvise);
+        	}
+        	//判断是否发送过咨询建议
+        	if (mConsultTreatmentModel.getTreatmentDto() != null && mConsultTreatmentModel.getTreatmentDto().getTreatmentStatus() == 1) {
+        		isSendAdvice = true;
+        		if(isAdded())
+        			tv_update_advice.setText(getResources().getString(R.string.update_advice));
+        	} else {
+        		isSendAdvice = false;
+        		if(isAdded())
+        			tv_update_advice.setText(getResources().getString(R.string.send_advice));
+        	}
+        }
+    }
+    
+   /**
+    * 保存咨询建议
+    * @param status：诊疗单状态
+    */
+    private void startSaveCureAdviceReuqest(final int status) {
+        final String cureAdvice = met_input_consult_advice.getEt_input().getText().toString().trim();
+		String showCureAdvice = "";
+		if (mConsultTreatmentModel != null && mConsultTreatmentModel.getTreatmentDto() != null) {
+			showCureAdvice = mConsultTreatmentModel.getTreatmentDto().getCureAdvise();
+		}
+        //诊疗单状态为草稿时,不显示加载进度条
+		if (status == TREATMENT_DRAFT) {
+			if (StringUtils.isEmpty(cureAdvice) || cureAdvice.equals(showCureAdvice)) {
+				if (getActivity() != null)
+					getActivity().finish();
+				return;
+			}
+		} else {
+			if (StringUtils.isEmpty(cureAdvice)) {
+				ToastUtils.ToastShort(getActivity(), R.string.input_cure_advice);
+				return;
+			}
+			if (StringUtils.isEmpty(cureAdvice) || cureAdvice.equals(showCureAdvice)) {
+				ToastUtil.show(getContext(), R.string.no_change_advice);
+				return;
+			}
+		}
+   	    String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils.saveTreatmentRequestParam(TAG, token, consultId, status,
+						cureAdvice, "", ""), JsonParserFactory.parseBaseModel(TreateModel.class), new IResultReceiver() {
+
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				// TODO Auto-generated method stub
+				// 诊疗单状态为草稿时，禁止任何提示
+				if (status == TREATMENT_DRAFT) {
+					if (getActivity() != null)
+						getActivity().finish();
+					return;
+				}
+				if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+					TreateModel dataModel = (TreateModel) resultData;
+					if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+						if (isSendAdvice)
+							ToastUtils.ToastShort(getActivity().getApplicationContext(), "新的咨询建议发送成功");
+						else
+							ToastUtils.ToastShort(getActivity().getApplicationContext(), "咨询建议已发出，本次咨询将会在5小时后自动关闭");
+						Intent intent = new Intent();
+						intent.putExtra(IntentTools.EXTRA_CONSULT_ADVICE, cureAdvice);
+						intent.putExtra(IntentTools.EXTRA_CONSULT_ADVICE_CREATE_TIME, dataModel.getCreateTime());
+						getActivity().setResult(RESULT_CODE_SAVE_ADVICE_SUCCESS, intent);
+						getActivity().finish();
+					} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+						if (getActivity() != null)
+							LoginActivity.startActivity(getActivity());
+					}
+				} else {
+					if (resultData == null) {
+						ToastUtils.ToastShort(getActivity().getApplicationContext(), R.string.network_error);
+					} else {
+						ToastUtils.ToastShort(getActivity().getApplicationContext(), (String) resultData);
+					}
+				}
+			}
+		});
+    }
+  
+    protected void initListener() {
+    	tv_update_advice.setOnClickListener(this);
+    }
+
+	@Override
+	public String getReqestTag() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.tv_update_advice:
+	        startSaveCureAdviceReuqest(TREATMENT_OFFICIAL);
+			break;
+		}
+	}
+	
+	/**
+	 * 保存咨询建议对话框
+	 */
+	public void saveCureAdviceDlg(){
+		String content = getString(R.string.dialog_update_advice_text);
+		String title = getString(R.string.dialog_hint_title);
+	    String btnLeftText = getString(R.string.dialog_no_modify);
+	    String btnRightText = getString(R.string.str_dialog_ok);
+        new HintDlg(getActivity(), content, title, btnLeftText, btnRightText, new OnDialogclickListener() {
+			
+			@Override
+			public void onButtonClick(int type,Dialog dialog) {
+				switch(type){
+				case AppConstants.RIGHT_BUTTON:
+					startSaveCureAdviceReuqest(TREATMENT_OFFICIAL);
+					dialog.dismiss();
+					
+				  break;
+				case AppConstants.LEFT_BUTTON:
+					dialog.dismiss();
+					act.finish();
+				  break;
+				}
+			}
+		},R.layout.print_card_dialog).show();
+	}
+	
+	/**
+	 * 是否修改咨询建议数据
+	 * @return 
+	 */
+	public boolean isModifyText(){
+		if(mConsultTreatmentModel==null){
+			return false;
+		}
+		if(mConsultTreatmentModel.getTreatmentDto() == null){
+			return false;
+		}
+		if(mConsultTreatmentModel.getTreatmentDto().getCureAdvise() == null){
+			return false;
+		}
+		//初始的咨询建议数据
+    	String cureAdvise=mConsultTreatmentModel.getTreatmentDto().getCureAdvise().trim();	
+    	//修改后的咨询建议数据
+		String etCureAdvice = met_input_consult_advice.getEt_input().getText().toString().trim();
+		//对比数据
+		if (!cureAdvise.equals(etCureAdvice)) {
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * 取消咨询
+	 * @param consultID:咨询服务ID
+	 */
+	public void cancelConsult() {
+		String content = null;
+		content = getString(R.string.dialog_cancel_order_text);
+		String title = getString(R.string.dialog_hint_title);
+		String btnConfirmText = getString(R.string.str_dialog_ok);
+		String btnCancelText = getString(R.string.str_dialog_cancel);
+		new HintDlg(getActivity(), content, title, btnCancelText,
+				btnConfirmText, new OnDialogclickListener() {
+					@Override
+					public void onButtonClick(int type, Dialog dialog) {
+						switch (type) {
+						case AppConstants.RIGHT_BUTTON:
+							startRevocationConsultRequest();
+							dialog.dismiss();
+							break;
+						case AppConstants.LEFT_BUTTON:
+							dialog.dismiss();
+							break;
+						}
+					}
+				}, R.layout.dialog_hint).show();
+	}
+	
+	/**
+	 * 取消咨询
+	 */
+	public void startRevocationConsultRequest() {
+		String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+		HttpTaskManager.startStringRequest(DataRequestUtils
+				.getRevocationConsultRequestParam(TAG, token, String.valueOf(consultId)),
+				JsonParserFactory.parseBaseModel(BaseModel.class),
+				new IResultReceiver() {
+					@Override
+					public void onReceiveResult(int resultCode, Object resultData) {
+						try {
+							if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+								final BaseModel dataModel = (BaseModel) resultData;
+								if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+									ToastUtils.ToastShort(getActivity(),getResources().getString(R.string.order_cancel_success));
+									getActivity().setResult(RESULT_CODE_CANCEL_CONSULT_SUCCESS);
+									getActivity().finish();
+								} else if (dataModel.getState() == ServerErrorCode.TOKEN_INVALID) {
+									LoginActivity.startActivity(getActivity());
+								}
+							} else {
+								if (resultData == null) {
+									ToastUtils.ToastShort(getContext().getApplicationContext(),R.string.network_error);
+								} else {
+									ToastUtils.ToastShort(getContext().getApplicationContext(),(String) resultData);
+								}
+							}
+						} catch (Exception e) {
+						}
+					}
+				});
+	}
+	
+	
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+	}
+	
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+}

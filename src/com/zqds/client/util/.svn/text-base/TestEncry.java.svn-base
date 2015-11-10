@@ -1,0 +1,35 @@
+package com.qdoc.client.util;
+
+import com.android.volley.center.RequestParams;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.url.DataRequestUtils;
+
+
+public class TestEncry {
+	private final String TAG = TestEncry.class.getSimpleName();
+    /**
+     * des加密与解密
+     * @param token
+     * @param test:字符串
+     * @param type:类型（0:32位，1:64位）
+     * @param status:状态(0:加密，1:解密)
+     */
+	public void testEncry(String token,String test,String type,String status){
+		
+
+		
+		RequestParams params = DataRequestUtils.getTestEncryption(TAG,token,test, type, status);
+		HttpTaskManager.startStringRequest(params,
+				null,
+				new IResultReceiver() {
+
+					@Override
+					public void onReceiveResult(int resultCode,
+							Object resultData) {
+						LogUtils.i(TAG, (String)resultData);
+					}
+				});
+        }
+
+}

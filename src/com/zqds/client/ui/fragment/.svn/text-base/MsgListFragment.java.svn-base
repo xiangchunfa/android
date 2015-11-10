@@ -1,0 +1,188 @@
+/*
+ * MyConsultFragment.java
+ * classes : com.qdoc.client.ui.fragment.MyConsultFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-20 下午5:36:19
+ */
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+
+import android.annotation.SuppressLint;
+import android.os.Bundle;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.model.MessageModel;
+import com.qdoc.client.ui.FlowerActivity;
+import com.qdoc.client.ui.MyConsultListActivity;
+import com.qdoc.client.ui.ThankLetterActivity;
+import com.qdoc.client.ui.adapter.MessageListAdapter;
+import com.qdoc.client.ui.adapter.PagerAdapter;
+import com.qdoc.client.ui.view.MyViewPager;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+
+/**
+ * com.qdoc.client.ui.fragment.MyConsultFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-20 下午5:36:19
+ */
+public class MsgListFragment extends BaseFragment implements OnClickListener{
+    /**
+     * TAG
+     */
+    public static final String TAG = MsgListFragment.class.getSimpleName();
+
+    /**
+     * view
+     */
+    private TitleBar mTitleBar;
+    private ListView mListView;
+    private LinearLayout lly_my_consult;
+    private LinearLayout lly_thanks_letter;
+    private LinearLayout lly_flower;
+
+    
+    /**
+     * params
+     */
+    private MessageListAdapter mAdapter;
+    private ArrayList<MessageModel> titleList = new ArrayList<MessageModel>();
+
+
+
+    public static ConsultDetailFragment newInstance(Bundle bundle) {
+        final ConsultDetailFragment fragment = new ConsultDetailFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        return inflater.inflate(R.layout.fragment_msg_list, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initView(view);
+        initParams();
+        initListener();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+//        mAdapter = new MessageListAdapter(getContext());
+//        mListView.setAdapter(mAdapter);
+        initData();
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+        lly_my_consult=(LinearLayout) view.findViewById(R.id.lly_my_consult);
+        lly_thanks_letter=(LinearLayout) view.findViewById(R.id.lly_thanks_letter);
+        lly_flower=(LinearLayout) view.findViewById(R.id.lly_flower);
+        mTitleBar.setTitleInfo(R.string.tab2_title, 0, 0, null, null, getResources().getColor(R.color.titlebar_bg));
+//        mListView = (ListView) view.findViewById(R.id.listView);
+    }
+
+    private void initData() {
+//        String[] mTabTitles = getResources().getStringArray(R.array.msg_default_list_name);
+//        TypedArray drawables = getResources().obtainTypedArray(R.array.msg_default_list_icon);
+//
+//        int size = mTabTitles.length;
+//        for (int i = 0; i < size; i++) {
+//            MessageModel model = new MessageModel();
+//            model.setIcon(drawables.getResourceId(i, 0));
+//            model.setName(mTabTitles[i]);
+//
+//            titleList.add(model);
+//        }
+
+//        mAdapter.addListData(titleList);
+    }
+
+    private void initListener() {
+        // TODO Auto-generated method stub
+//        mListView.setOnItemClickListener(new OnItemClickListener() {
+//
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                // TODO Auto-generated method stub
+//                switch (position) {
+//                    case 0:
+////                        msgActivity.switchToMyConsultList();
+//                        MyConsultActivity.startActivity(getActivity());
+//                        break;
+//                    case 1:
+////                        msgActivity.switchToThankList();
+//                    	ThankLetterActivity.startActivity(getActivity());
+//                        break;
+//                    case 2:
+////                        msgActivity.switchToFlowerList();
+//                    	FlowerActivity.startActivity(getActivity());
+//                        break;
+//                }
+//            }
+//        });
+    	lly_my_consult.setOnClickListener(this);
+    	lly_thanks_letter.setOnClickListener(this);
+    	lly_flower.setOnClickListener(this);
+    }
+
+    @Override
+    public String getReqestTag() {
+        // TODO Auto-generated method stub
+        return TAG;
+    }
+    
+    @Override
+    public void onDestroyView() {
+    	// TODO Auto-generated method stub
+    	super.onDestroyView();
+    }
+    
+    @Override
+    public void onPause() {
+    	// TODO Auto-generated method stub
+    	super.onPause();
+    }
+    
+    @Override
+    public void onResume() {
+    	// TODO Auto-generated method stub
+    	super.onResume();
+    }
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.lly_my_consult:
+			 MyConsultListActivity.startActivity(getActivity(),MsgListFragment.TAG);
+			break;
+
+		case R.id.lly_thanks_letter:
+			 ThankLetterActivity.startActivity(getActivity());
+			break;
+			
+		case R.id.lly_flower:
+			 FlowerActivity.startActivity(getActivity());
+			break;
+		}
+	}
+}

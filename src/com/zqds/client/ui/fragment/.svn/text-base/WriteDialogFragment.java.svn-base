@@ -1,0 +1,162 @@
+/*
+ * ShareDialogFragment.java
+ * classes : com.qdoc.client.ui.fragment.ShareDialogFragment
+ * @author xiangyutian
+ * V 1.0.0
+ * Create at 2014-7-18 上午2:31:20
+ */
+package com.qdoc.client.ui.fragment;
+
+import android.app.Dialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.ToastUtils;
+
+/**
+ * com.qdoc.client.ui.fragment.ShareDialogFragment
+ * 
+ * @author xiangyutian <br/>
+ *         create at 2014-7-18 上午2:31:20
+ */
+public class WriteDialogFragment extends DialogFragment {
+    /**
+     * TAG
+     */
+    public static final String TAG = WriteDialogFragment.class.getSimpleName();
+
+    /**
+     *view
+     */
+    private ImageView switchToggle;
+    private Button btnSend;
+    private EditText edInput;
+
+    /**
+     * params
+     */
+    private long consultId;
+    private String consultFrom;
+
+    public static WriteDialogFragment newInstance(Bundle bundle) {
+        final WriteDialogFragment fragment = new WriteDialogFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setStyle(DialogFragment.STYLE_NORMAL, 0);
+    }
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_dialog_write, container, false);
+        WindowManager.LayoutParams wmlp = getDialog().getWindow().getAttributes();
+        wmlp.gravity = Gravity.BOTTOM;
+        return v;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initParams();
+        initView(view);
+        initListener();
+    }
+
+    private void initParams() {
+        // TODO Auto-generated method stub
+        if (getArguments() != null) {
+            consultId = getArguments().getLong(IntentTools.EXTRA_CONSULT_ID);
+            consultFrom = getArguments().getString(IntentTools.EXTRA_CONSULT_FROM);
+            LogUtils.d(TAG, "consultId=========initParams===========  " + consultId);
+        }
+    }
+
+    private void initView(View view) {
+        // TODO Auto-generated method stub
+        edInput = (EditText) view.findViewById(R.id.btn_input);
+//        // 设置EditText的显示方式为多行文本输入
+//        edInput.setInputType(InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+//        // 文本显示的位置在EditText的最上方
+//        edInput.setGravity(Gravity.TOP);
+        // 改变默认的单行模式
+//        edInput.setSingleLine(false);
+        // 水平滚动设置为False
+        edInput.setHorizontallyScrolling(false);
+        btnSend = (Button) view.findViewById(R.id.send);
+        btnSend.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                if (TextUtils.isEmpty(edInput.getText().toString())) {
+                    ToastUtils.ToastShort(getActivity().getApplicationContext(), "请输入内容");
+                    return;
+                }
+
+                dismiss();
+
+                Intent intent = new Intent(AppConstants.TEXT_CREATE_INTENT_ACTION);
+                intent.putExtra(IntentTools.EXTRA_CONSULT_ID, consultId);
+                intent.putExtra(IntentTools.EXTRA_INPUT_CONTENT, edInput.getText().toString());
+                intent.putExtra(IntentTools.EXTRA_CONSULT_FROM, consultFrom);
+                LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+            }
+        });
+
+        switchToggle = (ImageView) view.findViewById(R.id.switchtoggle);
+        switchToggle.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                dismiss();
+
+                // 切换语音
+                Bundle bundle = new Bundle();
+                bundle.putLong(IntentTools.EXTRA_CONSULT_ID, consultId);
+                bundle.putString(IntentTools.EXTRA_CONSULT_FROM, consultFrom);
+                FragmentManager fm = getFragmentManager();
+                SpeakDialogFragment volDialog = SpeakDialogFragment.newInstance(bundle);
+                volDialog.show(fm, SpeakDialogFragment.TAG);
+            }
+        });
+    }
+   
+    /** 
+     * The system calls this only when creating the layout in a dialog. 当创建Dialog的时候系统将会调用 
+     */  
+    @Override  
+    public Dialog onCreateDialog(Bundle savedInstanceState) {  
+        /** 
+         * 你唯一可能会覆盖这个方法的原因就是当使用onCreateView()去修改任意Dialog特点的时候。例如， 
+         * dialog都有一个默认的标题，但是使用者可能不需要它。因此你可以去掉标题，但是你必须调用父类去获得Dialog。 
+         */  
+        Dialog dialog = super.onCreateDialog(savedInstanceState);  
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);  
+        return dialog;  
+    }  
+    
+    protected void initListener() {
+    }
+}

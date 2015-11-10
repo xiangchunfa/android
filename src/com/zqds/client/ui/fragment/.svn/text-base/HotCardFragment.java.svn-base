@@ -1,0 +1,247 @@
+package com.qdoc.client.ui.fragment;
+
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.DoctorCardDataModel;
+import com.qdoc.client.model.DoctorCardModel;
+import com.qdoc.client.model.ImprintCardNewModel;
+import com.qdoc.client.system.AppConstants;
+import com.qdoc.client.system.ImageLoaderHelper;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.view.PhoneClearEditText;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.LogUtils;
+import com.qdoc.client.util.NetworkUtils;
+import com.qdoc.client.util.OnKeyDownUtil;
+import com.qdoc.client.util.ToastUtils;
+
+public class HotCardFragment extends BaseFragment {
+	
+	public static final String TAG = HotCardFragment.class.getSimpleName();
+	
+	private TitleBar mTitleBar;
+    private ImageView mycard;//医生二维码图片空间
+    private TextView name;//医生的全名
+    private TextView post;//职务
+    private TextView tv_telphone;
+    private TextView hospital;//医生从属的医院
+    private TextView detail;//医生的职称
+    private EditText et_card_post;//职务编辑框
+    private TextView card_arrive_time;//预计送达时间
+    private TextView apply_card;//免费申请按钮
+    private PhoneClearEditText et_card_phone;
+    
+    private StringBuffer strBuffer = new StringBuffer();
+	
+    public static HotCardFragment newInstance(Bundle bundle) {
+        final HotCardFragment fragment = new HotCardFragment();
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_hot_card, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		
+		initView(view);
+		initListener();
+		initParam();
+	}
+	
+	private void initView(View view){
+		mTitleBar = (TitleBar) view.findViewById(R.id.titlebar);
+		mTitleBar.setTitleInfo(R.string.apply_for_free, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+		
+		mycard = (ImageView) view.findViewById(R.id.mycard);
+		name = (TextView) view.findViewById(R.id.name);
+		post = (TextView) view.findViewById(R.id.post);
+		tv_telphone = (TextView) view.findViewById(R.id.tv_telphone);
+		hospital = (TextView) view.findViewById(R.id.hospital);
+		detail = (TextView) view.findViewById(R.id.detail);
+		et_card_post = (EditText) view.findViewById(R.id.et_card_post);
+		card_arrive_time = (TextView) view.findViewById(R.id.card_arrive_time);
+		apply_card = (TextView) view.findViewById(R.id.apply_card);
+		et_card_phone = (PhoneClearEditText) view.findViewById(R.id.et_card_phone);
+	}
+	
+	private void initListener(){
+		et_card_post.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				post.setText(et_card_post.getText().toString().trim());
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,int after) {}
+			
+			@Override
+			public void afterTextChanged(Editable s) {}
+		});
+		
+		et_card_phone.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				if(et_card_phone.getText().toString().trim().length()>0)
+					tv_telphone.setVisibility(View.VISIBLE);
+				else
+					tv_telphone.setVisibility(View.GONE);
+				tv_telphone.setText("+86 "+et_card_phone.getText().toString());
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+			
+			@Override
+			public void afterTextChanged(Editable s) {}
+		});
+		
+		apply_card.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(OnKeyDownUtil.isValidClick())
+					applyHotCardForFree();
+			}
+		});
+	}
+	
+	private void initParam(){
+		card_arrive_time.setText(getString(R.string.plan_arrival_time));
+		getMyCardRequest();
+	}
+	
+	OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+		
+		@Override
+		public void onClick(View v) {
+			getActivity().finish();
+		}
+	};
+	
+    /**
+     * 加载医生名片二维码信息
+     */
+    private void getMyCardRequest() {
+        String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+        Global.progressDialog = ProgressDialog.show(getActivity(), null, null, true, true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.getMyCradRequestParam(TAG, token),
+                JsonParserFactory.parseBaseModel(DoctorCardDataModel.class), new IResultReceiver() {
+
+                    @Override
+                    public void onReceiveResult(int resultCode, Object resultData) {
+                    	Global.progressDialog.dismiss();
+                        if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                            final DoctorCardDataModel dataModel = (DoctorCardDataModel) resultData;
+                            if (dataModel.getState() == ServerErrorCode.INTERFACE_SUCCESS) {
+                            	if ((dataModel != null) && (dataModel.getDoctorCard() != null)) {
+                            		 DoctorCardModel doctorDto = dataModel.getDoctorCard();
+                            		 name.setText(doctorDto.getDoctorName());
+                            		 post.setText(TextUtils.isEmpty(doctorDto.getPositionName())?"":doctorDto.getPositionName());
+                         	    	 hospital.setVisibility(View.VISIBLE);
+                         	    	 detail.setVisibility(View.VISIBLE);
+                        			 ImageLoaderHelper.getInstance(getActivity()).displayImage(doctorDto.getRealQzCodeUrl(), mycard);
+                        			 hospital.setText(TextUtils.isEmpty(doctorDto.getHospitalName())?"":doctorDto.getHospitalName());
+                        			 strBuffer.setLength(0);
+                        			 strBuffer.append(TextUtils.isEmpty(doctorDto.getDepartName()) ? "" : doctorDto.getDepartName());
+                        			 strBuffer.append(" | ");
+                            		 strBuffer.append(TextUtils.isEmpty(doctorDto.getDictinoaryLable()) ? "" : doctorDto.getDictinoaryLable());
+                            		 detail.setText(strBuffer.toString());
+                            	}
+                            }else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                LoginActivity.startActivity(getActivity());
+          					}  
+                        } else {
+                            if (resultData == null) {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+                            } else {
+                                ToastUtils.ToastShort(getContext().getApplicationContext(), (String) resultData);
+                            }
+                        }
+                        LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+                    }
+                });
+    }
+    
+    /**
+     * 免费申请我的名片
+     */
+    private void applyHotCardForFree(){
+    	if(!NetworkUtils.isOnline(getContext())){
+    		ToastUtils.ToastShort(getContext(), R.string.network_unavaible);
+    		return;
+    	}
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	String telPhone = tv_telphone.getText().toString();
+    	if(!TextUtils.isEmpty(telPhone)){
+    		telPhone = telPhone.substring("+86 ".length()).replace("-", "");
+    	}
+    	if(telPhone.length()>0 && telPhone.length()!=11){
+    		ToastUtils.ToastShort(getContext(), R.string.wrong_phone_number);
+    		return;
+    	}
+    	HttpTaskManager.startStringRequest(DataRequestUtils.applyCardForFree(TAG, token, post.getText().toString().trim(),telPhone, AppConstants.MYCARD_TYPE_VALUE_HOT), 
+    			JsonParserFactory.parseBaseModel(ImprintCardNewModel.class), 
+    			new IResultReceiver() {
+			
+			@Override
+			public void onReceiveResult(int resultCode, Object resultData) {
+				if(resultCode==ServerErrorCode.STATUS_SUCCESS){
+					ImprintCardNewModel imprintCardModel = (ImprintCardNewModel) resultData;
+					if(null!=imprintCardModel&&imprintCardModel.getState()==ServerErrorCode.INTERFACE_SUCCESS){
+						ToastUtils.ToastShort(getContext(), getString(R.string.print_card_request_access));
+						LocalBroadcastManager.getInstance(getContext()).sendBroadcast(new Intent(AppConstants.REFRESH_CARD_APPLY_STATUS));
+						getActivity().finish();
+					}else if(null!=imprintCardModel&&imprintCardModel.getState()==ServerErrorCode.TOKEN_INVALID){
+						LoginActivity.startActivity(getActivity());
+					}else{
+						ToastUtils.ToastShort(getContext().getApplicationContext(), imprintCardModel.getErrorMsg());
+					}
+				}else{
+					ToastUtils.ToastShort(getContext().getApplicationContext(), R.string.network_error);
+				}
+				LogUtils.d(TAG, "resultCode::: " + resultCode + "resultData ::: " + resultData);
+			}
+		});
+    }
+
+	@Override
+	public String getReqestTag() {
+		return TAG;
+	}
+
+}

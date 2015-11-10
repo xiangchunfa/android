@@ -1,0 +1,234 @@
+package com.qdoc.client.ui.fragment;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.app.ProgressDialog;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+import com.qdoc.client.R;
+import com.qdoc.client.config.PersonalConfig;
+import com.qdoc.client.config.PersonalConfigKey;
+import com.qdoc.client.helper.Global;
+import com.qdoc.client.http.HttpTaskManager;
+import com.qdoc.client.http.ServerErrorCode;
+import com.qdoc.client.http.listener.IResultReceiver;
+import com.qdoc.client.http.parser.JsonParserFactory;
+import com.qdoc.client.http.url.DataRequestUtils;
+import com.qdoc.client.model.CommentModel;
+import com.qdoc.client.model.FindSatisfactionSurveyDataModel;
+import com.qdoc.client.ui.LoginActivity;
+import com.qdoc.client.ui.adapter.CommentListAdapter;
+import com.qdoc.client.ui.widget.ErrorMaskView;
+import com.qdoc.client.ui.widget.PullListMaskController;
+import com.qdoc.client.ui.widget.TitleBar;
+import com.qdoc.client.util.IntentTools;
+import com.qdoc.client.util.StringUtils;
+import com.qdoc.client.util.ToastUtils;
+/**
+ * FileName    : EvaluateFragment.java
+ * Description : 评价类
+ * @Copyright  : Keai Software Co.,Ltd.Rights Reserved 
+ * @Company    : 可爱医生网络技术有限公司
+ * @author     : 向春发
+ * @version    : 1.0 
+ * Create Date : 2015-4-21 
+ **/
+public class EvaluateFragment extends BaseFragment {
+   
+	/**
+	 * TAG
+	 */
+	public static final String TAG = EvaluateFragment.class.getSimpleName();
+	
+	/**
+	 * view
+	 */
+	public TextView tv_comment_time;
+	public TextView tv_comment_content;
+	public ImageView iv_comment_satisfaction;
+	public ErrorMaskView errorMaskView;
+	private ListView listView;
+	private TextView tv_faceback_content;
+	private TextView tv_title;
+	private ScrollView sv_main;
+	private TextView tv_faceback_title;
+	/**
+	 * params
+	 */
+	public FindSatisfactionSurveyDataModel dataModel;
+    private long consultId;
+	private PullListMaskController mViewController;
+	private CommentListAdapter mAdapter;
+//	private ConsultDtoModel consultDto;
+    private TitleBar titlebar;
+	
+    public static EvaluateFragment newInstance(Bundle bundle) {
+	     final EvaluateFragment fragment = new EvaluateFragment();
+	     fragment.setArguments(bundle);
+	     return fragment;
+	}
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_evaluate, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		initView(view);
+		initParams();
+		initListener();
+	}
+	
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		super.onActivityCreated(savedInstanceState);
+	}
+
+	@Override
+	public String getReqestTag() {
+		return null;
+	}
+
+	public void initView(View v) {
+		titlebar = (TitleBar) v.findViewById(R.id.titlebar);
+        titlebar.setTitleInfo(R.string.str_evaluate, R.drawable.icon_back, 0, actionBarLeftBtnListener, null, getResources().getColor(R.color.titlebar_bg));
+		consultId = getArguments().getLong(IntentTools.EXTRA_CONSULT_ID);
+        errorMaskView = (ErrorMaskView) v.findViewById(R.id.maskView);
+        mViewController = new PullListMaskController(errorMaskView);
+        listView = (ListView) v.findViewById(R.id.listView);
+        tv_faceback_content = (TextView) v.findViewById(R.id.tv_faceback_content);
+        tv_title = (TextView) v.findViewById(R.id.tv_title);
+        sv_main = (ScrollView) v.findViewById(R.id.sv_main);
+        tv_faceback_title = (TextView) v.findViewById(R.id.tv_faceback_title);
+        errorMaskView.setVisibility(View.VISIBLE);
+        sv_main.setVisibility(View.GONE);
+        errorMaskView.setLoadingStatus();
+	}
+
+	public void initParams() {
+		mAdapter = new CommentListAdapter(getActivity());
+		listView.setAdapter(mAdapter);
+		getInitFindSatisfactionSurvey(consultId);
+	}
+
+	public void initListener() {
+		mViewController.setOnRetryClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				getInitFindSatisfactionSurvey(consultId);
+			}
+		});
+	}
+	
+	/**
+	 * 获取咨询满意度
+	 */
+    public void getInitFindSatisfactionSurvey(long consultId){
+    	String token = PersonalConfig.getString(PersonalConfigKey.EXTRA_TOKEN);
+    	Global.progressDialog = ProgressDialog.show(getActivity(), null, getActivity().getString(R.string.login_hint), true, true);
+        HttpTaskManager.startStringRequest(DataRequestUtils.findNewSatisfactionSurvey(TAG, token, consultId),
+                  JsonParserFactory.parseBaseModel(FindSatisfactionSurveyDataModel.class), new IResultReceiver() {
+
+                      @Override
+                      public void onReceiveResult(int resultCode, Object resultData) {
+                    	  if (Global.progressDialog != null && Global.progressDialog.isShowing()){
+            					Global.progressDialog.dismiss();
+            			  }
+                          if (resultCode == ServerErrorCode.STATUS_SUCCESS) {
+                                  dataModel = (FindSatisfactionSurveyDataModel) resultData;
+                              if (dataModel.getState()==ServerErrorCode.INTERFACE_SUCCESS) {
+                            	  if (dataModel.getSatisfactionSurvey() == null) {//没有评价
+                            		  errorMaskView.setEmptyStatus(getResources().getString(R.string.no_evaluate));
+                            	  } else {//有评价
+                            		  setShowView();
+                            	  }
+                              } else if(dataModel.getState() == ServerErrorCode.TOKEN_INVALID){
+                                  LoginActivity.startActivity(getActivity());
+          					  } else {
+                                  ToastUtils.ToastShort(getActivity().getApplicationContext(), dataModel.getErrorMsg());
+                              }
+                          } else {
+                              if (resultData == null) {
+                                  ToastUtils.ToastShort(getActivity().getApplicationContext(), R.string.network_error);
+                              } else {
+                                  ToastUtils.ToastShort(getActivity().getApplicationContext(), (String) resultData);
+                              }
+                              errorMaskView.setErrorStatus();
+                          }
+                      }
+         });
+    }
+    
+	public void setShowView() {
+		errorMaskView.setVisibility(View.GONE);
+		sv_main.setVisibility(View.VISIBLE);
+		if (dataModel.getSatisfactionSurvey() == null) {
+			return;
+		}
+        String consultComment = getResources().getString(R.string.consult_comment, dataModel.getSatisfactionSurvey().getNickName());
+    	tv_title.setText(consultComment);
+		if (!StringUtils.isEmpty(dataModel.getSatisfactionSurvey().getOpinion())) {
+			tv_faceback_content.setText(dataModel.getSatisfactionSurvey().getOpinion());
+		} else {
+			//隐藏反馈意见
+			tv_faceback_content.setVisibility(View.GONE);
+			tv_faceback_title.setVisibility(View.GONE);
+		}
+		List<CommentModel> list = new ArrayList<CommentModel>();
+		if (dataModel.getSatisfactionSurvey().getAttitudeScore() != null){
+			CommentModel model1 = new CommentModel();
+			model1.setQuestion(dataModel.getSatisfactionSurvey().getProblemOne());
+			model1.setAnswerList(dataModel.getSatisfactionSurvey().getAnswerOneList());
+			model1.setAnswerIndex(dataModel.getSatisfactionSurvey().getAttitudeScore()); 
+			list.add(model1);
+		}
+		if (dataModel.getSatisfactionSurvey().getSynthesisScore() != null) {
+			CommentModel model2 = new CommentModel();
+			model2.setQuestion(dataModel.getSatisfactionSurvey().getProblemTwo());
+			model2.setAnswerList(dataModel.getSatisfactionSurvey().getAnswerTwoList());
+			model2.setAnswerIndex(dataModel.getSatisfactionSurvey().getSynthesisScore());
+			list.add(model2);
+		}
+        if (dataModel.getSatisfactionSurvey().getResponseScore() != null) {
+        	CommentModel model3 = new CommentModel();
+    		model3.setQuestion(dataModel.getSatisfactionSurvey().getProblemThree());
+    		model3.setAnswerList(dataModel.getSatisfactionSurvey().getAnswerThreeList());
+    		model3.setAnswerIndex(dataModel.getSatisfactionSurvey().getResponseScore());
+    		list.add(model3);
+        }
+		mAdapter.addListData(list);
+		Global.setListViewHeight(listView);
+	}
+    
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		HttpTaskManager.stop(TAG);
+	}
+	
+    OnClickListener actionBarLeftBtnListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+        	getActivity().finish();
+        }
+    };
+}
